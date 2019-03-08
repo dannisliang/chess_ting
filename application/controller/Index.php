@@ -8,7 +8,6 @@
 
 namespace app\controller;
 
-
 class Index extends Base
 {
     /**
@@ -16,6 +15,7 @@ class Index extends Base
      * @return \think\response\Json
      */
     public function index(){
+        //测试测试
         return json(msg( 0 , '测试'));
     }
 }
