@@ -19,3 +19,6 @@ return [
     ],
 
 ];
+use think\Route;
+
+Route::rule('index/index','index/index');
