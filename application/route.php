@@ -8,6 +8,10 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
+use think\Route;
+
+Route::rule('index/index','index/index');
+Route::rule('service/demo/index','demo/index');
 
 return [
     '__pattern__' => [
@@ -19,6 +23,4 @@ return [
     ],
 
 ];
-use think\Route;
 
-Route::rule('index/index','index/index');
