@@ -30,4 +30,5 @@ class Base
         $opt = json_decode($opt,true);
         return msg( 0 , '获取数据成功' , $opt);
     }
+    //jjjj
 }
