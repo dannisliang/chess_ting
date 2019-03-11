@@ -1,4 +1,6 @@
 <?php
+
+use app\definition\CodeMes;
 // +----------------------------------------------------------------------
 // | ThinkPHP [ WE CAN DO IT JUST THINK ]
 // +----------------------------------------------------------------------
@@ -30,4 +32,22 @@ function msg($code , $msg , $data = [])
 function objToArray($obj)
 {
     return json_decode(json_encode($obj), true);
+}
+
+
+/**
+ * @param $code 状态码
+ * @param $data 返回值
+ * @return \think\response\Json\
+ */
+function jsonRes($code, $data = []){
+    $res = [
+        'code' => $code,
+        'mess' => CodeMes::$errorCode[$code],
+    ];
+
+    if($data){
+        $res['data'] = $data;
+    }
+    return json($res);
 }
