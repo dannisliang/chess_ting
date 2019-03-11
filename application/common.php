@@ -14,28 +14,6 @@ use app\definition\CodeMes;
 // 应用公共文件
 
 /**
- * 返回统一信息
- * @param $code
- * @param $data
- * @param $msg
- * @return array
- */
-function msg($code , $msg , $data = [])
-{
-    return compact('code', 'msg' , 'data');
-}
-
-/**
- * 对象转换成数组
- * @param $obj
- */
-function objToArray($obj)
-{
-    return json_decode(json_encode($obj), true);
-}
-
-
-/**
  * @param $code 状态码
  * @param $data 返回值
  * @return \think\response\Json\

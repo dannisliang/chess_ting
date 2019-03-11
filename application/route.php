@@ -10,7 +10,9 @@
 // +----------------------------------------------------------------------
 use think\Route;
 
+Route::rule('service/getUserInfo','user/getUserInfo');
 Route::rule('service/room/createRoom','Room/createRoom');
+
 
 return [
     '__pattern__' => [
