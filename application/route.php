@@ -12,6 +12,7 @@ use think\Route;
 
 Route::rule('index/index','index/index');
 Route::rule('service/demo/index','demo/index');
+Route::rule('service/getUserInfo','user/getUserInfo');
 
 return [
     '__pattern__' => [
