@@ -18,7 +18,7 @@ use app\definition\CodeMes;
  * @param $data 返回值
  * @return \think\response\Json\
  */
-function jsonRes($code, $data = []){
+function jsonRes($code, $data = [] ){
     $res = [
         'code' => $code,
         'mess' => CodeMes::$errorCode[$code],
@@ -29,3 +29,24 @@ function jsonRes($code, $data = []){
     }
     return json($res);
 }
+
+/**
+ * 统一返回数据为array
+ * @param $code
+ * @param $msg
+ * @param $data
+ * @return array
+ */
+function msg($code, $data = [] ){
+    $res = [
+        'code' => $code,
+        'mess' => CodeMes::$errorCode[$code],
+    ];
+
+    if($data){
+        $res['data'] = $data;
+    }
+    return $res;
+}
+
+

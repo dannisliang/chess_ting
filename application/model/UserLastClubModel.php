@@ -1,0 +1,38 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: Administrator
+ * Date: 2019/3/12
+ * Time: 20:25
+ */
+
+namespace app\model;
+
+
+use think\Model;
+
+class UserLastClubModel extends Model
+{
+    protected $name = 'user_last_club';
+
+    /**
+     * 获取玩家上次登录的俱乐部id
+     * @param $player_id
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getLastClubId($player_id){
+        try{
+            $res = $this -> where('player_id',$player_id)->field('club_id')->find();
+            if(!$res){
+                return msg(3402);
+            }
+            return msg( 0 , $res);
+        }catch (\Exception $exception){
+            return msg(3401,$exception->getMessage());
+        }
+
+    }
+}
