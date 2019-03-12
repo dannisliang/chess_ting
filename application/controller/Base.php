@@ -17,7 +17,7 @@ class Base extends Controller
 {
     public $opt;
 
-    public function __construct()
+    public function _initialize()
     {
         # 拒绝一切非post请求
         $method = Request::instance()->method();
