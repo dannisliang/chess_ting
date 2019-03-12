@@ -15,6 +15,6 @@ class TbClub extends Model{
 
     # 根据俱乐部ID获取俱乐部数据
     public function getInfoById($id){
-        return $this->where(['id', '=', $id])->find();
+        return $this->where('id', '=', $id)->find();
     }
 }

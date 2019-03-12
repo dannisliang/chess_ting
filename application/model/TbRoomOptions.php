@@ -16,7 +16,7 @@ class TbRoomOptions extends Model{
 
     # 根据玩法ID获取玩法相关数据
     public function getInfoById($id){
-        return $this->where(['match_id', '=', $id])->find();
+        return $this->where('id', '=', $id)->find();
     }
 
 }
