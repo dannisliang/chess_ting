@@ -65,60 +65,61 @@ class Room extends Base
         $presidentId = $clubInfo['president_id'];
 
         # 此处代码需要优化 基本完全copy过来  只分析了一下逻辑
-        if($clubType > 0){ # 不是免费模式 需要判断资产
-            if($clubType == 0){ # 扣用户资产 判断用户资产是否充足
-                $bindingDiamondNum = 0; # 绑定钻石数
-                $type = 10002;
-                $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], $type);
-                if($bindingDiamondInfo && isset($bindingDiamondInfo[0]['property_num'])){
-                    $bindingDiamond = $bindingDiamondInfo[0]['property_num'];
-                }
 
-                $diamondNum = 0; # 非绑定钻石数
-                $type = 10001;
-                $diamondInfo = getUserProperty($userSessionInfo['userid'], $type);
-                if($diamondInfo && isset($diamondInfo[0]['property_num'])){
-                    $diamondNum = $diamondInfo[0]['property_num'];
-                }
-                $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0); # 玩家全部钻石
-
-
-                if($roomRate == 0){ # AA扣款，房费均摊
-
-                }
-
-
-                // TODO - process table options like collation etc
-                # 获取玩家折扣相关数据
-                $tbUserVip = new TbUserVip();
-                $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($playerId, $clubId);
-                $discount = 1; # 默认不打折
-                if($userVipInfo){
-                    $vipCardId = $userVipInfo['vid'];
-                    # 获取折扣数据
-                    $tbVipCard = new TbVipCard();
-                    $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
-                    if($vipCardInfo){
-                        $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
-                    }
-                }
-                // 判断玩家钻石是否充足
+        if($clubType == 0){ # 扣用户资产 判断用户资产是否充足
+            $bindingDiamondNum = 0; # 绑定钻石数
+            $type = 10002;
+            $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], $type);
+            if($bindingDiamondInfo && isset($bindingDiamondInfo[0]['property_num'])){
+                $bindingDiamond = $bindingDiamondInfo[0]['property_num'];
             }
 
-            if($clubType == 1){ # 扣会长资产 判断会长资产是否充足
-                $userDiamond = 0;
-                $diamondType = $clubId.'_'.$presidentId.'_10003';
-                $playerId = $presidentId;
-                $diamondInfo = getUserProperty($playerId, $diamondType);
-                if($diamondInfo && isset($diamondInfo[0]['property_num'])){
-                    $userDiamond = $diamondInfo[0]['property_num'];
+            $diamondNum = 0; # 非绑定钻石数
+            $type = 10001;
+            $diamondInfo = getUserProperty($userSessionInfo['userid'], $type);
+            if($diamondInfo && isset($diamondInfo[0]['property_num'])){
+                $diamondNum = $diamondInfo[0]['property_num'];
+            }
+            $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0); # 玩家全部钻石
+
+            # 玩家扣款中不可能出现免费房间，所以rate<0无需处理
+            if($roomRate == 0){ # AA扣款，房费均摊
+
+            }
+
+            # 获取玩家折扣相关数据
+            $tbUserVip = new TbUserVip();
+            $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($playerId, $clubId);
+            $discount = 1; # 默认不打折
+            if($userVipInfo){
+                $vipCardId = $userVipInfo['vid'];
+                # 获取折扣数据
+                $tbVipCard = new TbVipCard();
+                $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
+                if($vipCardInfo){
+                    $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
                 }
-                if($userDiamond < $needDiamond){
-                    $resData['need_diamond'] = $needDiamond;
-                    return jsonRes(23401);
-                }
+            }
+
+            // TODO - process table options like collation etc
+            //判断玩家是否能够开房
+        }
+
+
+        if($clubType == 1){ # 扣会长资产 判断会长资产是否充足
+            $userDiamond = 0;
+            $diamondType = $clubId.'_'.$presidentId.'_10003';
+            $playerId = $presidentId;
+            $diamondInfo = getUserProperty($playerId, $diamondType);
+            if($diamondInfo && isset($diamondInfo[0]['property_num'])){
+                $userDiamond = $diamondInfo[0]['property_num'];
+            }
+            if($userDiamond < $needDiamond){
+                $resData['need_diamond'] = $needDiamond;
+                return jsonRes(23401);
             }
         }
+
         ## 此处代码需要优化
 
         # 生成房间号
