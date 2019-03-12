@@ -9,6 +9,7 @@
 namespace app\controller;
 
 
+use app\definition\Definition;
 use GuzzleHttp\Client;
 
 class User extends Base
@@ -20,9 +21,9 @@ class User extends Base
         $user_id = session('player_id'); //收件人id
         $email_data = [
             'recipient' => $user_id,
-            'appid'     => CESHI_APPID
+            'appid'     => Definition::$CESHI_APPID
         ];
-        $client = new Client(['base_uri'=> WEB_USER_URL]);
+        $client = new Client(['base_uri'=> Definition::$WEB_USER_URL]);
         $res = $client -> request('post',$email_url,['json'=>$email_data]);
         echo '<pre/>';
         print_r(json_decode($res->getBody()->getContents(), true));die;
