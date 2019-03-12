@@ -11,7 +11,9 @@ namespace app\controller;
 use app\model\TbRoomOptions;
 use app\model\TbPlay;
 use app\model\TbClub;
+use think\cache\driver\Redis;
 use think\Session;
+use app\definition\RedisKey;
 
 class Room extends Base
 {
@@ -21,20 +23,19 @@ class Room extends Base
         Session::set('player', 10000);
         $playerId = Session::get("player");
         if (!$playerId){
-            return json(['code'=>9999]);
+            return jsonRes(9999);
         }
 
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id'])){
-            return json(['code' => 3006, 'mess' => '缺少请求参数']);
+            return jsonRes(3006);
         }
 
-        $matchId = $opt['match_id']; # 玩法ID
+        $matchId = $this->opt['match_id']; # 玩法ID
         $TbRoomOptions = new TbRoomOptions();
         $clubGameOpt = $TbRoomOptions->getInfoById($matchId);
         if(!$clubGameOpt){
-            return json(['code'=>3999,'mess'=>'没有此玩法相关数据']);
+            return jsonRes(3999);
         }
-
 
         $needDiamond = $clubGameOpt['diamond']; # 房费
         $oldDiamond = $needDiamond; # 房费
@@ -47,7 +48,7 @@ class Room extends Base
         $tbPlay = new TbPlay();
         $tbPlayInfo = $tbPlay->getInfoById($roomType);
         if(!$tbPlayInfo || !$tbPlayInfo['play'] || !$tbPlayInfo['name']){
-            return json(['code'=>3999,'mess'=>'没有此玩法相关数据']);
+            return jsonRes(3999);
         }
         $roomRule = $tbPlayInfo['play'];
         $roomName = $tbPlayInfo['name'];
@@ -56,7 +57,7 @@ class Room extends Base
         $tbClub = new tbClub();
         $clubInfo = $tbClub->getInfoById($clubId);
         if(!$clubInfo || !$clubInfo['club_type'] || !$clubInfo['president_id']){
-            return json(['code'=>3999,'mess'=>'没有此玩法相关数据']);
+            return jsonRes(3999);
         }
 
         $clubType = $clubInfo['club_type'];
@@ -90,12 +91,14 @@ class Room extends Base
             }
             if($userDiamond < $needDiamond){
                 $resData['need_diamond'] = $needDiamond;
-                return json(['code'=>23401,'mess'=>'玩家钻石不足','data' =>$resData]);
+                return jsonRes(23401);
             }
         }
 
-
+        # 生成房间号
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $roomNumber = $redisHandle->rpoplpush(RedisKey::$ROOM_NUMBER_KEY_LIST, RedisKey::$ROOM_NUMBER_KEY_LIST);
+        var_dump($roomNumber);die;
     }
-
-
 }
