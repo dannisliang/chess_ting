@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: 杨腾飞
  * Date: 2019/3/12
  * Time: 20:25
  */
@@ -27,11 +27,11 @@ class UserLastClubModel extends Model
         try{
             $res = $this -> where('player_id',$player_id)->field('club_id')->find();
             if(!$res){
-                return msg(3402);
+                return false;
             }
-            return msg( 0 , $res);
+            return $res;
         }catch (\Exception $exception){
-            return msg(3401,$exception->getMessage());
+            return jsonRes(3401,$exception->getMessage());
         }
 
     }

@@ -111,13 +111,13 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
     }
 
     try{
-        $requestBeginTime = time();
+        $requestBeginTime = microtime();
         $httpClient = new Client(['base_uri' => $url]);
         $response = $httpClient->request($type, '', $requestConfig);
-        $requestEndTime = time();
+        $requestEndTime = microtime();
         $requestKeepTime = bcsub($requestEndTime, $requestBeginTime, 1);
 
-        if($requestKeepTime > 0.5){
+        if($requestKeepTime > 500){
             $logInfo = date('Y-m-d H:i:s', time()). '|' . '请求服务器响应慢' . '|' . $url . '|' . $requestKeepTime;
             trace($logInfo);
         }
@@ -133,4 +133,22 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         trace($logInfo);
         return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
     }
+}
+
+/**
+ * 发送guzzle http请求
+ * @param $user_id /用户id
+ * @param $url  /服务器地址
+ * @param $pathInfo /访问路径
+ * @param $data /携带参数
+ * @return mixed
+ */
+function guzzleRequest( $url , $pathInfo , $data )
+{
+    //实例化guzzle
+    $client = new \guzzle\GuzzleHttp( $url );
+
+    $result = $client -> getBodyContent( $pathInfo , $data );
+
+    return $result;
 }
