@@ -34,5 +34,8 @@ class Definition{
 
     public static $USER_SESSION_INDO = 'user_session_info'; // 设置用户session的key   key中存json
 
+
+    public static $ROOM_NEED_USER_NUMBER = [1, 2, 3, 4]; # 房间玩家数 只可能是1234
+
 }
 
