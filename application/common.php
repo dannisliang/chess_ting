@@ -161,3 +161,21 @@ function getRoomNeedUserNum($roomOptions){
     }
     return $roomNeedUserNum;
 }
+
+/**
+ * 发送guzzle http请求
+ * @param $user_id /用户id
+ * @param $url  /服务器地址
+ * @param $pathInfo /访问路径
+ * @param $data /携带参数
+ * @return mixed
+ */
+function guzzleRequest( $url , $pathInfo , $data )
+{
+    //实例化guzzle
+    $client = new \guzzle\GuzzleHttp( $url );
+
+    $result = $client -> getBodyContent( $pathInfo , $data );
+
+    return $result;
+}

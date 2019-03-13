@@ -9,7 +9,7 @@ namespace app\model;
 
 use think\Model;
 
-class ClubSocket extends Model{
+class ClubSocketModel extends Model{
 
     protected $name = 'club_socket';
 

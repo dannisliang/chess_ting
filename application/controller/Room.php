@@ -9,17 +9,17 @@
 namespace app\controller;
 
 use app\definition\Definition;
-use app\model\TbRoomOptions;
-use app\model\TbPlay;
-use app\model\TbClub;
+use app\model\RoomOptionsModel;
+use app\model\PlayModel;
+use app\model\ClubModel;
 use think\cache\driver\Redis;
 use app\definition\RedisKey;
-use app\model\TbUserVip;
-use app\model\TbVipCard;
-use app\model\ClubSocket;
-use app\model\GameServiceNew;
-use app\model\UserRoom;
-use app\model\ServiceGatewayNew;
+use app\model\UserVipModel;
+use app\model\VipCardModel;
+use app\model\ClubSocketModel;
+use app\model\GameServiceNewModel;
+use app\model\UserRoomModel;
+use app\model\ServiceGatewayNewModel;
 
 class Room extends Base
 {
@@ -36,7 +36,7 @@ class Room extends Base
         }
 
         $matchId = $this->opt['match_id']; # 玩法ID
-        $TbRoomOptions = new TbRoomOptions();
+        $TbRoomOptions = new RoomOptionsModel();
         $clubGameOpt = $TbRoomOptions->getInfoById($matchId);
         if(!$clubGameOpt){
             return jsonRes(3999);
@@ -49,7 +49,7 @@ class Room extends Base
         $roomRate =  $clubGameOpt['room_rate']; # 扣开房人员钻石的规则
         $cheat = $clubGameOpt['cheat']; # 作弊
 
-        $tbPlay = new TbPlay();
+        $tbPlay = new PlayModel();
         $tbPlayInfo = $tbPlay->getInfoById($roomType);
         if(!$tbPlayInfo || !$tbPlayInfo['play'] || !$tbPlayInfo['name']){
             return jsonRes(3999);
@@ -59,7 +59,7 @@ class Room extends Base
         $roomName = $tbPlayInfo['name'];
 
         $clubId = $this->opt['club_id']; # 俱乐部ID
-        $tbClub = new tbClub();
+        $tbClub = new ClubModel();
         $clubInfo = $tbClub->getInfoById($clubId);
         if(!$clubInfo || !$clubInfo['president_id']){
             return jsonRes(3999);
@@ -78,11 +78,11 @@ class Room extends Base
             }
             # 获取折扣
             $discount = 1;
-            $tbUserVip = new TbUserVip();
+            $tbUserVip = new UserVipModel();
             $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($userSessionInfo['userid'], $clubId);
             if($userVipInfo){
                 $vipCardId = $userVipInfo['vid'];
-                $tbVipCard = new TbVipCard();
+                $tbVipCard = new VipCardModel();
                 $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
                 if($vipCardInfo){
                     $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
@@ -132,7 +132,7 @@ class Room extends Base
         }
 
         # 根据俱乐部ID获取俱乐部socket通道
-        $clubSocket = new ClubSocket();
+        $clubSocket = new ClubSocketModel();
         $clubSocketInfo = $clubSocket->getInfoByClubId($clubId);
         if($clubSocketInfo){ # 存在专属通道
             $roomUrl = $clubSocketInfo['room_url'];
@@ -143,11 +143,11 @@ class Room extends Base
             $backList['socket_h5'] = $socketH5;
             $serviceId = 1;
         }else{ # 不存在专属通道 要寻找一个压力最小的服务器
-            $gameServiceNew = new GameServiceNew();
+            $gameServiceNew = new GameServiceNewModel();
             $gameServiceNewInfos = $gameServiceNew->getInfosByRoomTypeId($roomType);
             //声明一个空数组,以服务器的ID为键,数量为值存进去
             $serviceRoomNumArr = [];
-            $userRoom = new UserRoom();
+            $userRoom = new UserRoomModel();
             foreach ($gameServiceNewInfos as $k => $v){
                 # 根据服务器ID获取服务器房间数
                 $serviceRoomNum = $userRoom->getServiceRoomNumByServiceId($v['service_id']);
@@ -156,7 +156,7 @@ class Room extends Base
             $serviceId = array_search(min($serviceRoomNumArr), $serviceRoomNumArr);//数量最小的服务器
 
             # 根据服务器的ID查出服务器的地址
-            $serviceGatewayNew = new ServiceGatewayNew();
+            $serviceGatewayNew = new ServiceGatewayNewModel();
             $serviceInfo = $serviceGatewayNew->getInfoById($serviceId);
             $roomUrl = '';
             if(!$serviceInfo){
@@ -182,7 +182,7 @@ class Room extends Base
         $check = $roomRule['checks'];
 
         # 创建房间 成功返回房间号 失败
-        $clubSocket = new ClubSocket();
+        $clubSocket = new ClubSocketModel();
         $clubSocketInfo = $clubSocket->getInfoByClubId($clubId);
 
         if($clubSocketInfo){

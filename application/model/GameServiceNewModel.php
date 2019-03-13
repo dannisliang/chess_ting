@@ -9,7 +9,7 @@ namespace app\model;
 
 use think\Model;
 
-class GameServiceNew extends Model{
+class GameServiceNewModel extends Model{
 
     protected $name = 'game_service_new';
 

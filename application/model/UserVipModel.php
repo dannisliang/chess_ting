@@ -9,9 +9,9 @@ namespace app\model;
 
 use think\Model;
 
-class TbUserVip extends Model{
+class UserVipModel extends Model{
 
-    protected $name = 'tb_user_vip';
+    protected $name = 'user_vip';
 
     # 根据俱乐部ID获取俱乐部数据
     public function getInfoByUserIdAndClubId($userId, $clubId){
