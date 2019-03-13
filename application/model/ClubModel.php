@@ -9,7 +9,7 @@ namespace app\model;
 
 use think\Model;
 
-class TbClub extends Model{
+class ClubModel extends Model{
 
     protected $name = 'club';
 

@@ -10,9 +10,9 @@ namespace app\model;
 
 use think\Model;
 
-class TbPlay extends Model{
+class PlayModel extends Model{
 
-    protected $name = 'tb_play';
+    protected $name = 'play';
 
     # 根据规则ID获取相关规则
     public function getInfoById($id){

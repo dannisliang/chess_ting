@@ -33,4 +33,9 @@ class ServiceGatewayNewModel extends Model
         }
 
     }
+
+    # 根据服务器ID获取服务器数据
+    public function getInfoById($serviceId){
+        return $this->where('id', '=', $serviceId)->find();
+    }
 }

@@ -12,8 +12,8 @@ namespace app\controller;
 use app\definition\Definition;
 use app\model\GetLastClub;
 use app\model\ServiceGatewayNewModel;
-use app\model\TbClub;
-use app\model\TbRoomOptions;
+use app\model\ClubModel;
+use app\model\RoomOptionsModel;
 use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 use guzzle\GuzzleHttp;
@@ -77,8 +77,8 @@ class User extends Base
      * 获取返回房间的信息
      */
     private function getRoomInfo($user_room_info){
-        $roomOptionModel = new TbRoomOptions();
         $userRoomModel = new UserRoomModel();
+        $roomOptionModel = new RoomOptionsModel();
         //返回的房间信息
         $check      = '';
         $options    = '';
@@ -157,7 +157,7 @@ class User extends Base
      * @throws \think\exception\DbException
      */
     private function getClubName($club_id){
-        $clubModel = new TbClub();
+        $clubModel = new ClubModel();
         $club = $clubModel -> getClubNameById($club_id);
         if(!$club){
             return $club_name = '';
