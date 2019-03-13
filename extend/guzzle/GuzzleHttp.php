@@ -8,14 +8,18 @@
 namespace guzzle;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use think\Log;
 
 class GuzzleHttp
 {
     public static $client; //储存实例化信息
 
+    public static $url;  //服务器地址
+
     public  function __construct( $url )
     {
+        self::$url = $url;
         self::$client = new Client(['base_uri'=> $url]);
     }
 
@@ -26,22 +30,36 @@ class GuzzleHttp
      * @param string $method
      * @return string
      */
-    public function getBodyContent( $pathInfo ,  $data , $method = 'post')
+    public function getBodyContent( $pathInfo ,  $data  , $method = 'post' )
     {
         try{
+            $requestStartTime = microtime();
             //请求接口信息
             $response = self::$client -> request( $method , $pathInfo , ['json'=>$data , 'timeout' => 1] );
 
+            $requestEndTime = microtime();
+            $requestKeepTime = bcsub($requestEndTime,$requestStartTime);
+
+            if($requestKeepTime > 500 ){
+                $requestLog = date('Y-m-d H:i:s', time()). '|' . self::$url . $pathInfo . '|' . '请求服务器响应慢' . '|' . $requestKeepTime;
+                trace($requestLog);
+            }
+
+            if ($response->getStatusCode() !== 200 ){
+                $requestLog = date('Y-m-d H:i:s', time()). '|' . self::$url . $pathInfo .  '|' . '请求服务器异常' . '|' . $response->getStatusCode() ;
+                trace($requestLog);
+            }
+
             //返回body信息
             $result = $response->getBody()->getContents();
+            return json_decode($result,true);
 
-            return json_decode($result,true)['data'];
+        }catch(RequestException $e){ //连接超时错误
 
-        }catch(\Exception $e){
+            $logInfo = date('Y-m-d H:i:s', time()) . '|' . '请求超时' . '|' . self::$url . $pathInfo;
+            trace($logInfo);
 
-            Log::write('email_response_error',$e->getMessage());
-
-            return false;
+            return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
 
         }
 
