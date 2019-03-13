@@ -10,9 +10,9 @@ namespace app\model;
 
 use think\Model;
 
-class TbVipCard extends Model{
+class VipCardModel extends Model{
 
-    protected $name = 'tb_vip_card';
+    protected $name = 'vip_card';
 
     # 根据俱乐部ID获取俱乐部数据
     public function getInfoById($vipCardId){

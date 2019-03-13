@@ -75,6 +75,12 @@ function checkUserToken(){
     return $response['result'];
 }
 
+/**
+ * 获取用户资产
+ * @param $userIds 用户ID或用户ID集
+ * @param $propertyType 请求类型 固定值
+ * @return mixed
+ */
 function getUserProperty($userIds, $propertyType){
     $requestUrl = Definition::$WEB_API_URL . "api/get_player_property.php";
     $data['app_id'] = Definition::$CESHI_APPID;
@@ -115,9 +121,14 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         $httpClient = new Client(['base_uri' => $url]);
         $response = $httpClient->request($type, '', $requestConfig);
         $requestEndTime = microtime();
+
+        $requestBeginTimeArr = explode(' ', $requestBeginTime);
+        $requestEndTimeArr = explode(' ', $requestEndTime);
+        $requestBeginTime = bcadd($requestBeginTimeArr[0], $requestBeginTimeArr[1], 2);
+        $requestEndTime = bcadd($requestEndTimeArr[0], $requestEndTimeArr[1], 2);
         $requestKeepTime = bcsub($requestEndTime, $requestBeginTime, 1);
 
-        if($requestKeepTime > 500){
+        if($requestKeepTime > 0.5){
             $logInfo = date('Y-m-d H:i:s', time()). '|' . '请求服务器响应慢' . '|' . $url . '|' . $requestKeepTime;
             trace($logInfo);
         }
@@ -133,6 +144,22 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         trace($logInfo);
         return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
     }
+}
+
+/**
+ * 获取房间需要的玩家人数
+ * @param $roomOptions
+ * @return mixed
+ */
+function getRoomNeedUserNum($roomOptions){
+    $roomNeedUserNum = 1;
+    foreach (Definition::$ROOM_NEED_USER_NUMBER as $k => $v){
+        if(in_array($v, $roomOptions)){
+            $roomNeedUserNum = $v;
+            break;
+        }
+    }
+    return $roomNeedUserNum;
 }
 
 /**
