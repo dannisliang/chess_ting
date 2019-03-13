@@ -66,9 +66,23 @@ class Room extends Base
 
 
         if($clubType == 0){ # 扣用户资产 判断用户资产是否充足  玩家扣款中不可能出现免费房间，所以rate<0无需处理
-            if($roomRate == 0){ # AA扣款，房费均摊
-                $needDiamond  = $needDiamond/4; # 逻辑是这样代码需要改
+            # 因为最终需要拿到房费 所以先计算房费
+            if($roomRate == 0){
+                $needDiamond  = $needDiamond/4; # AA后的房费
             }
+            # 获取折扣
+            $discount = 1;
+            $tbUserVip = new TbUserVip();
+            $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($userSessionInfo['userid'], $clubId);
+            if($userVipInfo){
+                $vipCardId = $userVipInfo['vid'];
+                $tbVipCard = new TbVipCard();
+                $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
+                if($vipCardInfo){
+                    $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
+                }
+            }
+            $needDiamond = bcmul($discount, $needDiamond, 0); # 最终房费
 
             # 获取非绑定钻石数 判断是否能够开房
             $diamondNum = 0;
@@ -85,27 +99,11 @@ class Room extends Base
                 if($bindingDiamondInfo && isset($bindingDiamondInfo[0]['property_num'])){
                     $bindingDiamondNum = $bindingDiamondInfo[0]['property_num'];
                 }
-
                 if($bindingDiamondNum < $needDiamond){ # 绑定钻石不够 判断钻石总和是否能够开房
                     $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0);
-                    if($userAllDiamond < $needDiamond){ # 绑定钻石非绑定钻石相加不够 计算折扣 判断是否能够开房
-                        $discount = 1;
-                        $tbUserVip = new TbUserVip();
-                        $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($userSessionInfo['userid'], $clubId);
-                        if($userVipInfo){
-                            $vipCardId = $userVipInfo['vid'];
-                            $tbVipCard = new TbVipCard();
-                            $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
-                            if($vipCardInfo){
-                                $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
-                            }
-                        }
-                        $needDiamond = bcmul($discount, $needDiamond, 0);
-
-                        if($userAllDiamond < $needDiamond){ # 折扣后总钻石还不够 返回错误
-                            $resData['need_diamond'] = $needDiamond;
-                            return jsonRes(23401, $resData);
-                        }
+                    if($userAllDiamond < $needDiamond){ # 绑定钻石非绑定钻石相加不够
+                        $resData['need_diamond'] = $needDiamond;
+                        return jsonRes(23401, $resData);
                     }
                 }
             }
