@@ -12,19 +12,20 @@ use app\model\TbRoomOptions;
 use app\model\TbPlay;
 use app\model\TbClub;
 use think\cache\driver\Redis;
-use think\Session;
 use app\definition\RedisKey;
+use app\model\TbUserVip;
+use app\model\TbVipCard;
 
 class Room extends Base
 {
-
     #  创建房间
     public function createRoom(){
-        Session::set('player', 10000);
-        $playerId = Session::get("player");
-        if (!$playerId){
-            return jsonRes(9999);
-        }
+//        $checkUserToken = checkUserToken();
+//        if(!$checkUserToken){
+//            return jsonRes(9999);
+//        }
+
+//        $userSessionInfo = getUserSessionInfo();
 
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id'])){
             return jsonRes(3006);
@@ -39,8 +40,7 @@ class Room extends Base
 
         $needDiamond = $clubGameOpt['diamond']; # 房费
         $oldDiamond = $needDiamond; # 房费
-        $roomOptions = $clubGameOpt['options']; # 具体规则
-        $roomOptions = json_decode($roomOptions); # 具体规则
+        $roomOptions = json_decode($clubGameOpt['options']); # 具体规则
         $roomType =  $clubGameOpt['room_type']; # 房间类型
         $roomRate =  $clubGameOpt['room_rate']; # 房间算力
         $cheat = $clubGameOpt['cheat']; # 作弊
@@ -50,42 +50,67 @@ class Room extends Base
         if(!$tbPlayInfo || !$tbPlayInfo['play'] || !$tbPlayInfo['name']){
             return jsonRes(3999);
         }
+
         $roomRule = $tbPlayInfo['play'];
         $roomName = $tbPlayInfo['name'];
 
-        $clubId = $opt['club_id']; # 俱乐部ID
+        $clubId = $this->opt['club_id']; # 俱乐部ID
         $tbClub = new tbClub();
         $clubInfo = $tbClub->getInfoById($clubId);
-        if(!$clubInfo || !$clubInfo['club_type'] || !$clubInfo['president_id']){
+        if(!$clubInfo || !$clubInfo['president_id']){
             return jsonRes(3999);
         }
 
         $clubType = $clubInfo['club_type'];
         $presidentId = $clubInfo['president_id'];
 
-        # 判断是A模式还是B模式,A模式判断玩家是否货币充足,B模式判断会长货币是否充足
+        # 此处代码需要优化 基本完全copy过来  只分析了一下逻辑
+
         if($clubType == 0){ # 扣用户资产 判断用户资产是否充足
             $bindingDiamondNum = 0; # 绑定钻石数
             $type = 10002;
-            $bindingDiamondInfo = getUserProperty($playerId, $type);
+            $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], $type);
             if($bindingDiamondInfo && isset($bindingDiamondInfo[0]['property_num'])){
                 $bindingDiamond = $bindingDiamondInfo[0]['property_num'];
             }
 
             $diamondNum = 0; # 非绑定钻石数
             $type = 10001;
-            $diamondInfo = getUserProperty($playerId, $type);
+            $diamondInfo = getUserProperty($userSessionInfo['userid'], $type);
             if($diamondInfo && isset($diamondInfo[0]['property_num'])){
                 $diamondNum = $diamondInfo[0]['property_num'];
             }
-            $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0);
+            $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0); # 玩家全部钻石
+
+            # 玩家扣款中不可能出现免费房间，所以rate<0无需处理
+            if($roomRate == 0){ # AA扣款，房费均摊
+
+            }
+
+            # 获取玩家折扣相关数据
+            $tbUserVip = new TbUserVip();
+            $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($playerId, $clubId);
+            $discount = 1; # 默认不打折
+            if($userVipInfo){
+                $vipCardId = $userVipInfo['vid'];
+                # 获取折扣数据
+                $tbVipCard = new TbVipCard();
+                $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
+                if($vipCardInfo){
+                    $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
+                }
+            }
+
+            // TODO - process table options like collation etc
+            //判断玩家是否能够开房
         }
+
 
         if($clubType == 1){ # 扣会长资产 判断会长资产是否充足
             $userDiamond = 0;
             $diamondType = $clubId.'_'.$presidentId.'_10003';
             $playerId = $presidentId;
-            $playerDiamond = getUserProperty($playerId, $diamondType);
+            $diamondInfo = getUserProperty($playerId, $diamondType);
             if($diamondInfo && isset($diamondInfo[0]['property_num'])){
                 $userDiamond = $diamondInfo[0]['property_num'];
             }
@@ -94,6 +119,8 @@ class Room extends Base
                 return jsonRes(23401);
             }
         }
+
+        ## 此处代码需要优化
 
         # 生成房间号
         $redis = new Redis();

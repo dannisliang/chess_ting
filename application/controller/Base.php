@@ -17,12 +17,13 @@ class Base extends Controller
 {
     public $opt;
 
+    # 自测通过
     public function _initialize()
     {
         # 拒绝一切非post请求
         $method = Request::instance()->method();
         if($method !== 'POST'){
-            json(['code' => 3001, 'mess' => '请求方法不正确'])->send();
+            return json(['code' => 3001, 'mess' => '请求方法不正确'])->send();
             exit();
         }
 
@@ -32,10 +33,12 @@ class Base extends Controller
             $this->opt = input('post.');
         }else{
             $this->opt = file_get_contents("php://input");
-            if($this->opt){
-                return json(['code'=>3006,'mess' => '缺少请求参数']);
-            }
             $this->opt = json_decode($this->opt,true);
+        }
+
+        if(!$this->opt){
+            return json(['code'=>3006, 'mess' => '缺少请求参数'])->send();
+            exit();
         }
     }
 }

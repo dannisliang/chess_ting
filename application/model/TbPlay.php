@@ -16,7 +16,7 @@ class TbPlay extends Model{
 
     # 根据规则ID获取相关规则
     public function getInfoById($id){
-        return $this->where(['id', '=', $id])->find();
+        return $this->where('id', '=' , $id)->find();
     }
 
 
