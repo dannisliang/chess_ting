@@ -78,6 +78,7 @@ class User extends Base
      */
     private function getRoomInfo($user_room_info){
         $roomOptionModel = new TbRoomOptions();
+        $userRoomModel = new UserRoomModel();
         //返回的房间信息
         $check      = '';
         $options    = '';
@@ -87,9 +88,9 @@ class User extends Base
         if($user_room_info){
             $roomOption = $roomOptionModel ->getInfoById($user_room_info['match_id']);
             if (!$roomOption){
-
+                $userRoomInfo = $userRoomModel -> getOptionsByRoomNum($user_room_info['room_id']);
             }
-            var_dump($roomOption);die;
+            var_dump($userRoomInfo);die;
         }
 
         return $res = [
