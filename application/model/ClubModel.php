@@ -15,7 +15,7 @@ class ClubModel extends Model{
 
     # 根据俱乐部ID获取俱乐部数据
     public function getInfoById($id){
-        return $this->where('id', '=', $id)->find();
+        return $this->where('cid', '=', $id)->find();
     }
 
     /**
@@ -27,7 +27,7 @@ class ClubModel extends Model{
      */
     public function getClubNameById($id){
         try{
-            $res = $this ->where('id',$id)->find();
+            $res = $this -> where('cid',$id)->find();
             if (!$res){
                 return false;
             }

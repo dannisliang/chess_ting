@@ -10,14 +10,14 @@ namespace app\controller;
 
 
 use app\definition\Definition;
-use app\model\GetLastClub;
+use app\model\PlayModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\ClubModel;
 use app\model\RoomOptionsModel;
+use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
-use guzzle\GuzzleHttp;
-class User extends Base
+class User
 {
     public function getUserInfo()
     {
@@ -41,17 +41,21 @@ class User extends Base
         $lastClub = $lastClubModel -> getLastClubId($user_id);
         $club_id = $lastClub['club_id'];
         //获取俱乐部名称
-        if (!$lastClub){
-            $club_name = '';
-        }else{
+        $club_name = '';
+        if ($club_id){
             $club_name = $this -> getClubName($club_id);
         }
-
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
         //返回房间信息
-        $this ->getRoomInfo($user_room_info);
+        $roomInfo = $this -> getRoomInfo($user_room_info);
+
+        //获取用户评价数量
+        $evaluate = $this -> getEvaluate($user_id);
+
+        //获取用户资产（返回钻石数量）
+        $assets = $this -> getUserAssets($user_id);
 
         $result = [
             'phone_num' => $phone_num,
@@ -62,23 +66,90 @@ class User extends Base
             'head_img' => $user_info['headimgurl'],
             'club_name'=> $club_name,
             'club_id'  => $club_id,
-//            'room_id'  => $room_id,
-//            'socket_url'=>$socket_url,
-//            'socket_h5'=> $socket_h5,
-//            'check'    => $check,
-//            'options'  => $options
+            'room_id'  => $roomInfo['room_id'],
+            'socket_url'=>$roomInfo['socket_url'],
+            'socket_h5'=> $roomInfo['socket_h5'],
+            'check'    => $roomInfo['check'],
+            'options'  => $roomInfo['options'],
+            'socket_ssl'=> Definition::$SOCKET_SSL,
+            'notification_h5'=> Definition::$NOTIFICATION_H5,
+            'notification_url'=> Definition::$NOTIFICATION_URL,
+            'good_nums'=> $evaluate['good_num'],
+            'bad_nums' => $evaluate['bad_num'],
+            'diamond_num'=> $assets['diamond_num'],
+            'gold_num' => $assets['gold_num']
         ];
         return jsonRes( 0 , $result);
-//        echo '<pre/>';
-//        print_r($result);die;
+    }
+
+
+    /**
+     * 获取用户资产
+     * @param $user_id
+     */
+    private function getUserAssets($user_id){
+        //资产类型
+        $property_type = [10000,10001,10002];
+        $userAssets = getUserProperty($user_id,$property_type);
+        $diamond_num = 0; //钻石数量
+        $gold_num = 0; //金币数量
+
+        if(!empty($userAssets)){
+            foreach ($userAssets as $val){
+                switch ($val['property_type']){
+                    case 10000: //金币
+                        $gold_num += $val['property_num'];
+                        break;
+                    case 10001: //购买钻
+                        $diamond_num += $val['property_num'];
+                        break;
+                    case 10002: //赠送钻
+                        $diamond_num += $val['property_num'];
+                        break;
+                }
+            }
+        }
+        $assets = [
+            'diamond_num' => $diamond_num,
+            'gold_num'    => $gold_num,
+        ];
+        return $assets;
     }
 
     /**
-     * 获取返回房间的信息
+     * 获取用户的评价数量
+     * @param $user_id
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    private function getEvaluate($user_id){
+        $evaluateModel = new UserEvaluateModel();
+        $evalInfo = $evaluateModel ->getInfoById($user_id);
+        $evaluate = [
+            'good_num' => 0 ,
+            'bad_num'   => 0,
+        ];
+        if(!empty($evalInfo)){
+            $evaluate = [
+                'good_num' => $evalInfo['good_num'] ,
+                'bad_num'   => $evalInfo['bad_num'],
+            ];
+        }
+
+        return $evaluate;
+    }
+
+    /**
+     * 获取房间信息
+     * @param $user_room_info
+     * @return array
      */
     private function getRoomInfo($user_room_info){
         $userRoomModel = new UserRoomModel();
         $roomOptionModel = new RoomOptionsModel();
+        $playModel = new PlayModel();
         //返回的房间信息
         $check      = '';
         $options    = '';
@@ -86,11 +157,22 @@ class User extends Base
         $socket_h5  = '';
         $socket_url = '';
         if($user_room_info){
+            $room_id    = $user_room_info['room_num'];
+            $socket_h5  = $user_room_info['socket_h5'];
+            $socket_url = $user_room_info['socket_url'];
             $roomOption = $roomOptionModel ->getInfoById($user_room_info['match_id']);
             if (!$roomOption){
-                $userRoomInfo = $userRoomModel -> getOptionsByRoomNum($user_room_info['room_id']);
+                $roomOption = $userRoomModel -> getOptionsByRoomNum($user_room_info['room_id']);
+                $roomOption['room_type'] = $roomOption['play_type'];
             }
-            var_dump($userRoomInfo);die;
+            $options = [];
+            if($roomOption){
+                $options = json_decode($roomOption['options']);
+            }
+            //获取play中的玩法
+            $play = $playModel -> getInfoById($roomOption['room_type']);
+            //获取check
+            $check = json_decode($play['play'],true)['checks'];
         }
 
         return $res = [
@@ -162,7 +244,7 @@ class User extends Base
         if(!$club){
             return $club_name = '';
         }
-        $club_name = $club['club_name'];
+        $club_name = base64_decode($club['club_name']);
         return $club_name;
     }
 
