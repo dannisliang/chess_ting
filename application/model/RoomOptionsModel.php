@@ -14,9 +14,12 @@ class RoomOptionsModel extends Model{
 
     protected $name = 'room_options';
 
-    # 根据玩法ID获取玩法相关数据
-    public function getInfoById($id){
-        return $this->where('id', $id)->find();
+    /**
+     * @param $id 玩法规则ID
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getRoomOptionInfoByRoomOptionsId($roomOptionsId){
+        return $this->where('id', $roomOptionsId)->find();
     }
 
 }

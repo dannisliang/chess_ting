@@ -14,8 +14,11 @@ class VipCardModel extends Model{
 
     protected $name = 'vip_card';
 
-    # 根据俱乐部ID获取俱乐部数据
-    public function getInfoById($vipCardId){
-        return $this->where('id', '=', $vipCardId)->find();
+    /**
+     * @param $vipCardId
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getVipCardInfoByVipCardId($vipCardId){
+        return $this->where('vip_id', '=', $vipCardId)->find();
     }
 }
