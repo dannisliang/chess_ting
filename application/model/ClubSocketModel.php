@@ -13,8 +13,12 @@ class ClubSocketModel extends Model{
 
     protected $name = 'club_socket';
 
-    # 根据俱乐部ID获取俱乐部连接通道
-    public function getInfoByClubId($clubId){
+    /**
+     * 获取俱乐部专属连接通道
+     * @param $clubId 俱乐部ID
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getClubSocketInfoByClubId($clubId){
         return $this->where('club_id', '=', $clubId)->find();
     }
 }

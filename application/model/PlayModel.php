@@ -15,8 +15,8 @@ class PlayModel extends Model{
     protected $name = 'play';
 
     # 根据规则ID获取相关规则
-    public function getInfoById($id){
-        return $this->where('id', '=' , $id)->find();
+    public function getPlayInfoByPlayId($playId){
+        return $this->where('id', '=' , $playId)->find();
     }
 
 

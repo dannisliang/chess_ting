@@ -13,12 +13,12 @@ class GameServiceNewModel extends Model{
 
     protected $name = 'game_service_new';
 
-    # 根据玩法获取玩法专属服务器
-    public function getInfosByRoomTypeId($roomType){
-        $where = [
-            ['is_open', '=', 1],
-            ['room_type', '=', $roomType],
-        ];
-        return $this->where($where)->select();
+    /**
+     * 根据房间规则的玩法ID获取玩法可连接的服务器  集
+     * @param $roomType
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getGameServiceNewInfosByRoomTypeId($roomType){
+        return $this->where('is_open', '=', 1)->where('room_type', '=', $roomType)->select();
     }
 }

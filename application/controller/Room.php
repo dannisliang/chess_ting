@@ -20,95 +20,100 @@ use app\model\ClubSocketModel;
 use app\model\GameServiceNewModel;
 use app\model\UserRoomModel;
 use app\model\ServiceGatewayNewModel;
+use think\Session;
 
 class Room extends Base
 {
     #  创建房间
     public function createRoom(){
+//        $this->opt['match_id'] = roomOptionId (各种玩法相关数据)
+//        $this->opt['club_id'] = clubId (俱乐部相关数据)
+//        $res = json_encode(['userid' => 552610]);
+//        session::set(RedisKey::$USER_SESSION_INDO, $res);
+
+//        # 检查用户登录状态
 //        $checkUserToken = checkUserToken();
-//        if(!$checkUserToken){
+//        if($checkUserToken || !isset($checkUserToken['result']) || !$checkUserToken['result']){
 //            return jsonRes(9999);
 //        }
 
-//        $userSessionInfo = getUserSessionInfo();
+        # 获取用户的session数据
+        $userSessionInfo = getUserSessionInfo();
+
+        # 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id'])){
             return jsonRes(3006);
         }
 
-        $matchId = $this->opt['match_id']; # 玩法ID
-        $TbRoomOptions = new RoomOptionsModel();
-        $clubGameOpt = $TbRoomOptions->getInfoById($matchId);
-        if(!$clubGameOpt){
+        # 根据玩法规则ID获取规则
+        $roomOptions = new RoomOptionsModel();
+        $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
+        if(!$roomOptionsInfo){
             return jsonRes(3999);
         }
 
-        $needDiamond = $clubGameOpt['diamond']; # 房费
-        $oldDiamond = $needDiamond; # 房费
-        $roomOptions = json_decode($clubGameOpt['options']); # 具体规则
-        $roomType =  $clubGameOpt['room_type']; # 房间类型
-        $roomRate =  $clubGameOpt['room_rate']; # 扣开房人员钻石的规则
-        $cheat = $clubGameOpt['cheat']; # 作弊
-
-        $tbPlay = new PlayModel();
-        $tbPlayInfo = $tbPlay->getInfoById($roomType);
-        if(!$tbPlayInfo || !$tbPlayInfo['play'] || !$tbPlayInfo['name']){
+        # 根据俱乐部ID获取俱乐部相关数据
+        $club = new ClubModel();
+        $clubInfo = $club->getClubInfoByClubId($this->opt['club_id']);
+        if(!$clubInfo){
             return jsonRes(3999);
         }
 
-        $roomRule = $tbPlayInfo['play'];
-        $roomName = $tbPlayInfo['name'];
-
-        $clubId = $this->opt['club_id']; # 俱乐部ID
-        $tbClub = new ClubModel();
-        $clubInfo = $tbClub->getInfoById($clubId);
-        if(!$clubInfo || !$clubInfo['president_id']){
+        # 根据房间类型ID获取房间玩法相关数据（大json）
+        $play = new PlayModel();
+        $playInfo = $play->getPlayInfoByPlayId($roomOptionsInfo['room_type']);
+        if(!$playInfo){
             return jsonRes(3999);
         }
 
-        $clubType = $clubInfo['club_type']; # 开房房费结算类型 0扣开房人员  1扣会长
-        $presidentId = $clubInfo['president_id'];
+        # 房费
+        $needDiamond = $roomOptionsInfo['diamond'];
+
+        # 玩法规则json解码
+        $playInfoPlayJsonDecode = json_decode($playInfo['play'], true);
+
+        # 房间规则json解码
+        $roomOptionsInfoOptionsJsonDecode = json_decode($roomOptionsInfo['options'], true);
 
         # 获取房间开始需要的玩家数
-        $roomNeedUserNum = getRoomNeedUserNum($roomOptions);
-        # 扣用户资产 判断用户资产是否充足  玩家扣款中不可能出现免费房间，所以rate<0无需处理
-        if($clubType == 0){
+        $roomNeedUserNum = getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode);
+
+        # 资产判断
+        if($clubInfo['club_type'] == 0){ # 扣用户资产 判断用户资产是否充足  玩家扣款中不可能出现免费房间，所以rate<0无需处理
             # 因为最终需要拿到房费 所以先计算房费
-            if($roomRate == 0){ # 判断是否AA扣款
+            if($roomOptionsInfo['room_rate'] == 0){ # 判断是否AA扣款
                 $needDiamond  = bcdiv($needDiamond, $roomNeedUserNum, 0);
             }
             # 获取折扣
             $discount = 1;
-            $tbUserVip = new UserVipModel();
-            $userVipInfo = $tbUserVip->getInfoByUserIdAndClubId($userSessionInfo['userid'], $clubId);
+            $userVip = new UserVipModel();
+            $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
             if($userVipInfo){
                 $vipCardId = $userVipInfo['vid'];
-                $tbVipCard = new VipCardModel();
-                $vipCardInfo = $tbVipCard->getInfoById($vipCardId);
+                $vipCard = new VipCardModel();
+                $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($vipCardId);
                 if($vipCardInfo){
                     $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
                 }
             }
             $needDiamond = bcmul($discount, $needDiamond, 0); # 最终房费
-
             # 获取非绑定钻石数 判断是否能够开房
             $diamondNum = 0;
             $type = 10001;
             $diamondInfo = getUserProperty($userSessionInfo['userid'], $type);
-            if($diamondInfo && isset($diamondInfo[0]['property_num'])){
-                $diamondNum = $diamondInfo[0]['property_num'];
-            }
 
+            if($diamondInfo && isset($diamondInfo['data'][0]['property_num'])){
+                $diamondNum = $diamondInfo['data'][0]['property_num'];
+            }
             if($diamondNum < $needDiamond){ # 非绑定钻石不够 获取绑定钻石 判断是是否能够开房
                 $bindingDiamondNum = 0;
                 $type = 10002;
                 $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], $type);
-                if($bindingDiamondInfo && isset($bindingDiamondInfo[0]['property_num'])){
-                    $bindingDiamondNum = $bindingDiamondInfo[0]['property_num'];
+                if($bindingDiamondInfo && isset($bindingDiamondInfo['data'][0]['property_num'])){
+                    $bindingDiamondNum = $bindingDiamondInfo['data'][0]['property_num'];
                 }
-
                 if($bindingDiamondNum < $needDiamond){ # 绑定钻石不够 判断钻石总和是否能够开房
                     $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0);
-
                     if($userAllDiamond < $needDiamond){ # 绑定钻石非绑定钻石相加不够
                         $resData['need_diamond'] = $needDiamond;
                         return jsonRes(23401, $resData);
@@ -117,13 +122,12 @@ class Room extends Base
             }
         }
         # 扣会长资产 判断会长资产是否充足
-        if($clubType == 1){
+        if($clubInfo['club_type'] == 1){
             $userDiamond = 0;
-            $diamondType = $clubId.'_'.$presidentId.'_10003';
-            $playerId = $presidentId;
-            $diamondInfo = getUserProperty($playerId, $diamondType);
-            if($diamondInfo && isset($diamondInfo[0]['property_num'])){
-                $userDiamond = $diamondInfo[0]['property_num'];
+            $type = $this->opt['club_id'].'_'.$clubInfo['president_id'].'_10003';
+            $diamondInfo = getUserProperty($clubInfo['president_id'], $type);
+            if($diamondInfo && isset($diamondInfo['data'][0]['property_num'])){
+                $userDiamond = $diamondInfo['data'][0]['property_num'];
             }
             if($userDiamond < $needDiamond){
                 $resData['need_diamond'] = $needDiamond;
@@ -131,12 +135,17 @@ class Room extends Base
             }
         }
 
+        # 生成房间号
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $roomNumber = $redisHandle->rpoplpush(RedisKey::$ROOM_NUMBER_KEY_LIST, RedisKey::$ROOM_NUMBER_KEY_LIST);
+
         # 根据俱乐部ID获取俱乐部socket通道
         $clubSocket = new ClubSocketModel();
-        $clubSocketInfo = $clubSocket->getInfoByClubId($clubId);
+        $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
         if($clubSocketInfo){ # 存在专属通道
             $roomUrl = $clubSocketInfo['room_url'];
-            $checkUrl = $roomUrl .'api/v3/room/checkRoom';
+            $checkUrl = $roomUrl.Definition::$CHECK_ROOM;
             $socketUrl = $clubSocket['socket_url'];
             $socketH5 = $clubSocket['socket_h5'];
             $backList['socket_url'] = $socketUrl;
@@ -144,7 +153,7 @@ class Room extends Base
             $serviceId = 1;
         }else{ # 不存在专属通道 要寻找一个压力最小的服务器
             $gameServiceNew = new GameServiceNewModel();
-            $gameServiceNewInfos = $gameServiceNew->getInfosByRoomTypeId($roomType);
+            $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
             //声明一个空数组,以服务器的ID为键,数量为值存进去
             $serviceRoomNumArr = [];
             $userRoom = new UserRoomModel();
@@ -154,60 +163,46 @@ class Room extends Base
                 $serviceRoomNumArr[$v['service_id']] = $serviceRoomNum;//服务器的ID为键,数量为值
             }
             $serviceId = array_search(min($serviceRoomNumArr), $serviceRoomNumArr);//数量最小的服务器
-
             # 根据服务器的ID查出服务器的地址
             $serviceGatewayNew = new ServiceGatewayNewModel();
-            $serviceInfo = $serviceGatewayNew->getInfoById($serviceId);
-            $roomUrl = '';
-            if(!$serviceInfo){
-                $roomUrl = Definition::$ROOM_URL;
-                $socketH5 = Definition::$SOCKET_H5;
-                $socketApp = Definition::$SOCKET_URL;
-            }else{
-                $roomUrl = $serviceInfo['service'];
-                $socketH5 = $serviceInfo['gateway_h5'];
-                $socketApp = $serviceInfo['gateway_app'];
+            $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
+            if(!$serviceGatewayNewInfo){
+                $serviceGatewayNewInfo['service'] = Definition::$ROOM_URL;
+                $serviceGatewayNewInfo['gateway_h5'] = Definition::$SOCKET_H5;
+                $serviceGatewayNewInfo['gateway_app'] = Definition::$SOCKET_URL;
             }
+            $roomUrl = $serviceGatewayNewInfo['service'];
         }
 
-        # 生成房间号
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $roomNumber = $redisHandle->rpoplpush(RedisKey::$ROOM_NUMBER_KEY_LIST, RedisKey::$ROOM_NUMBER_KEY_LIST);
+        # 逻辑服需要的开房数据
+        $data['roomId'] = $roomNumber.$this->opt['match_id'];
+        $data['config'] = $playInfoPlayJsonDecode;
+        $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
 
-        # 逻辑服需要的数据
-        $roomId = $roomNumber.$matchId;
-        $roomRule = json_decode($roomRule,true);
-        $roomRule['options'] = $roomOptions;
-        $check = $roomRule['checks'];
+        # 创建房间 成功返回房间号
+        $requestUrl = $roomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'];
+        $createRoomInfo = sendHttpRequest($requestUrl, $data);
 
-        # 创建房间 成功返回房间号 失败
-        $clubSocket = new ClubSocketModel();
-        $clubSocketInfo = $clubSocket->getInfoByClubId($clubId);
-
-        if($clubSocketInfo){
-            $roomUrl = $clubSocketInfo['room_url'];
-            $url = $roomUrl."api/v3/room/createRoom/".$userSessionInfo['userid'];
-        }else{
-            //不存在则调用base里的方法查出socket和roomurl
-            if ($roomType){
-                $new_service = new \app\controller\Base();
-                $new_roomurl = $new_service->getService($room_type);
-                $room_url = $new_roomurl['room_url'];
-            }else{
-                $room_url = Definition::$ROOM_URL;
-            }
-            $url = $roomUrl.'api/v3/room/createRoom/'.$userSessionInfo['userid'];
+        if(!isset($createRoomInfo['content']['result'])){
+            return jsonRes(1111);
         }
 
-        $data['roomId'] = $clubId.'_'.$roomId;
-        $data['config'] = $contion;
-        $data = json_encode($data);
-        \think\Log::write($data,'send_lijiang_data');
-        $list = postInterface($url,$data);
-        \think\Log::write($list,'back_creatroom');
-        $list = json_decode($list,true);
-        return $list;
-        var_dump($roomNumber);die;
+        if($createRoomInfo['content']['result'] == 10000){ # 房间不存在
+            return jsonRes(23202);
+        }
+
+        if($createRoomInfo['content']['result'] == 10001){ # 房间已满
+            return jsonRes(23204);
+        }
+
+        if($createRoomInfo['content']['result'] == 10002){ # 玩家已经在房间里
+            return jsonRes(9999);
+        }
+
+        if($createRoomInfo['content']['result'] == 10003){ # 房间已存在
+            return jsonRes(23203);
+        }
+
+        # 写数据
     }
 }

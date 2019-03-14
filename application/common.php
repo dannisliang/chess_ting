@@ -33,12 +33,12 @@ function jsonRes($code, $data = [] ){
  * @return mixed   {’nickname’:’昵称’,’sex’:1,’province’:’省份’,’city’:’城市’,’country’:’国家’,’headimgurl’:’头像图片url’}  'userid'  '1'
  */
 function getUserSessionInfo(){
-    $userInfo = json_decode(Session::get(RedisKey::$USER_SESSION_INDO));
+    $userInfo = Session::get(RedisKey::$USER_SESSION_INDO);
     if(!$userInfo){
         return json(['code'=>9999, 'mess' => '请重新登录'])->send();
         exit();
     }
-    return $userInfo;
+    return json_decode($userInfo, true);
 }
 
 /**
@@ -70,24 +70,24 @@ function checkUserToken(){
     $data['uid'] = $userSessionInfo['userid'];
     $data['ip'] = getUserIp();
     $data['token'] = $userSessionInfo['token'];
-    $requestUrl = Definition::$WEB_API_URL . 'api/v3/check_token_time.php';
+    $requestUrl = Definition::$WEB_API_URL.Definition::$CHECK_TOKEN_TIME;
     $response = sendHttpRequest($requestUrl, $data);
-    return $response['result'];
+    return $response;
 }
 
 /**
  * 获取用户资产
  * @param $userIds 用户ID或用户ID集
- * @param $propertyType 请求类型 固定值
+ * @param $propertyType 请求类型固定值
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
-    $requestUrl = Definition::$WEB_API_URL . "api/get_player_property.php";
+    $requestUrl = Definition::$WEB_API_URL.Definition::$GET_PLAYER_PROPERTY;
     $data['app_id'] = Definition::$CESHI_APPID;
     $data['property_type'] = $propertyType;
     $data['uid'] =$userIds;
     $response = sendHttpRequest($requestUrl, $data);
-    return $response['data'];
+    return $response;
 }
 
 /**
@@ -151,15 +151,36 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
  * @param $roomOptions
  * @return mixed
  */
-function getRoomNeedUserNum($roomOptions){
-    $roomNeedUserNum = 1;
-    foreach (Definition::$ROOM_NEED_USER_NUMBER as $k => $v){
-        if(in_array($v, $roomOptions)){
-            $roomNeedUserNum = $v;
-            break;
+function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    $userNum = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'playerSize');
+    return $userNum;
+}
+
+/**
+ * 获取玩法中的玩家人数值
+ * @param $playInfoPlayJsonDecodeChecksGroup play表中的play字段的checks的group
+ * @param $roomOptionsInfoOptionsJsonDecode roomOptions表中的options
+ * @param $keyName 需要查找的key的名字
+ * @return mixed|string
+ */
+function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $roomOptionsInfoOptionsJsonDecode, $keyName){
+//    print_r($playInfoPlayJsonDecodeChecksGroup);die;
+    $ret = '';
+    if(is_array($playInfoPlayJsonDecodeChecksGroup)){
+        foreach($playInfoPlayJsonDecodeChecksGroup as $k => $v){
+            if($k === $keyName){
+                if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
+                    $ret = $v;
+                }
+            }else{
+                $ret = getPlayInfoWhichInOptionsInfo($v, $roomOptionsInfoOptionsJsonDecode, $keyName);
+                if($ret){
+                    break;
+                }
+            }
         }
     }
-    return $roomNeedUserNum;
+    return $ret;
 }
 
 /**

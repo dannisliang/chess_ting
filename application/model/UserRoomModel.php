@@ -37,8 +37,12 @@ class UserRoomModel extends Model
         }
     }
 
-    # 根据服务器ID获取获取服务器房间数
+    /**
+     * 根据服务器ID获取服务器的连接数
+     * @param $serviceId 服务器ID
+     * @return int|string
+     */
     public function getServiceRoomNumByServiceId($serviceId){
-        return $this->where('service',$serviceId)->count();
+        return $this->where('service', '=', $serviceId)->count();
     }
 }
