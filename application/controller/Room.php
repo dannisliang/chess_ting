@@ -144,13 +144,14 @@ class Room extends Base
         $clubSocket = new ClubSocketModel();
         $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
         if($clubSocketInfo){ # 存在专属通道
-            $roomUrl = $clubSocketInfo['room_url'];
+            $serviceId = 1; # 创建房间需要的服务器ID
+            $roomUrl = $clubSocketInfo['room_url']; # 创建房间需要请求逻辑服的地址
             $checkUrl = $roomUrl.Definition::$CHECK_ROOM;
             $socketUrl = $clubSocket['socket_url'];
             $socketH5 = $clubSocket['socket_h5'];
             $backList['socket_url'] = $socketUrl;
             $backList['socket_h5'] = $socketH5;
-            $serviceId = 1;
+
         }else{ # 不存在专属通道 要寻找一个压力最小的服务器
             $gameServiceNew = new GameServiceNewModel();
             $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
@@ -171,27 +172,69 @@ class Room extends Base
                 $serviceGatewayNewInfo['gateway_h5'] = Definition::$SOCKET_H5;
                 $serviceGatewayNewInfo['gateway_app'] = Definition::$SOCKET_URL;
             }
-            $roomUrl = $serviceGatewayNewInfo['service'];
+            $roomUrl = $serviceGatewayNewInfo['service']; # 创建房间需要请求逻辑服的地址
         }
 
-        # 逻辑服需要的开房数据
-        $data['roomId'] = $roomNumber.$this->opt['match_id'];
+        $playerIds = json_encode([$userSessionInfo['userid']]); # 房间的用户ID集
+        $playerIps = json_encode([getUserIp()]); # 房间的用户IP集
+        $needDiamonds = json_encode([[$userSessionInfo['userid'] => $needDiamond]]); # 需要支付的钻石集
+        # 先创建房间 后请求逻辑服
+        $redisHashValue = [
+            'createTime' => date('Y-m-d H:i:s'), # 房间创建时间
+            'owner' => $userSessionInfo['userid'], # 房间创始人
+            'roomNum' => $roomNumber, # 房间需要的人数
+            'playerIds' => $playerIds, # 房间的用户ID集 json
+            'playerIps' => $playerIps, # 玩家IP地址集 json
+            'serviceId' => $serviceId, # 服务器ID
+            'diamond' => $roomOptionsInfo['diamond'], # 进房需要的钻石  没均分没折扣的值
+            'playerNum' => 1, # 当前玩家数
+            'joinStatus' => 1, # 其他人是否能够申请加入
+            'clubId' => $this->opt['club_id'], # 俱乐部ID
+            'diamonds' => $needDiamonds, # 每个用户需要扣的钻石集 json
+            'clubType' => , # 俱乐部结算类型 免费房间和不免费房间 凌驾于roomRate之上
+            'roomRate' => , # 房间结算类型 大赢家/房主/均摊
+            'roomCheat' => , # 是否检查GPS房间
+            'socketH5' => , # H5的socket连接通道
+            'socketUrl' => , # socket的连接地址
+
+
+            'roomOptionsRoomType' => $roomOptionsInfo['room_type'], # 规则表中的类型 对应
+            'roomType' => 0, #
+
+
+            'room_check' => ,
+            'options' => ,
+            'oldDiamond' => ,
+            'diamondType' => ,
+            'optionId' => ,
+            'createTime' => ,
+            'room_select' =>
+        ];
+
+        $hsetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $redisHashValue);
+        if(!$hsetRes){ # 写入失败
+            return jsonRes(23205);
+        }
+
+        # 请求逻辑服创建房间
+        $data['roomId'] = $roomNumber;
         $data['config'] = $playInfoPlayJsonDecode;
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
-
-        # 创建房间 成功返回房间号
         $requestUrl = $roomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'];
         $createRoomInfo = sendHttpRequest($requestUrl, $data);
 
         if(!isset($createRoomInfo['content']['result'])){
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
             return jsonRes(1111);
         }
 
         if($createRoomInfo['content']['result'] == 10000){ # 房间不存在
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
             return jsonRes(23202);
         }
 
         if($createRoomInfo['content']['result'] == 10001){ # 房间已满
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
             return jsonRes(23204);
         }
 
@@ -200,9 +243,25 @@ class Room extends Base
         }
 
         if($createRoomInfo['content']['result'] == 10003){ # 房间已存在
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
             return jsonRes(23203);
         }
 
-        # 写数据
+        # 会长模式提前计算
+        if($clubInfo['club_type'] == 1){
+            # 结算失败 请求解散房间  删除房间
+
+        }
+
+        # 加入到俱乐部房间集合中
+        $addRes = $redisHandle->sadd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+        if(!$addRes){ # 加入集合失败  请求解散房间  删除房间
+
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
+            return jsonRes(23205);
+        }
+
+        # 返回客户端
+        return jsonRes(23206);
     }
 }

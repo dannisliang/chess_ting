@@ -38,7 +38,7 @@ function getUserSessionInfo(){
         return json(['code'=>9999, 'mess' => '请重新登录'])->send();
         exit();
     }
-    return json_decode($userInfo, true);
+    return $userInfo;
 }
 
 /**
@@ -171,6 +171,7 @@ function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $room
             if($k === $keyName){
                 if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
                     $ret = $v;
+                    break;
                 }
             }else{
                 $ret = getPlayInfoWhichInOptionsInfo($v, $roomOptionsInfoOptionsJsonDecode, $keyName);
