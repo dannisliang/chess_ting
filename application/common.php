@@ -237,3 +237,13 @@ function has_keys($key, $arr, $is_true = false){
     }
     return true;
 }
+
+/**
+ * 从session获取
+ * @return mixed
+ */
+function getUserIdFromSession(){
+    Session::set(Definition::$USER_SESSION_INDO,['player_id'=>328946]);
+    $user_id = Session::get(Definition::$USER_SESSION_INDO)['player_id'];
+    return $user_id;
+}

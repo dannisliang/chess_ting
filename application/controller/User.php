@@ -203,7 +203,7 @@ class User
             $socket_url = $item['socket_url'];
             $serviceInfo = $serviceGatewayModel ->getService($service_id);
             $url = $serviceInfo['service'];
-            $path_info = 'api/v3/room/checkPlayer';
+            $path_info = Definition::$CHECK_PLAYER;
             //请求逻辑服
             $lists = guzzleRequest( $url , $path_info , $data);
             $serviceInfo = $lists['content'];
@@ -273,7 +273,7 @@ class User
         //请求用户中心接口地址
         $url = Definition::$WEB_API_URL;
         //获取用户中心接口路径
-        $userInfo_url = 'api/get_info.php';
+        $userInfo_url = Definition::$GET_INFO;
         //向用户中心传输的请求参数
         $data = [
             'uid' => $user_id,
@@ -294,8 +294,8 @@ class User
         //请求运营中心接口地址
         $url = Definition::$WEB_USER_URL;
 
-        //获取运营中心接口
-        $email_url = 'api/email_list.php';
+        //获取运营中心接口邮件列表
+        $email_url = Definition::$EMAIL_LIST;
 
         //请求email需要的数据
         $email_data = [
