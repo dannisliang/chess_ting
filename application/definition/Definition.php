@@ -42,5 +42,7 @@ class Definition{
     public static $GET_PLAYER_PROPERTY = 'api/get_player_property.php'; # 用户中心获取用户资产接口
     public static $CHECK_ROOM = 'api/v3/room/checkRoom'; # 逻辑服检测房间地址
     public static $CREATE_ROOM = 'api/v3/room/createRoom/'; # 逻辑服创建房间地址
+    public static $RAISE_PLAYER_PROPERTY = 'api/raise_player_property.php'; # 扣用户资产
+    public static $DIS_BAND_ROOM = 'api/v3/room/disbandRoom/'; # 解绑房间
 }
 
