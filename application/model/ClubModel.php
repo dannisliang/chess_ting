@@ -13,11 +13,18 @@ class ClubModel extends Model{
 
     protected $name = 'club';
 
+    # 根据俱乐部ID获取俱乐部数据
+    public function getInfoById($id)
+    {
+        return $this->where('cid', '=', $id)->find();
+    }
+
     /**
      * @param $id 俱乐部ID的
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getClubInfoByClubId($clubId){
+    public function getClubInfoByClubId($clubId)
+    {
         return $this->where('cid', '=', $clubId)->find();
     }
 
@@ -30,7 +37,7 @@ class ClubModel extends Model{
      */
     public function getClubNameById($id){
         try{
-            $res = $this ->where('id',$id)->find();
+            $res = $this -> where('cid',$id)->find();
             if (!$res){
                 return false;
             }
