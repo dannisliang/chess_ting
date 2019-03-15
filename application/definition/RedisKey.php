@@ -15,5 +15,4 @@ class RedisKey{
 
     public static $USER_SESSION_INDO = 'user_session_info'; # 设置用户session的key   key中存json
 
-    public static $APPTYPE_TOKEN = 'apptype_token_'; //验证token时存入机型,token,和登录的客户端型号。
 }
