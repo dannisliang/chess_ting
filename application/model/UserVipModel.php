@@ -13,13 +13,12 @@ class UserVipModel extends Model{
 
     protected $name = 'user_vip';
 
-    # 根据俱乐部ID获取俱乐部数据
-    public function getInfoByUserIdAndClubId($userId, $clubId){
-        $where = [
-            ['uid', '=', $userId],
-            ['club_id', '=', $clubId],
-            ['vip_status', '=', 1],
-        ];
-        return $this->where($where)->find();
+    /**
+     * @param $userId 用户ID
+     * @param $clubId 俱乐部ID
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getUserVipInfoByUserIdAndClubId($userId, $clubId){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vip_status', '=', 1)->find();
     }
 }

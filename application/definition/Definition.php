@@ -35,7 +35,12 @@ class Definition{
     public static $USER_SESSION_INDO = 'user_session_info'; // 设置用户session的key   key中存json
 
 
-    public static $ROOM_NEED_USER_NUMBER = [1, 2, 3, 4]; # 房间玩家数 只可能是1234
 
+
+
+    public static $CHECK_TOKEN_TIME = 'api/v3/check_token_time.php'; # 用户中心检查用户token接口请求地址
+    public static $GET_PLAYER_PROPERTY = 'api/get_player_property.php'; # 用户中心获取用户资产接口
+    public static $CHECK_ROOM = 'api/v3/room/checkRoom'; # 逻辑服检测房间地址
+    public static $CREATE_ROOM = 'api/v3/room/createRoom/'; # 逻辑服创建房间地址
 }
 

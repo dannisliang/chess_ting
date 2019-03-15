@@ -34,8 +34,12 @@ class ServiceGatewayNewModel extends Model
 
     }
 
-    # 根据服务器ID获取服务器数据
-    public function getInfoById($serviceId){
+    /**
+     * 根据服务器ID获取服务器连接相关数据
+     * @param $serviceId 服务器ID
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getServiceGatewayNewInfoByServiceId($serviceId){
         return $this->where('id', '=', $serviceId)->find();
     }
 }
