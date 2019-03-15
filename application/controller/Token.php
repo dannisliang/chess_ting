@@ -38,11 +38,11 @@ class Token extends Base
 
         //验证传输的token是否可靠
         $url = Definition::$WEB_API_URL;
-        $pathInfo = 'api/v3/authenticate.php';
+        $pathInfo = Definition::$AUTHENTICATE;
         $data = [
-            'uid'=> $this->opt['player_id'],
-            'ip' => $ip,
-            'token'=> $this->opt['token']
+            'ip'    => $ip,
+            'token' => $this->opt['token'],
+            'uid'   => $this->opt['player_id'],
         ];
 
         $result = guzzleRequest( $url , $pathInfo , $data );
