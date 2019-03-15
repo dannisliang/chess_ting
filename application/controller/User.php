@@ -93,9 +93,9 @@ class User
         $userAssets = getUserProperty($user_id,$property_type);
         $diamond_num = 0; //钻石数量
         $gold_num = 0; //金币数量
+        if(!empty($userAssets['data'])){
+            foreach ($userAssets['data'] as $val){
 
-        if(!empty($userAssets)){
-            foreach ($userAssets as $val){
                 switch ($val['property_type']){
                     case 10000: //金币
                         $gold_num += $val['property_num'];
