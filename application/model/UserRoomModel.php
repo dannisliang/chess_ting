@@ -29,6 +29,23 @@ class UserRoomModel extends Model
         }
     }
 
+    /**
+     * 获取勾选的玩法
+     */
+    public function getOptionsByRoomNum($room_num){
+        try{
+            return $this -> where ('room_num',$room_num) -> field('play_type,options') -> find();
+        }catch (\Exception $e){
+            return false;
+        }
+    }
+
+    /**
+     * 删除user_room
+     * @param $player_id
+     * @param $room_num
+     * @return bool|int
+     */
     public function delUserRoom($player_id,$room_num){
         try{
             return $this -> where('player_id',$player_id)->where('room_num',$room_num)->delete();

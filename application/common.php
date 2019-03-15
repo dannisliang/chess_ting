@@ -201,3 +201,39 @@ function guzzleRequest( $url , $pathInfo , $data )
 
     return $result;
 }
+
+/**
+ * 检查一个变量是否为空，0 不算空
+ * @param $str:要处理的二维数组
+ */
+function check_empty($str){
+    if(is_numeric($str)){
+        return false;
+    }else{
+        return empty($str);
+    }
+}
+
+/**
+ * 检查key 是否存在数组中
+ * @param mixed $key 可以是一个键值，也可以是多个，多个用数组表示，
+ * @param Array $arr
+ * @param Boole $is_true 如果该值为真，则要求值不能为 空字符串 和 null
+ * @return Boole 多个键值，必须全部存在才返回 true
+ */
+function has_keys($key, $arr, $is_true = false){
+    if(!is_array($key)){
+        $key = [$key];
+    }
+    foreach($key as $v){
+        if(!array_key_exists($v, $arr) ){
+            return false;
+        }
+        if($is_true){
+            if(check_empty($arr[$v])){
+                return false;
+            }
+        }
+    }
+    return true;
+}
