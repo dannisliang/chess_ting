@@ -10,6 +10,8 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use app\definition\RedisKey;
+use think\Session;
 
 class Token extends Base
 {
@@ -19,7 +21,7 @@ class Token extends Base
      */
     public function getToken(){
         //验证必须传的参数
-        $opt = ['player_id','token','client_type','app_type'];
+        $opt = ['player_id','token','client_type','app_type'];// uid token 机型 app还是h5
         if(!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
@@ -44,10 +46,15 @@ class Token extends Base
         ];
 
         $result = guzzleRequest( $url , $pathInfo , $data );
+
         if($result['result'] === false){
             return jsonRes(3002);
         }
-        //todo 还有参数未完成
-        return jsonRes( 0 );
+        //验证完成的信息存入session
+        Session::set(RedisKey::$APPTYPE_TOKEN . $this->opt['player_id'],$this->opt);
+        return jsonRes( 0 ,[
+            'session_id' => session_id(),
+            'curent_time'=> time()
+        ]);
     }
 }

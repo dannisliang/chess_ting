@@ -52,6 +52,7 @@ class GuzzleHttp
 
             //返回body信息
             $result = $response->getBody()->getContents();
+
             return json_decode($result,true);
 
         }catch(RequestException $e){ //连接超时错误
