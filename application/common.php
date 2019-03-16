@@ -37,7 +37,7 @@ function jsonRes($code, $data = [] ){
  * @return mixed   {’nickname’:’昵称’,’sex’:1,’province’:’省份’,’city’:’城市’,’country’:’国家’,’headimgurl’:’头像图片url’}  'userid'  '1'
  */
 function getUserSessionInfo(){
-    $userInfo = Session::get(RedisKey::$USER_SESSION_INDO);
+    $userInfo = Session::get(RedisKey::$USER_SESSION_INFO);
     if(!$userInfo){
         return json(['code'=>9999, 'mess' => '请重新登录'])->send();
         exit();
@@ -268,6 +268,7 @@ function disBandRoom($service, $playerId, $roomId){
 }
 
 /**
+ * 删除集合中的房间数据失败调用
  * @param $sKey 俱乐部存储房间号的set的key
  * @param $roomNumber 房间号
  */
@@ -275,6 +276,16 @@ function sRemErrorLog($sKey, $roomNumber){
     $date = date('Y-m-d H:i:s', time());
     $error_str = $date.'|'.$sKey.'|'.$roomNumber."\n";
     file_put_contents(APP_LOG_PATH.'s_rem_error.log', $error_str, FILE_APPEND);
+}
+
+/**
+ * 删除用户对应房间失败调用
+ * @param $key
+ */
+function delErrorLog($key){
+    $date = date('Y-m-d H:i:s', time());
+    $error_str = $date.'|'.$key."\n";
+    file_put_contents(APP_LOG_PATH.'del_error.log', $error_str, FILE_APPEND);
 }
 
 /**

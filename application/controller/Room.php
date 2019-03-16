@@ -21,6 +21,7 @@ use app\model\GameServiceNewModel;
 use app\model\UserRoomModel;
 use app\model\ServiceGatewayNewModel;
 use think\Session;
+
 class Room extends Base
 {
     #  创建房间
@@ -28,7 +29,7 @@ class Room extends Base
 //        $this->opt['match_id'] = roomOptionId (各种玩法相关数据)
 //        $this->opt['club_id'] = clubId (俱乐部相关数据)
         $sess = ['userid' => 552610];
-        Session::set(RedisKey::$USER_SESSION_INDO, $sess);
+        Session::set(RedisKey::$USER_SESSION_INFO, $sess);
 
         # 检查用户登录状态
 //        $checkUserToken = checkUserToken();
@@ -218,14 +219,28 @@ class Room extends Base
             'playerIps' => $playerIps, # 玩家IP地址集 json
             'roomOptions' => $roomOptionsInfo['options'], # 玩法相关数据 json
         ];
+        $setUserRoom = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'], $roomNumber);
+        if(!$setUserRoom){
+            return jsonRes(23205);
+        }
         $hSetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $redisHashValue);
         if(!$hSetRes){
+            $delRes = $redisHandle->del(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            if(!$delRes){
+                delErrorLog(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            }
             return jsonRes(23205);
         }
         $sAddRes = $redisHandle->sadd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
         if(!$sAddRes){
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber);
+            $delRes = $redisHandle->del(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            if(!$delRes){
+                delErrorLog(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            }
             return jsonRes(23205);
         }
+
 
         # 会长模式提前结算
         if($clubInfo['club_type'] == 1){
@@ -236,6 +251,10 @@ class Room extends Base
                 $sRemRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                 if(!$sRemRes){
                     sRemErrorLog(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                }
+                $delRes = $redisHandle->del(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+                if(!$delRes){
+                    delErrorLog(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
                 }
                 return jsonRes(23205);
             }
@@ -253,6 +272,10 @@ class Room extends Base
             if(!$sRemRes){
                 sRemErrorLog(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }
+            $delRes = $redisHandle->del(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            if(!$delRes){
+                delErrorLog(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid']);
+            }
             if($clubInfo['club_type'] == 1){ # 还钻
                 operaUserProperty($clubInfo['president_id'], $propertyType, $needDiamond);
             }
@@ -267,7 +290,7 @@ class Room extends Base
     # 玩家加入房间
     public function joinRoom(){
         $sess = ['userid' => 552610];
-        Session::set(RedisKey::$USER_SESSION_INDO, $sess);
+        Session::set(RedisKey::$USER_SESSION_INFO, $sess);
         # 检查用户登录状态
 //        $checkUserToken = checkUserToken();
 //        if($checkUserToken || !isset($checkUserToken['result']) || !$checkUserToken['result']){
@@ -280,10 +303,8 @@ class Room extends Base
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
-
         # 获取房间人数
         $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']);
-        print_r($roomHashValue);die;
 
         $issetRoom = $redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']);
         if(!$issetRoom){
@@ -304,8 +325,6 @@ class Room extends Base
     # 强制解散房间
     public function disBandRoom(){
         $userSessionInfo = getUserSessionInfo();
-        print_r(disBandRoom('http://192.168.9.18:9910/', $userSessionInfo['userid'], 136710));die;
+        print_r(disBandRoom('http://192.168.9.18:9910/', $userSessionInfo['userid'], 994839));die;
     }
-
-    #
 }
