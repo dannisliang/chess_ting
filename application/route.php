@@ -10,10 +10,17 @@
 // +----------------------------------------------------------------------
 use think\Route;
 
+
 Route::rule('service/getUserInfo','user/getUserInfo');
-Route::rule('service/room/createRoom','Room/createRoom');
 Route::rule('service/getToken','token/getToken');
 Route::rule('service/club/getClubInfo','club/getClubInfo');
+
+/**
+ * 房间相关
+ */
+Route::rule('service/room/createRoom','Room/createRoom');
+Route::rule('service/room/disBandRoom','Room/disBandRoom');
+Route::rule('service/room/joinRoom','Room/joinRoom');
 
 
 return [

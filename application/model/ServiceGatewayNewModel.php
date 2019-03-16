@@ -35,7 +35,7 @@ class ServiceGatewayNewModel extends Model
     }
 
     /**
-     * 根据服务器ID获取服务器连接相关数据
+     * 根据服务器ID获取服务器房间数
      * @param $serviceId 服务器ID
      * @return array|false|\PDOStatement|string|Model
      */

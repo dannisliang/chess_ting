@@ -10,6 +10,10 @@ use GuzzleHttp\Exception\RequestException;
 
 // 应用公共文件
 
+function p($info){
+    print_r($info);die;
+}
+
 /**
  * 接口json返回
  * @param $code 状态码
@@ -134,15 +138,15 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         }
 
         if($response->getStatusCode() != 200){ # 服务器错误
-            $logInfo = date('Y-m-d H:i:s', time()). '|' . '请求服务器错误' . '|' . $url . '|' . $response->getStatusCode();
+            $logInfo = date('Y-m-d H:i:s', time()). '|' . '服务器内部错误' . '|' . $url . '|' . $response->getStatusCode();
             trace($logInfo);
-            return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
+            return json(['code' => 1111, 'mess' => '服务器内部错误'])->send();
         }
         return json_decode($response->getBody()->getContents(), true);
     }catch (RequestException $e){ # 连接超时RequestException
         $logInfo = date('Y-m-d H:i:s', time()) . '|' . '请求超时' . '|' . $url;
         trace($logInfo);
-        return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
+        return json(['code' => 1111, 'mess' => '服务器内部错误'])->send();
     }
 }
 
@@ -152,6 +156,9 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
  * @return mixed
  */
 function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    if(!isset($playInfoPlayJsonDecode['checks']['group'])){
+        return false;
+    }
     $userNum = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'playerSize');
     return $userNum;
 }
@@ -238,12 +245,44 @@ function has_keys($key, $arr, $is_true = false){
     return true;
 }
 
+
+/**
+ * 扣用户资产
+ * @param $player 用户ID
+ * @param $type 资产类型
+ * @param $diamond 需要的钻石
+ * @return mixed
+ */
+function operaUserProperty($player, $type, $diamond){
+    $url = Definition::$WEB_API_URL.Definition::$RAISE_PLAYER_PROPERTY;
+    $data['uid'] = $player;
+    $data['app_id'] = Definition::$CESHI_APPID;
+    $data['property_type'] = $type;
+    $data['property_num'] = $diamond;
+    return sendHttpRequest($url, $data);
+}
+
+function disBandRoom($service, $playerId, $roomId){
+    $data['playerId'] = $playerId;
+    sendHttpRequest($service.Definition::$DIS_BAND_ROOM.$roomId, $data);
+}
+
+/**
+ * @param $sKey 俱乐部存储房间号的set的key
+ * @param $roomNumber 房间号
+ */
+function sRemErrorLog($sKey, $roomNumber){
+    $date = date('Y-m-d H:i:s', time());
+    $error_str = $date.'|'.$sKey.'|'.$roomNumber."\n";
+    file_put_contents(APP_LOG_PATH.'s_rem_error.log', $error_str, FILE_APPEND);
+}
+
 /**
  * 从session获取
  * @return mixed
  */
 function getUserIdFromSession(){
-    Session::set(Definition::$USER_SESSION_INDO,['player_id'=>328946]);
-    $user_id = Session::get(Definition::$USER_SESSION_INDO)['player_id'];
+    Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
+    $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
     return $user_id;
 }
