@@ -18,4 +18,6 @@ class RedisKey{
     public static $USER_ROOM_KEY_HASH = 'user_room_key_hash:'; # 用户房间hash
 
     public static $CLUB_ALL_ROOM_NUMBER_SET = 'club_all_room_number_set_'; # 俱乐部所有房间号set
+
+    public static $USER_ROOM_KEY = 'user_room_'; # 用户房间对应关系
 }
