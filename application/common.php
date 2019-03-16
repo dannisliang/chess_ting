@@ -152,6 +152,9 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
  * @return mixed
  */
 function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    if(!isset($playInfoPlayJsonDecode['checks']['group'])){
+        return false;
+    }
     $userNum = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'playerSize');
     return $userNum;
 }
@@ -258,4 +261,18 @@ function operaUserProperty($player, $type, $diamond){
 function disBandRoom($service, $playerId, $roomId){
     $data['playerId'] = $playerId;
     sendHttpRequest($service.Definition::$DIS_BAND_ROOM.$roomId, $data);
+}
+
+/**
+ * @param $sKey 俱乐部存储房间号的set的key
+ * @param $roomNumber 房间号
+ */
+function sRemErrorLog($sKey, $roomNumber){
+    $date = date('Y-m-d H:i:s', time());
+    $error_str = $date.'|'.$sKey.'|'.$roomNumber."\n";
+    file_put_contents(APP_LOG_PATH.'s_rem_error.log', $error_str, FILE_APPEND);
+}
+
+function p($info){
+    print_r($info);die;
 }

@@ -44,5 +44,12 @@ class Definition{
     public static $CREATE_ROOM = 'api/v3/room/createRoom/'; # 逻辑服创建房间地址
     public static $RAISE_PLAYER_PROPERTY = 'api/raise_player_property.php'; # 扣用户资产
     public static $DIS_BAND_ROOM = 'api/v3/room/disbandRoom/'; # 解绑房间
+
+
+    # 资产类型
+    public static $USER_PROPERTY_TYPE_BINDING = 10002; # 绑定钻石
+    public static $USER_PROPERTY_TYPE_NOT_BINDING = 10001; # 非绑定钻石
+    public static $USER_PROPERTY_PRESIDENT = 10003; # 会长资产
+
 }
 

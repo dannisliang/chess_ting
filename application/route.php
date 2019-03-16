@@ -14,6 +14,7 @@ Route::rule('service/getUserInfo','user/getUserInfo');
 Route::rule('service/room/createRoom','Room/createRoom');
 Route::rule('service/getToken','token/getToken');
 Route::rule('service/room/disBandRoom','Room/disBandRoom');
+Route::rule('service/room/joinRoom','Room/joinRoom');
 
 
 return [
