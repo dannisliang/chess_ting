@@ -10,6 +10,10 @@ use GuzzleHttp\Exception\RequestException;
 
 // 应用公共文件
 
+function p($info){
+    print_r($info);die;
+}
+
 /**
  * 接口json返回
  * @param $code 状态码
@@ -273,6 +277,12 @@ function sRemErrorLog($sKey, $roomNumber){
     file_put_contents(APP_LOG_PATH.'s_rem_error.log', $error_str, FILE_APPEND);
 }
 
-function p($info){
-    print_r($info);die;
+/**
+ * 从session获取
+ * @return mixed
+ */
+function getUserIdFromSession(){
+    Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
+    $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
+    return $user_id;
 }

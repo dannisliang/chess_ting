@@ -13,7 +13,7 @@ class RedisKey{
 
     public static $ROOM_NUMBER_KEY_LIST = 'room_number_key_list'; # 房间号list 右出左进原子性操作
 
-    public static $USER_SESSION_INDO = 'user_session_info'; # 设置用户session的key   key中存json
+    public static $USER_SESSION_INFO = 'user_session_info'; # 设置用户session的key   key中存json
 
     public static $USER_ROOM_KEY_HASH = 'user_room_key_hash:'; # 用户房间hash
 
