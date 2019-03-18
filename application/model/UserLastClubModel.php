@@ -54,7 +54,7 @@ class UserLastClubModel extends Model
     }
 
     public function  insertByWhere(){
-        
+
     }
 
 
