@@ -46,26 +46,6 @@ function getUserSessionInfo(){
 }
 
 /**
- * 获取用户的IP
- * @return string
- */
-function getUserIp(){
-    $ip = '';
-    if(isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR']){
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }else if(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR']){
-        $ip = $_SERVER['REMOTE_ADDR'];
-    }else if(isset($_SERVER['HTTP_CLIENT_IP']) && $_SERVER['HTTP_CLIENT_IP']){
-        $ip = $_SERVER['HTTP_CLIENT_IP'];
-    }
-
-    if(!$ip){
-        $ip = 'unknown';
-    }
-    return $ip;
-}
-
-/**
  * 检查用户token是否有效
  * @return mixed ture/false
  */
@@ -289,43 +269,4 @@ function getUserIdFromSession(){
     Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
     $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
     return $user_id;
-}
-
-/**
- * 请求加入房间
- * @param $club_id
- * @param $room_id
- * @param $player
- * @param string $room_type
- * @param string $url
- * @return mixed
- */
-function joinRoom($clubId, $roomId,$player,$room_type='',$url=''){
-    $club_socket_opt = \think\Db::query("SELECT * FROM tb_club_socket WHERE club_id = $club_id");
-    if($club_socket_opt){
-        $room_url = $club_socket_opt[0]['room_url'];
-        $url = "$room_url"."api/v3/room/joinRoom/$player";
-    }else{
-        //不存在则调用base里的方法查出socket和roomurl
-        if ($room_type){
-            $new_service = new \app\controller\Base();
-            if($url){
-                $room_url = $url;
-            }else{
-                $new_roomurl = $new_service->getService($room_type);
-                $room_url = $new_roomurl['room_url'];
-            }
-
-        }else{
-            $room_url = ROOM_URL;
-        }
-        $url = "$room_url"."api/v3/room/joinRoom/$player";
-    }
-    \think\Log::write($url,'send_jiangge');
-    $data['roomId'] = "$club_id".'_'."$room_id";
-    $data = json_encode($data);
-    \think\Log::write($data,"jiarufangjian1");
-    $list = postInterface($url,$data);
-    $list = json_decode($list,true);
-    return $list;
 }
