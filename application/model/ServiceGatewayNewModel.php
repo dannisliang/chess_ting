@@ -42,4 +42,14 @@ class ServiceGatewayNewModel extends Model
     public function getServiceGatewayNewInfoByServiceId($serviceId){
         return $this->where('id', '=', $serviceId)->find();
     }
+
+    /**
+     * 根据条件获取一条记录
+     * @param $where
+     * @param string $field
+     * @return ServiceGatewayNewModel
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
+    }
 }

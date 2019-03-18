@@ -62,4 +62,12 @@ class UserRoomModel extends Model
     public function getServiceRoomNumByServiceId($serviceId){
         return $this->where('service', '=', $serviceId)->count();
     }
+
+    /**
+     * 获取服务器的数量
+     * @return int|string
+     */
+    public function getServiceCount($where){
+        return $this -> where($where) -> count();
+    }
 }

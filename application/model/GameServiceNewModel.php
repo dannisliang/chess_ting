@@ -21,4 +21,30 @@ class GameServiceNewModel extends Model{
     public function getGameServiceNewInfosByRoomTypeId($roomType){
         return $this->where('is_open', '=', 1)->where('room_type', '=', $roomType)->select();
     }
+
+    /**
+     * 根据条件获取多条数据
+     * @param $where
+     * @param $field
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getSomeByWhere($where, $field = '*'){
+        return $this -> where($where) -> field($field) -> select();
+    }
+
+    /**
+     * 根据条件获取一条数据
+     * @param $where
+     * @param $field
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where, $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
+    }
 }

@@ -270,3 +270,4 @@ function getUserIdFromSession(){
     $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
     return $user_id;
 }
+

@@ -51,7 +51,7 @@ class Token extends Base
             return jsonRes(3002);
         }
         //验证完成的信息存入session
-        Session::set(RedisKey::$USER_SESSION_INDO, $this->opt);
+        Session::set(RedisKey::$USER_SESSION_INFO, $this->opt);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()
