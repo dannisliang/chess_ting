@@ -20,4 +20,6 @@ class RedisKey{
     public static $CLUB_ALL_ROOM_NUMBER_SET = 'club_all_room_number_set_'; # 俱乐部所有房间号set
 
     public static $USER_ROOM_KEY = 'user_room_'; # 用户房间对应关系
+
+    public static $JOIN_OR_OUT_ROOM_LIST = 'join_or_out_room_list'; # 玩家加入房间或退出房间的队列
 }
