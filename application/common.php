@@ -46,33 +46,12 @@ function getUserSessionInfo(){
 }
 
 /**
- * 获取用户的IP
- * @return string
- */
-function getUserIp(){
-    $ip = '';
-    if(isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR']){
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }else if(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR']){
-        $ip = $_SERVER['REMOTE_ADDR'];
-    }else if(isset($_SERVER['HTTP_CLIENT_IP']) && $_SERVER['HTTP_CLIENT_IP']){
-        $ip = $_SERVER['HTTP_CLIENT_IP'];
-    }
-
-    if(!$ip){
-        $ip = 'unknown';
-    }
-    return $ip;
-}
-
-/**
  * 检查用户token是否有效
  * @return mixed ture/false
  */
-function checkUserToken(){
-    $userSessionInfo = getUserSessionInfo();
+function checkUserToken($userSessionInfo){
     $data['uid'] = $userSessionInfo['userid'];
-    $data['ip'] = getUserIp();
+    $data['ip'] = $userSessionInfo['ip'];
     $data['token'] = $userSessionInfo['token'];
     $requestUrl = Definition::$WEB_API_URL.Definition::$CHECK_TOKEN_TIME;
     $response = sendHttpRequest($requestUrl, $data);
@@ -105,8 +84,8 @@ function getUserProperty($userIds, $propertyType){
 function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
     $requestConfig = [
         'json' => $data,
-        'connect_timeout' => 1, # 最长握手时间
-        'timeout' => 1, # 最长等待时间
+//        'connect_timeout' => 1, # 最长握手时间
+//        'timeout' => 1, # 最长等待时间
         'headers' => ['Accept-Encoding' => 'gzip'],
         'decode_content' => 'gzip',
         'http_errors' => false, # 非200状态码不抛出异常
@@ -133,20 +112,27 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         $requestKeepTime = bcsub($requestEndTime, $requestBeginTime, 1);
 
         if($requestKeepTime > 0.5){
-            $logInfo = date('Y-m-d H:i:s', time()). '|' . '请求服务器响应慢' . '|' . $url . '|' . $requestKeepTime;
-            trace($logInfo);
+            $errorData = [
+                $requestKeepTime,
+                $url
+            ];
+            errorLog('slowRequest', $errorData);
         }
 
         if($response->getStatusCode() != 200){ # 服务器错误
-            $logInfo = date('Y-m-d H:i:s', time()). '|' . '服务器内部错误' . '|' . $url . '|' . $response->getStatusCode();
-            trace($logInfo);
-            return json(['code' => 1111, 'mess' => '服务器内部错误'])->send();
+            $errorData = [
+                $url
+            ];
+            errorLog('errorRequest', $errorData);
+            return [];
         }
         return json_decode($response->getBody()->getContents(), true);
-    }catch (RequestException $e){ # 连接超时RequestException
-        $logInfo = date('Y-m-d H:i:s', time()) . '|' . '请求超时' . '|' . $url;
-        trace($logInfo);
-        return json(['code' => 1111, 'mess' => '服务器内部错误'])->send();
+    }catch (RequestException $e){ # 连接超时等
+        $errorData = [
+            $url
+        ];
+        errorLog('otherRequest', $errorData);
+        return [];
     }
 }
 
@@ -245,7 +231,6 @@ function has_keys($key, $arr, $is_true = false){
     return true;
 }
 
-
 /**
  * 扣用户资产
  * @param $player 用户ID
@@ -268,24 +253,12 @@ function disBandRoom($service, $playerId, $roomId){
 }
 
 /**
- * 删除集合中的房间数据失败调用
- * @param $sKey 俱乐部存储房间号的set的key
- * @param $roomNumber 房间号
- */
-function sRemErrorLog($sKey, $roomNumber){
-    $date = date('Y-m-d H:i:s', time());
-    $error_str = $date.'|'.$sKey.'|'.$roomNumber."\n";
-    file_put_contents(APP_LOG_PATH.'s_rem_error.log', $error_str, FILE_APPEND);
-}
-
-/**
- * 删除用户对应房间失败调用
+ * 写redis错误日志
  * @param $key
  */
-function delErrorLog($key){
-    $date = date('Y-m-d H:i:s', time());
-    $error_str = $date.'|'.$key."\n";
-    file_put_contents(APP_LOG_PATH.'del_error.log', $error_str, FILE_APPEND);
+function errorLog($errorType, $data){
+    $errorStr = date('Y-m-d H:i:s', time()).'|'.implode('|', $data).PHP_EOL;
+    file_put_contents(APP_LOG_PATH.$errorType.'.log', $errorStr, FILE_APPEND);
 }
 
 /**

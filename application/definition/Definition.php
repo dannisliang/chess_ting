@@ -56,7 +56,8 @@ class Definition{
     public static $DIS_BAND_ROOM = 'api/v3/room/disbandRoom/'; # 解绑房间
     public static $CHECK_ROOM   = 'api/v3/room/checkRoom'; # 逻辑服检测房间地址
     public static $CREATE_ROOM  = 'api/v3/room/createRoom/'; # 逻辑服创建房间地址
-    public static $CHECK_PLAYER = 'api/v3/room/checkPlayer'; //逻辑服检查用户是否在房间接口
+    public static $CHECK_PLAYER = 'api/v3/room/checkPlayer'; # 逻辑服检查用户是否在房间接口
+    public static $JOIN_ROOM = 'api/v3/room/joinRoom/'; # 逻辑服请求加入房间的接口
 
     /**
      * 运营中心
