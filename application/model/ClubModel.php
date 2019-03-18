@@ -13,19 +13,14 @@ class ClubModel extends Model{
 
     protected $name = 'club';
 
-    # 根据俱乐部ID获取俱乐部数据
-    public function getInfoById($id)
-    {
-        return $this->where('cid', '=', $id)->find();
-    }
-
     /**
+     * 获取正常的俱乐部数据
      * @param $id 俱乐部ID的
      * @return array|false|\PDOStatement|string|Model
      */
     public function getClubInfoByClubId($clubId)
     {
-        return $this->where('cid', '=', $clubId)->find();
+        return $this->where('cid', '=', $clubId)->where('club_status', '=', 1)->find();
     }
 
     /**
