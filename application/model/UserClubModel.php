@@ -11,11 +11,11 @@ namespace app\model;
 
 use think\Model;
 
-class ServiceGatewayNewModel extends Model
+class UserClubModel extends Model
 {
     protected $name = 'user_club';
 
-    public function test(){
-
+    public function getSomeByWhere($where,$field = '*' ){
+        return $this -> where( $where ) -> field( $field ) -> select();
     }
 }

@@ -41,4 +41,17 @@ class ClubModel extends Model{
             return false;
         }
     }
+
+    /**
+     * 传输条件获取一条信息
+     * @param $where
+     * @param $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere( $where , $field = '*' ){
+        return $this -> where( $where ) -> field( $field ) -> find();
+    }
 }

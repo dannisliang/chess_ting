@@ -54,7 +54,10 @@ class Room extends Base
 
         # 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
-        $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
+        $where = [
+            'id' => $this->opt['match_id'],
+        ];
+        $roomOptionsInfo = $roomOptions->getOneByWhere($where);
         if(!$roomOptionsInfo){
             return jsonRes(3501);
         }

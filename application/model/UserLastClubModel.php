@@ -35,4 +35,27 @@ class UserLastClubModel extends Model
         }
 
     }
+
+    /**
+     * 根据获取一套数据
+     * @param $where
+     * @param $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
+    }
+
+    public function updateByWhere(){
+
+    }
+
+    public function  insertByWhere(){
+        
+    }
+
+
 }
