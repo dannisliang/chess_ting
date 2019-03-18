@@ -37,6 +37,9 @@ class JoinOrOutRoom extends Command{
 
                     $roomHashKey = RedisKey::$USER_ROOM_KEY_HASH.$listPopInfoJsonDecode['roomId']; # 房间key
                     $setRes = true;
+                    $setHashRes = true;
+                    $delRes = true;
+                    $sMoveRes = true;
 
                     if($listPopInfoJsonDecode['type'] == 1){ # 加入房间
                         $roomInfo = $redisHandle->hMget($roomHashKey, ['playerInfos', 'roomNeedUserNum']);
@@ -58,17 +61,18 @@ class JoinOrOutRoom extends Command{
                                 'joinStatus' => 0,
                                 'playerInfos' => $playerInfosJsonEncode,
                             ];
-                            $setRes = $redisHandle->hMset($roomHashKey, $setArr);
+                            $setHashRes = $redisHandle->hMset($roomHashKey, $setArr);
                         }else{
-                            $setRes = $redisHandle->hSet($roomHashKey, 'playerInfos', $playerInfosJsonEncode);
+                            $setHashRes = $redisHandle->hSet($roomHashKey, 'playerInfos', $playerInfosJsonEncode);
                         }
+                        $setRes = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$listPopInfoJsonDecode['userId'], $listPopInfoJsonDecode['roomId']);
                     }
 
                     if($listPopInfoJsonDecode['type'] == 0){ # 退出房间
                         $roomInfo = $redisHandle->hMget($roomHashKey, ['playerInfos', 'joinStatus']);
                         $playerInfos = json_decode($roomInfo['playerInfos'], true);
-
                         unset($playerInfos[$listPopInfoJsonDecode['userId']]);
+
                         $playerInfosJsonEncode = json_encode($playerInfos);
                         if($roomInfo['joinStatus'] == 0){ # 以前是满员
                             $setArr = [
@@ -76,13 +80,16 @@ class JoinOrOutRoom extends Command{
                                 'playerInfos' => $playerInfosJsonEncode
                             ];
 
-                            $setRes = $redisHandle->hMset($roomHashKey, $setArr);
+                            $setHashRes = $redisHandle->hMset($roomHashKey, $setArr);
                         }else{
-                            $setRes = $redisHandle->hSet($roomHashKey, 'playerInfos', $playerInfosJsonEncode);
+                            $setHashRes = $redisHandle->hSet($roomHashKey, 'playerInfos', $playerInfosJsonEncode);
                         }
+                        $delRes = $redisHandle->del(RedisKey::$USER_ROOM_KEY.$listPopInfoJsonDecode['userId']);
+
+
                     }
 
-                    if(!$setRes){ # 写日志
+                    if(!$setHashRes){ # 写日志
                         $errorArr = [
                             $joinOrOutRoomList,
                         ];
@@ -90,6 +97,14 @@ class JoinOrOutRoom extends Command{
                             $errorArr[] = $v;
                         }
                         errorLog('joinOrOutRoom', $errorArr);
+                    }
+
+                    if(!$setRes){
+
+                    }
+
+                    if(!$delRes){
+
                     }
 
                 }
