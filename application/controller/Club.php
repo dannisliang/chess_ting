@@ -24,7 +24,7 @@ class Club extends Base
         if (!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
-
+        //获取用户的vip信息
         $this -> getUserVipInfo($user_id,$this ->opt['club_id']);
         return jsonRes(0);
     }
@@ -32,10 +32,10 @@ class Club extends Base
     private function getUserVipInfo($user_id,$club_id){
         $userVipModel = new UserVipModel();
         $where = [
-            'a.club_id'=> $club_id,
-            'uid'    => $user_id,
+            'a.club_id' => $club_id,
             'vip_status'=> 1,
-            'end_day' => [
+            'uid'       => $user_id,
+            'end_day'   => [
                 '>',date('Y-m-d H:i:s',time())
             ]
         ];
@@ -47,11 +47,12 @@ class Club extends Base
                 'vid'       => $userVipInfo['vid'],
                 'vip_name'  => $userVipInfo['v_name']
             ];
+            //获取用户的vip信息
             $list = [
-                'surplus_day' => strtotime($userVipInfo['end_day']) - time(),//会员卡剩余时间
+                'end_day'     => strtotime($userVipInfo['end_day']),
                 'cards_num'   => $userVipInfo['card_number'],
+                'surplus_day' => strtotime($userVipInfo['end_day']) - time(),//会员卡剩余时间
                 'user_vipinfos'=>$user_vipinfos,
-                'end_day'     => strtotime($userVipInfo['end_day'])
             ];
         }
         var_dump($list);die;
