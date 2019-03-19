@@ -13,7 +13,13 @@ use think\Route;
 
 Route::rule('service/getUserInfo','user/getUserInfo');
 Route::rule('service/getToken','token/getToken');
+
+/**
+ * 与俱乐部相关
+ */
 Route::rule('service/club/getClubInfo','club/getClubInfo');
+Route::rule('service/club/getClubInfos','club/getClubInfos');
+Route::rule('service/club/JoinClub','club/joinClub');
 
 /**
  * 房间相关

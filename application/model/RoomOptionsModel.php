@@ -36,6 +36,19 @@ class RoomOptionsModel extends Model{
     }
 
     /**
+     * 获取一条信息
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where( $where ) -> field( $field ) -> find();
+    }
+
+    /**
      * 获取玩法和规则
      * @param $where
      * @return false|\PDOStatement|string|\think\Collection
