@@ -395,18 +395,38 @@ class Room extends Base
         # 房间人数
         $userNum = count($roomUserInfo); # 获取房间人数
         if($userNum >= $roomHashValue['needUserNum']){
-            $setArr = [
+            $setHashInfo = [
                 'joinStatus' => 0,
                 'playerInfos' => json_decode($roomUserInfo)
             ];
-            $setHashRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], $setArr);
+            $setHash = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], $setHashInfo);
         }else{
-            $setHashRes = $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
+            $setHash = $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
         }
         $redisHandle->del($lockKey); # 解锁
 
-        if(!$setHashRes){ # 写失败 记录日志
+        # 设置用户房间
+        $setUserRoom = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userId'], $this->opt['room_id']);
+        if(!$setHash){ # 修改房间数据失败 记录日志
+            $errorData = [
+                RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']
+            ];
+            if(isset($setHashInfo)){
+                foreach ($setHashInfo as $v){
+                    $setHashInfo[] = $v;
+                }
+            }else{
+                $errorData[] = json_encode($roomUserInfo);
+            }
+            errorLog('changeRoomHash', $errorData);
+        }
 
+        if($setUserRoom){ # 写用户房间失败 记录日志
+            $errorData = [
+                RedisKey::$USER_ROOM_KEY.$userSessionInfo['userId'],
+                $this->opt['room_id']
+            ];
+            errorLog('setUserRoom', $errorData);
         }
 
         # 返回客户端的值
