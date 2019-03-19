@@ -49,12 +49,22 @@ class UserLastClubModel extends Model
         return $this -> where($where) -> field($field) -> find();
     }
 
-    public function updateByWhere(){
-
+    /**
+     * 更新一条数据
+     * @param $where
+     * @param $data
+     * @return UserLastClubModel
+     */
+    public function updateByWhere($where,$data){
+        return $this -> where($where) -> update($data);
     }
 
-    public function  insertByWhere(){
-
+    /**
+     * 添加一条数据
+     * @param $data
+     */
+    public function  insertData($data){
+        return $this -> insertGetId($data);
     }
 
 
