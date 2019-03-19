@@ -52,4 +52,13 @@ class ServiceGatewayNewModel extends Model
     public function getOneByWhere($where , $field = '*'){
         return $this -> where($where) -> field($field) -> find();
     }
+
+
+    /**
+     * 获取所有可连接的服务器
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getServiceGatewayNewInfos(){
+        return $this->select();
+    }
 }

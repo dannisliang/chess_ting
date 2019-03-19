@@ -56,10 +56,7 @@ class Room extends Base
 
         # 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
-        $where = [
-            'id' => $this->opt['match_id'],
-        ];
-        $roomOptionsInfo = $roomOptions->getOneByWhere($where);
+        $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
         if(!$roomOptionsInfo){
             return jsonRes(3501);
         }
@@ -246,6 +243,8 @@ class Room extends Base
             'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), # 玩法数据中的play的checks json
             'roomOptions' => $roomOptionsInfo['options'], # 玩法相关数据 json
             'playerInfos' => json_encode($playerInfos), # 用户信息集 json
+            'isGps' => $roomOptionsInfo['cheat'], # 是否判断gps 0不检测
+            'gpsRange' => $clubInfo['gps'] # gps检测距离
         ];
 
         # 写房间hash
@@ -286,7 +285,7 @@ class Room extends Base
 
     # 玩家加入房间
     public function joinRoom(){
-        if(!isset($this->opt['room_id'])){
+        if(!isset($this->opt['room_id']) || !is_numeric($this->opt['room_id'])){
             return jsonRes(3006);
         }
 
@@ -357,6 +356,7 @@ class Room extends Base
         $requestUrl = $roomHashValue['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid']; # 逻辑服加入房间的请求地址
         $requestData['roomId'] = $this->opt['room_id'];
         $joinRoomInfo = sendHttpRequest($requestUrl, $requestData);
+//        p($joinRoomInfo);
         if(!$joinRoomInfo || !isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
             return jsonRes(3506);
         }
@@ -365,9 +365,7 @@ class Room extends Base
         $getLock = false;
         $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'].'lock';
-        $a = 1;
         while(!$getLock){
-            $a ++;
             if(time() > $timeOut){
                 break;
             }
@@ -378,14 +376,17 @@ class Room extends Base
         }
 
         if(!$getLock){ # 没能拿到锁
-            # 写日志
-                echo 1;die;
+            $errorData = [
+                RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'],
+                $userSessionInfo['userid']
+            ];
+            errorLog('joinRoomError', $errorData);
         }
 
         $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']);
         $roomUserInfo = json_decode($roomHashValue['playerInfos'], true);
-        $roomUserInfo[$userSessionInfo['userId']] = [
-            'userId' => $userSessionInfo['userId'],
+        $roomUserInfo[$userSessionInfo['userid']] = [
+            'userId' => $userSessionInfo['userid'],
             'nickName' => $userSessionInfo['nickName'],
             'headImgUrl' => $userSessionInfo['headImgUrl'],
             'ipAddr' => $userSessionInfo['ip'],
@@ -404,16 +405,13 @@ class Room extends Base
             $setHash = $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
         }
         $redisHandle->del($lockKey); # 解锁
-
-        # 设置用户房间
-        $setUserRoom = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userId'], $this->opt['room_id']);
         if(!$setHash){ # 修改房间数据失败 记录日志
             $errorData = [
                 RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']
             ];
             if(isset($setHashInfo)){
                 foreach ($setHashInfo as $v){
-                    $setHashInfo[] = $v;
+                    $errorData[] = $v;
                 }
             }else{
                 $errorData[] = json_encode($roomUserInfo);
@@ -421,9 +419,11 @@ class Room extends Base
             errorLog('changeRoomHash', $errorData);
         }
 
+        # 设置用户房间
+        $setUserRoom = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'], $this->opt['room_id']);
         if($setUserRoom){ # 写用户房间失败 记录日志
             $errorData = [
-                RedisKey::$USER_ROOM_KEY.$userSessionInfo['userId'],
+                RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'],
                 $this->opt['room_id']
             ];
             errorLog('setUserRoom', $errorData);
@@ -442,6 +442,17 @@ class Room extends Base
         return jsonRes(0, $returnArr);
     }
 
+    # 玩家加入房间回调
+    public function joinRoomCallBack()
+    {
+        return jsonRes(0);
+    }
+
+    # 房间游戏开始回调
+    public function startGameCallBack(){
+
+    }
+
     # 退出房间
     public function outRoom(){
 
@@ -449,8 +460,135 @@ class Room extends Base
 
     # 强制解散房间
     public function disBandRoom(){
-        $userSessionInfo = getUserSessionInfo();
-        print_r(disBandRoom('http://192.168.9.18:9910/', $userSessionInfo['userid'], 641267));die;
+        if(!isset($this->opt['uid']) || !is_numeric($this->opt['uid'])){
+            return jsonRes(3006);
+        }
+
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+
+        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
+        if($userRoom){
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
+            $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$userRoom);
+            if($roomHashValue){
+                $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$userRoom);
+                $clubId = $roomHashValue['clubId'];
+                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$clubId, $userRoom);
+
+                $disBandUrl = $roomHashValue['roomUrl'];
+                $disBandRes = sendHttpRequest($disBandUrl.Definition::$DIS_BAND_ROOM.$userRoom, ['playerId' => $this->opt['uid']]);
+                if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                    return jsonRes(3507);
+                }
+            }
+        }
+
+        # 获取玩家所在房间
+        $serviceGatewayNew = new ServiceGatewayNewModel();
+        $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
+        foreach ($serviceGatewayNewInfos as $v){
+            $checkPlayerRes = sendHttpRequest($v['service'].Definition::$CHECK_PLAYER, ['playerId' => $this->opt['uid']], 'POST', [], ['connect_timeout' => 1, 'timeout' => 1]);
+            if($checkPlayerRes && isset($checkPlayerRes['content']['roomId']) && $checkPlayerRes['content']['roomId']){
+                $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$checkPlayerRes['content']['roomId'], ['playerId' => $this->opt['uid']]);
+                if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                    return jsonRes(3507);
+                }
+            }
+        }
+
+        return jsonRes(3508);
+
+    }
+
+    # 获取gps相关信息
+    public function getRoomGpsInfo(){
+        if(isset($this->opt['room_id']) && $this->opt['room_id'] && is_numeric($this->opt['room_id'])){
+            $redis = new Redis();
+            $redisHandle = $redis->handler();
+            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
+            if(!$roomHashInfo){
+                return jsonRes(3505); # 房间不存在
+            }
+            $returnData = [
+                'room_cheat' => $roomHashInfo['isGps'],
+                'gps_range' => $roomHashInfo['gpsRange']
+            ];
+            return jsonRes(0, $returnData);
+        }
+
+        if(isset($this->opt['match_id']) && $this->opt['match_id'] && is_numeric($this->opt['room_id'])){
+            $roomOptions = new RoomOptionsModel();
+            $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
+            if(!$roomOptionsInfo){
+                return jsonRes(3501);
+            }
+
+            $club = new ClubModel();
+            $clubInfo = $club->getClubInfoByClubId($roomOptionsInfo['club_id']);
+            if(!$clubInfo){
+                return jsonRes(3500);
+            }
+
+            $returnData = [
+                'room_cheat' => $roomOptionsInfo['room_cheat'],
+                'gps_range' => $clubInfo['gps']
+            ];
+            return jsonRes(0, $returnData);
+        }
+
+        return jsonRes(3006); # 请求参数有误
+    }
+
+    # 查询玩家所在的房间
+    public function getUserRoom(){
+        if(!isset($this->opt['uid']) || !$this->opt['uid'] || !is_numeric($this->opt['uid'])){
+            return jsonRes(3006);
+        }
+
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+
+        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
+        if($userRoom){
+            return jsonRes(0, [$userRoom]);
+        }
+
+        # 去逻辑服获取玩家所在房间
+        $serviceGatewayNew = new ServiceGatewayNewModel();
+        $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
+        foreach ($serviceGatewayNewInfos as $v){
+            $checkPlayerRes = sendHttpRequest($v['service'].Definition::$CHECK_PLAYER, ['playerId' => $this->opt['uid']], 'POST', [], ['connect_timeout' => 1, 'timeout' => 1]);
+            if($checkPlayerRes && isset($checkPlayerRes['content']['roomId']) && $checkPlayerRes['content']['roomId']){
+                return jsonRes(0, [$checkPlayerRes['content']['roomId']]);
+            }
+        }
+        return jsonRes(3509);
+    }
+
+    # 房间列表
+    public function roomList(){
+        if(!isset($this->opt['club_id']) || !$this->opt['club_id'] || !is_numeric($this->opt['club_id'])){
+            return jsonRes(3006);
+        }
+
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+
+        $sMembers = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
+        if(!$sMembers){
+            return jsonRes(0, []);
+        }
+
+
+        $userRoomReturn = [];
+        foreach ($sMembers as $roomNum){
+            $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$roomNum);
+            if($roomHashValue){
+                $roomUserNum = count(json_decode($roomHashValue['playerInfos'], true));
+
+            }
+        }
     }
 
 
