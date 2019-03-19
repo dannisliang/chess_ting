@@ -38,11 +38,11 @@ class Token extends Base
 
         //验证传输的token是否可靠
         $url = Definition::$WEB_API_URL;
-        $pathInfo = 'api/v3/authenticate.php';
+        $pathInfo = Definition::$AUTHENTICATE;
         $data = [
-            'uid'=> $this->opt['player_id'],
-            'ip' => $ip,
-            'token'=> $this->opt['token']
+            'ip'    => $ip,
+            'token' => $this->opt['token'],
+            'uid'   => $this->opt['player_id'],
         ];
 
         $result = guzzleRequest( $url , $pathInfo , $data );
@@ -51,7 +51,7 @@ class Token extends Base
             return jsonRes(3002);
         }
         //验证完成的信息存入session
-        Session::set(RedisKey::$USER_SESSION_INDO, $this->opt);
+        Session::set(RedisKey::$USER_SESSION_INFO, $this->opt);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()

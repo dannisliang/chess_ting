@@ -19,6 +19,25 @@ class PlayModel extends Model{
         return $this->where('id', '=' , $playId)->find();
     }
 
+    /**
+     * 获取玩法的信息
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where( $where ) -> field($field) -> find();
+    }
+
+    /**
+     * 获取多条数据
+     */
+    public function getSomeById($where,$field){
+        return $this -> where($where) -> field($field) -> select();
+    }
 
 }
 
