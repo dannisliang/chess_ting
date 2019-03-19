@@ -229,7 +229,7 @@ class Room extends Base
         ];
         $redisHashValue = [
             'createTime' => date('Y-m-d H:i:s'), # 房间创建时间
-            'roomNeedUserNum' => $roomNeedUserNum, # 房间需要的人数
+            'needUserNum' => $roomNeedUserNum, # 房间需要的人数
             'serviceId' => $serviceId, # 服务器ID
             'diamond' => $roomOptionsInfo['diamond'], # 进房需要的钻石  没均分没折扣的值
             'joinStatus' => 1, # 其他人是否能够申请加入
@@ -305,8 +305,8 @@ class Room extends Base
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        # 获取房间信息中的俱乐部ID 判断玩家是否加入该俱乐部
-        $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']);
+        # 获取房间信息中的俱乐部ID
+        $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['diamond', 'roomNeedUserNum', 'clubType', 'roomRate', 'clubId', 'roomUrl']);
 //        p($roomHashValue);
         if(!$roomHashValue){
             return jsonRes(3505);
@@ -361,25 +361,52 @@ class Room extends Base
             return jsonRes(3506);
         }
 
-        # 存在多个人修改roomHash的可能性 所以入队列 后台单进程脚本处理
-        $listInfo = [
-            'type' => 1, # 1加入房间 0退出房间
-            'roomId' => $this->opt['room_id'], # 房间的ID
-            'userId' => $userSessionInfo['userid'], # 用户ID
-            'nickName' => $userSessionInfo['nickname'],
-            'headImgUrl' => $userSessionInfo['headimgurl'],
-            'ipAddr' => $userSessionInfo['ip'],
-            'needDiamond' => $needDiamond,
-        ];
-        $pushRes = $redisHandle->lPush(RedisKey::$JOIN_OR_OUT_ROOM_LIST, json_encode($listInfo));
-        if(!$pushRes){ # 写日志
-            $errorArr = [
-                RedisKey::$JOIN_OR_OUT_ROOM_LIST,
-            ];
-            foreach ($listInfo as $v){
-                $errorArr[] = $v;
+        # 使用redis锁处理
+        $getLock = false;
+        $timeOut = bcadd(time(), 2, 0);
+        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'].'lock';
+        $a = 1;
+        while(!$getLock){
+            $a ++;
+            if(time() > $timeOut){
+                break;
             }
-            errorLog('joinOrOutRoom', $errorArr);
+            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
+            if($getLock){
+                break;
+            }
+        }
+
+        if(!$getLock){ # 没能拿到锁
+            # 写日志
+                echo 1;die;
+        }
+
+        $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id']);
+        $roomUserInfo = json_decode($roomHashValue['playerInfos'], true);
+        $roomUserInfo[$userSessionInfo['userId']] = [
+            'userId' => $userSessionInfo['userId'],
+            'nickName' => $userSessionInfo['nickName'],
+            'headImgUrl' => $userSessionInfo['headImgUrl'],
+            'ipAddr' => $userSessionInfo['ip'],
+            'needDiamond' => $needDiamond
+        ];
+
+        # 房间人数
+        $userNum = count($roomUserInfo); # 获取房间人数
+        if($userNum >= $roomHashValue['needUserNum']){
+            $setArr = [
+                'joinStatus' => 0,
+                'playerInfos' => json_decode($roomUserInfo)
+            ];
+            $setHashRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], $setArr);
+        }else{
+            $setHashRes = $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
+        }
+        $redisHandle->del($lockKey); # 解锁
+
+        if(!$setHashRes){ # 写失败 记录日志
+
         }
 
         # 返回客户端的值
