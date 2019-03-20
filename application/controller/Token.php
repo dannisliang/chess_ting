@@ -36,16 +36,13 @@ class Token extends Base
             $ip = reset(explode(',', $ip));
         }
 
-        //验证传输的token是否可靠
-        $url = Definition::$WEB_API_URL;
-        $pathInfo = Definition::$AUTHENTICATE;
+        //验证token
         $data = [
             'ip'    => $ip,
             'token' => $this->opt['token'],
             'uid'   => $this->opt['player_id'],
         ];
-
-        $result = guzzleRequest( $url , $pathInfo , $data );
+        $result = checkToken( $data );
 
         if($result['result'] === false){
             return jsonRes(3002);
