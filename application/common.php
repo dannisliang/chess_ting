@@ -269,6 +269,27 @@ function errorLog($errorType, $data){
 function getUserIdFromSession(){
     Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
     $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
+    if(!$user_id){
+        return false;
+    }
     return $user_id;
+}
+
+/**
+ * 验证token
+ * $data = [
+        'ip'    => $ip,
+        'token' => $this->opt['token'],
+        'uid'   => $this->opt['player_id'],
+    ];
+ * @param $data
+ * @return mixed
+ */
+function checkToken($data){
+    //验证传输的token是否可靠
+    $url = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$AUTHENTICATE;
+    $result = guzzleRequest( $url , $pathInfo , $data );
+    return $result;
 }
 

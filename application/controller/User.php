@@ -23,8 +23,10 @@ class User
     {
         //实例化model
         $lastClubModel = new UserLastClubModel();
-        session('player_id',328946);
-        $user_id    = session('player_id'); //收件人id
+        $user_id = getUserIdFromSession();
+        if(!$user_id){
+            return jsonRes(9999);
+        }
 
         //获取未读取邮件数量
         $email_num  = $this ->getEmailNum($user_id);

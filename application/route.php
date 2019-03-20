@@ -20,6 +20,7 @@ Route::rule('service/getToken','token/getToken');
 Route::rule('service/club/getClubInfo','club/getClubInfo');
 Route::rule('service/club/getClubInfos','club/getClubInfos');
 Route::rule('service/club/JoinClub','club/joinClub');
+Route::rule('service/club/outClub','club/outClub');
 
 /**
  * 房间相关
@@ -31,6 +32,12 @@ Route::rule('service/room/getUserRoom','Room/getUserRoom');
 Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
 Route::rule('service/room/test','Room/test');
 Route::rule('service/room/outRoom','Room/outRoomCallBack');
+
+/**
+ * 商城相关
+ */
+Route::rule('service/shop/shopDetail','shop/shopDetail');
+
 
 return [
     '__pattern__' => [

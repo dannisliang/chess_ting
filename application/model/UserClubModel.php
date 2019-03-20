@@ -71,4 +71,13 @@ class UserClubModel extends Model
         return $this -> insert($data);
     }
 
+    /**
+     * 根据条件删除信息
+     * @param $where
+     * @return int
+     */
+    public function delByWhere($where){
+        return $this -> where($where) ->delete();
+    }
+
 }

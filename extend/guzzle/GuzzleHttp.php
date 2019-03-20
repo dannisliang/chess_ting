@@ -37,12 +37,12 @@ class GuzzleHttp
             //请求接口信息
             $response = self::$client -> request( $method , $pathInfo , ['json'=>$data , 'timeout' => 1] );
 
-            $requestEndTime = microtime();
+            $requestEndTime      = microtime();
             $requestBeginTimeArr = explode(' ', $requestStartTime);
-            $requestEndTimeArr = explode(' ', $requestEndTime);
-            $requestBeginTime = bcadd($requestBeginTimeArr[0], $requestBeginTimeArr[1], 2);
-            $requestEndTime = bcadd($requestEndTimeArr[0], $requestEndTimeArr[1], 2);
-            $requestKeepTime = bcsub($requestEndTime, $requestBeginTime, 1);
+            $requestEndTimeArr   = explode(' ', $requestEndTime);
+            $requestBeginTime    = bcadd($requestBeginTimeArr[0], $requestBeginTimeArr[1], 2);
+            $requestEndTime      = bcadd($requestEndTimeArr[0], $requestEndTimeArr[1], 2);
+            $requestKeepTime     = bcsub($requestEndTime, $requestBeginTime, 1);
 
             if($requestKeepTime > 0.5 ){
                 $requestLog = date('Y-m-d H:i:s', time()). '|' . self::$url . $pathInfo . '|' . '请求服务器响应慢' . '|' . $requestKeepTime;
@@ -64,7 +64,7 @@ class GuzzleHttp
             $logInfo = date('Y-m-d H:i:s', time()) . '|' . '请求超时' . '|' . self::$url . $pathInfo;
             trace($logInfo);
 
-            return json(['code' => 1111, 'mess' => '服务器内部错误，请重试'])->send();
+            return false;
 
         }
 
