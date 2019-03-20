@@ -81,7 +81,7 @@ function getUserProperty($userIds, $propertyType){
  * @param array $headers 请求头
  * @return mixed|\Psr\Http\Message\StreamInterface 记录超时日志 记录状态码非200日志 请求正确返回array
  */
-function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
+function sendHttpRequest($url, $data, $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
 //        'connect_timeout' => 1, # 最长握手时间
@@ -90,6 +90,12 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         'decode_content' => 'gzip',
         'http_errors' => false, # 非200状态码不抛出异常
     ];
+
+    if($config){
+        foreach ($config as $k => $v){
+            $requestConfig[$k] = $v;
+        }
+    }
 
     if($headers){
         foreach ($headers as $k => $v){
@@ -245,11 +251,6 @@ function operaUserProperty($player, $type, $diamond){
     $data['property_type'] = $type;
     $data['property_num'] = $diamond;
     return sendHttpRequest($url, $data);
-}
-
-function disBandRoom($service, $playerId, $roomId){
-    $data['playerId'] = $playerId;
-    sendHttpRequest($service.Definition::$DIS_BAND_ROOM.$roomId, $data);
 }
 
 /**

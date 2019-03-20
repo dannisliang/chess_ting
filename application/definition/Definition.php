@@ -56,12 +56,25 @@ class Definition{
     public static $DIS_BAND_ROOM = 'api/v3/room/disbandRoom/'; # 解绑房间
     public static $CHECK_ROOM   = 'api/v3/room/checkRoom'; # 逻辑服检测房间地址
     public static $CREATE_ROOM  = 'api/v3/room/createRoom/'; # 逻辑服创建房间地址
-    public static $CHECK_PLAYER = 'api/v3/room/checkPlayer'; # 逻辑服检查用户是否在房间接口
+    public static $GET_USER_ROOM = 'api/v3/room/checkPlayer'; # 逻辑服获取用户房间
     public static $JOIN_ROOM = 'api/v3/room/joinRoom/'; # 逻辑服请求加入房间的接口
 
     /**
      * 运营中心
      */
     public static $EMAIL_LIST = 'api/email_list.php'; //运营中心获取邮件列表
+
+    /**
+     * 日志
+     */
+    public static $DEL_USER_ROOM = 'delUserRoom'; # 删除用户房间 参数 用户ID 房间ID
+    public static $SET_USER_ROOM = 'setUserRoom'; # 写用户房间 参数 用户ID 房间ID
+    public static $DEL_CLUB_ROOM = 'delClubRoom'; # 俱乐部删除房间 参数 俱乐部ID 房间ID
+    public static $ADD_CLUB_ROOM = 'addClubRoom'; # 俱乐部添加房间 参数 俱乐部ID 房间ID
+    public static $SET_ROOM_HASH = 'setRoomHash'; # 写房间hash数据 参数 房间ID 房间其他数据
+    public static $CHANGE_ROOM_HASH = 'changeRoomHash'; # 修改房间hash数据 参数 用户ID 房间ID
+    public static $CHANGE_ROOM_STATUS = 'changeRoomStatus'; # 修改房间状态 参数 房间ID
+    public static $CHANGE_ROOM_PLAY = 'changeRoomPlay'; # 修改房间牌局记录 参数 房间ID
+
 }
 
