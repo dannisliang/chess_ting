@@ -203,7 +203,7 @@ class User
             $socket_url = $item['socket_url'];
             $serviceInfo = $serviceGatewayModel ->getService($service_id);
             $url = $serviceInfo['service'];
-            $path_info = Definition::$CHECK_PLAYER;
+            $path_info = Definition::$GET_USER_ROOM;
             //请求逻辑服
             $lists = guzzleRequest( $url , $path_info , $data);
             $serviceInfo = $lists['content'];
