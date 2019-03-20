@@ -67,5 +67,14 @@ class UserLastClubModel extends Model
         return $this -> insertGetId($data);
     }
 
+    /**
+     * 根据条件删除一条信息
+     * @param $where
+     * @return int
+     */
+    public function delByWhere($where){
+        return $this -> where($where) -> delete();
+    }
+
 
 }
