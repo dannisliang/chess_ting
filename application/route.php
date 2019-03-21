@@ -21,7 +21,11 @@ Route::rule('service/club/getClubInfo','club/getClubInfo');
 Route::rule('service/room/createRoom','Room/createRoom');
 Route::rule('service/room/disBandRoom','Room/disBandRoom');
 Route::rule('service/room/joinRoom','Room/joinRoom');
-
+/**
+ * 邮件相关
+ */
+Route::rule('service/Mail/lists','mail/lists');
+Route::rule('service/Mail/detail','mail/detail');
 
 return [
     '__pattern__' => [
