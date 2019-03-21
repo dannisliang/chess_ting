@@ -65,5 +65,6 @@ class Definition{
     public static $EMAIL_LIST = 'api/email_list.php'; //运营中心获取邮件列表
     public static $EMAIL_DETAIL = '/api/email_detail.php'; //运营中心获取邮件详情
     public static $EMAIL_DELETE = '/api/email_del.php'; //运营中心删除邮件列表地址
+    public static $EMAIL_DELETE_MORE = '/api/email_del_list.php';//运营中心批量删除邮件
 }
 

@@ -190,137 +190,44 @@ class Mail extends Base
                 guzzleRequest($url,$url_area,$datadel);
             }
             Log::write($result,'$result_$resultdetail');
-            return json(['code' => 0, 'mess' => '请求成功', 'data' => $result]);
+            return jsonRes( 0 , $result);
         } else {
-            return json(['code' => 3004, 'mess' => '获取失败']);
+            return jsonRes( 3004 );
         }
-        /*
-         * $data['appid'] = CESHI_APPID;
-        $data['id'] = $post['mail_id'];
-        $data['playerId'] = Session::get('player');
-        $data = json_encode($data);
-        Log::write($data,'data_opt');
-        $url = WEB_USER_URL .'/api/email_detail.php';
-        $list = postInterface($url, $data);
-        $list = json_decode($list, true);
-        Log::write($list,'email_detail');
-        if ($list['code'] == 0) {
-            $sender = $list['data']['sender'];
-            if($sender == 0){
-                $email_type = 1;
-            }else{
-                //如果不是,获取俱乐部的得名字
-                $club_name = getCLubName($sender);
-                $email_type = 2;
-                $result['club_name'] = $club_name;
-            }
-
-            if ($list['data']['content'] == '') {
-                $content = '';
-            } else {
-                $content = $list['data']['content'];
-            }
-            if ($list['data']['goods'] == '') {
-                $result['rewards'] = '';
-            } else {
-                $goods = $list['data']['goods'];
-                $goods = json_decode($goods,true);
-                $goods_name = array();
-                $goods_counts = array();
-                foreach ($goods as $k=>$v){
-                    array_push($goods_name,$k);
-                    array_push($goods_counts,$v);
-                }
-                $new_goods = array();
-                for ($i=0;$i<count($goods_name);$i++){
-                    $goods_type = $goods_name[$i];
-                    if(strpos("$goods_type",'_') !== false){
-                        //'包含_';
-                        $opt = explode('_',"$goods_type");
-
-                        $vip_id = $opt[1];
-                        $num = count($opt);
-                        if($num==3){
-                            //说明是绑钻
-                            $new_goods[$i]['good_name'] = 10002;
-                            $new_goods[$i]['good_counts'] = $goods_counts[$i];
-                        }else{
-                            //说明是VIP卡
-                            $new_goods[$i]['good_name'] = 10004;
-                            $new_goods[$i]['vip_id'] = (int)$vip_id;
-                            $new_goods[$i]['good_counts'] = $goods_counts[$i];
-                            $vip_id = $opt[1];
-                            //查出vip卡的图片
-                            $vip_opt = Db::query("SELECT icon FROM tb_vip_card WHERE vip_id = $vip_id");
-                            $vip_icon = $vip_opt[0]['icon'];
-                            $new_goods[$i]['vip_icon'] = "https://tjmahjong.chessvans.com//GMBackstage/public/"."$vip_icon";
-                        }
-                    }else{
-                        $new_goods[$i]['good_name'] = $goods_name[$i];
-                        $new_goods[$i]['good_counts'] = $goods_counts[$i];
-                    }
-                }
-                $result['rewards'] = $new_goods;
-            }
-            $result['content'] = $content;
-            $result['email_type'] = $email_type;
-            $liujinyon = $list['data'];
-
-            $read_status = $liujinyon['read_status'];
-            $recive_statua = $liujinyon['receive_status'];
-
-
-            if($read_status ==1 && $recive_statua ==1){
-                //都为1则删除
-                $url = WEB_USER_URL .'/api/email_del.php';
-
-                $datadel['appid'] = CESHI_APPID;
-                $datadel['id'] = $post['mail_id'];
-                $datadel = json_encode($datadel);
-
-                postInterface($url,$datadel);
-
-            }elseif($read_status ==1 && $liujinyon['goods'] == ''){
-                $url = WEB_USER_URL .'/api/email_del.php';
-
-                $datadel['appid'] = CESHI_APPID;
-                $datadel['id'] = $post['mail_id'];
-                $datadel = json_encode($datadel);
-
-                postInterface($url,$datadel);
-
-            }
-            Log::write($result,'$result_$resultdetail');
-            return json(['code' => 0, 'mess' => '请求成功', 'data' => $result]);
-        } else {
-            return json(['code' => 3004, 'mess' => '获取失败']);
-        }*/
-        /*接受的数据
-     *{"mail_id":10555} */
-        /*返回的邮件详情数据
-         * array (
-       'rewards' =>
-      array (
-        0 =>
-        array (
-          'good_name' => 10002,
-          'good_counts' => '1111',
-        ),
-         ),
-        'content' => '12312asd',
-        'email_type' => 1,
-        )*/
-
 
     }
     /**
      *删除邮件
      * @param
      */
-    public function delete($mail_id = ''){
-        if(!$mail_id){
-            $mail_id = $this->opt(['mail_id']);
+    public function delete(){
+        $data['appid'] = Definition::$CESHI_APPID;//游戏的appID
+        $id = $this->opt(['mail_id']);
+        $data['id'] = $id;//邮件的ID
+        $player_opt = getUserSessionInfo();
+        $player = $player_opt['uid'];
+        $url = Definition::$WEB_USER_URL;//运营中心的域名
+        if($id == '0'){
+            //查询该玩家所有的邮件,然后再循环获取所有邮件的id数组
+            $url_area = Definition::$EMAIL_LIST;//邮件列表
+            $appid = Definition::$CESHI_APPID;
+            $datas['appid'] = $appid;//appid
+            $datas['recipient'] = $player;//玩家的ID
+            $email_list = guzzleRequest($url,$url_area,$datas);//玩家的邮件列表
+            $mail_list = array();
+            for($i=0;$i<count($email_list['data']);$i++){
+                $mail_list[$i] = $email_list['data'][$i]['id'];
+            }
+            $del_url = Definition::$EMAIL_DELETE_MORE;//批量删除
+            $data['ids'] = $mail_list;
+        }else{
+            $del_url = Definition::$EMAIL_DELETE;//单独删除
         }
-
+        $list = guzzleRequest($url,$del_url,$data);
+        if ($list['code'] == 0) {
+            return jsonRes(0);
+        } else {
+            return jsonRes(3004);
+        }
     }
 }
