@@ -33,19 +33,6 @@ function jsonRes($code, $data = [] ){
 }
 
 /**
- * 获取用户的session数据
- * @return mixed   {’nickname’:’昵称’,’sex’:1,’province’:’省份’,’city’:’城市’,’country’:’国家’,’headimgurl’:’头像图片url’}  'userid'  '1'
- */
-function getUserSessionInfo(){
-    $userInfo = Session::get(RedisKey::$USER_SESSION_INFO);
-    if(!$userInfo){
-        return json(['code'=>9999, 'mess' => '请重新登录'])->send();
-        exit();
-    }
-    return $userInfo;
-}
-
-/**
  * 检查用户token是否有效
  * @return mixed ture/false
  */
