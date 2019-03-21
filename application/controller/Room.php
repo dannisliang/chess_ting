@@ -25,12 +25,7 @@ use app\model\UserClubModel;
 
 class Room extends Base
 {
-    # 玩家加入房间回调完成
-    public function joinRoomCallBack()
-    {
-        return jsonRes(0);
-    }
-    # 强制解散玩家房间完成  还钻没有完成
+    # 强制解散玩家房间完成
     public function disBandRoom(){
         if(!isset($this->opt['uid']) || !is_numeric($this->opt['uid'])){
             return jsonRes(3006);
@@ -130,21 +125,19 @@ class Room extends Base
             }
         }
 
-        # 还钻
-        if(isset($roomHashInfo['clubId']) && isset($roomHashInfo['roomPlayInfo']) && isset($roomHashInfo['clubType']) && ($roomHashInfo['clubType'] == 1) && isset($roomHashInfo['needDiamond']) && isset($roomHashInfo['roomOptionsId'])){
-            $roomPlayInfo = json_decode($roomHashInfo['roomPlayInfo'], true);
-            if(is_array($roomPlayInfo)){ # 判断是否是数组
-                $round = count($roomPlayInfo);
-                if($round < 1){ # 一局都没玩
-                    $propertyType = $roomHashInfo['clubId'].'_'.$roomHashInfo['roomOptionsId'].'_'.Definition::$USER_PROPERTY_PRESIDENT;
-                    operaUserProperty($roomHashInfo['roomOptionsId'], $propertyType, $roomHashInfo['needDiamond']);
-                }
+        # 房主模式还钻
+        if(isset($roomHashInfo['clubId']) && isset($roomHashInfo['roomPlayInfo']) && isset($roomHashInfo['clubType']) && isset($roomHashInfo['needDiamond']) && isset($roomHashInfo['roomOptionsId'])){
+            if(!$roomHashInfo['roomPlayInfo'] && ($roomHashInfo['clubType'] == 1)){ # 房主模式没有对局还钻
+                $propertyType = $roomHashInfo['clubId'].'_'.$roomHashInfo['roomOptionsId'].'_'.Definition::$USER_PROPERTY_PRESIDENT;
+                operaUserProperty($roomHashInfo['roomOptionsId'], $propertyType, $roomHashInfo['needDiamond']);
             }
         }
+
         return jsonRes(3507);
     }
     # 获取gps相关信息完成
     public function getRoomGpsInfo(){
+        # 根据房间ID获取
         if(isset($this->opt['room_id']) && is_numeric($this->opt['room_id'])){
             $redis = new Redis();
             $redisHandle = $redis->handler();
@@ -159,6 +152,7 @@ class Room extends Base
             return jsonRes(0, $returnData);
         }
 
+        # 根据房间规则ID获取
         if(isset($this->opt['match_id']) && is_numeric($this->opt['match_id'])){
             $roomOptions = new RoomOptionsModel();
             $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
@@ -666,6 +660,11 @@ class Room extends Base
         }
 
         return jsonRes(0, $returnData);
+    }
+    # 玩家加入房间回调完成
+    public function joinRoomCallBack()
+    {
+        return jsonRes(0);
     }
     # 玩家退出房间回调完成
     public function outRoomCallBack(){
