@@ -357,8 +357,7 @@ class Room extends Base
             $serviceRoomNumArr = [];
             $userRoom = new UserRoomModel();
             foreach ($gameServiceNewInfos as $k => $v){
-                $serviceRoomNum = $userRoom->getServiceRoomNumByServiceId($v['service_id']);
-                $serviceRoomNumArr[$v['service_id']] = $serviceRoomNum;
+                $serviceRoomNumArr[$v['service_id']] = $userRoom->getServiceRoomNumByServiceId($v['service_id']);
             }
             $serviceId = array_search(min($serviceRoomNumArr), $serviceRoomNumArr);
             $serviceGatewayNew = new ServiceGatewayNewModel();
@@ -389,9 +388,9 @@ class Room extends Base
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
         $createRoomInfo = sendHttpRequest($createRoomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
 //        p($createRoomInfo);
-        if(!$createRoomInfo || !isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
+        if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
             if($clubInfo['club_type'] == 1){ # 还钻
-                operaUserProperty($clubInfo['president_id'], $propertyType, $needDiamond);
+                operaUserProperty($clubInfo['president_id'], $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT, $needDiamond);
             }
             return jsonRes(23205);
         }
@@ -406,7 +405,7 @@ class Room extends Base
         if(isset($diamondInfo)){
             $playerInfos[$userSessionInfo['userid']]['needDiamond'] = $diamondInfo;
         }
-        $redisHashValue = [
+        $roomHashValue = [
             'createTime' => date('Y-m-d H:i:s'), # 房间创建时间
             'needUserNum' => $needUserNum, # 房间需要的人数
             'serviceId' => $serviceId, # 服务器ID
@@ -429,19 +428,19 @@ class Room extends Base
             'gpsRange' => $clubInfo['gps'] # gps检测距离
         ];
 
-        # 写房间hash
-        $hSetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $redisHashValue);
+        # 写房间hash 写失败记录日志
+        $hSetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $roomHashValue);
         if(!$hSetRes){ # 写日志
             $errorData = [
                 $roomNumber,
             ];
-            foreach ($redisHashValue as $v){
+            foreach ($roomHashValue as $v){
                 $errorData[] = $v;
             }
             errorLog(Definition::$SET_ROOM_HASH, $errorData);
         }
 
-        # 写用户房间 使用redis锁处理
+        # 写用户房间 使用redis锁处理 写失败记录日志
         $getLock = false;
         $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
@@ -455,16 +454,10 @@ class Room extends Base
             }
         }
         if($getLock){
-            $setUserRoom = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'], $roomNumber);
+            $setUserRoomRes = $redisHandle->set(RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'], $roomNumber);
             $redisHandle->del($lockKey); # 解锁
-            if(!$setUserRoom){ # 写日志
-                $errorData = [
-                    $userSessionInfo['userid'],
-                    $roomNumber
-                ];
-                errorLog(Definition::$SET_USER_ROOM, $errorData);
-            }
-        }else{
+        }
+        if(!isset($setUserRoomRes) || !$setUserRoomRes){
             $errorData = [
                 $userSessionInfo['userid'],
                 $roomNumber
@@ -476,7 +469,7 @@ class Room extends Base
         $sAddRes = $redisHandle->sadd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
         if(!$sAddRes){ # 写日志
             $errorData = [
-                RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'],
+                $this->opt['club_id'],
                 $roomNumber
             ];
             errorLog(Definition::$ADD_CLUB_ROOM, $errorData);
