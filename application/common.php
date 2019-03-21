@@ -267,12 +267,24 @@ function errorLog($errorType, $data){
  * @return mixed
  */
 function getUserIdFromSession(){
-    Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
-    $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
-    if(!$user_id){
+    //杨腾飞调试专用
+    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
+    $user_info = json_decode($user_info,true);
+    if(!is_array($user_info)){
+        $user_info = [];
+    }
+    Session::set(RedisKey::$USER_SESSION_INFO,json_encode(array_merge($user_info,['player_id'=>328946])));
+
+    try{
+        $user_id = json_decode(Session::get(RedisKey::$USER_SESSION_INFO),true)['player_id'];
+
+        if(!$user_id){
+            return false;
+        }
+        return $user_id;
+    }catch (\Exception $e){
         return false;
     }
-    return $user_id;
 }
 
 /**
@@ -291,5 +303,43 @@ function checkToken($data){
     $pathInfo = Definition::$AUTHENTICATE;
     $result = guzzleRequest( $url , $pathInfo , $data );
     return $result;
+}
+
+/**
+ * 返回用户昵称
+ * @param $player_id
+ * @return mixed
+ */
+function backNickname($player_id){
+    $user_session_info = json_decode(Session::get(RedisKey::$USER_SESSION_INFO),true);
+    if(isset($user_info['nick_name'])){
+        $nick_name = $user_session_info['nick_name'];
+    }else{
+        $data = [
+            'uid'=>$player_id,
+            'app_id'=>Definition::$CESHI_APPID,
+        ];
+        $url = Definition::$WEB_API_URL;
+        $path_info = Definition::$GET_INFO;
+        $user_info = guzzleRequest($url , $path_info , $data);
+        $nick_name = $user_info['data']['nickname'];
+        //再存入session
+        if(!is_array($user_session_info)){
+            $user_session_info = [];
+        }
+        $user_info = array_merge($user_session_info,['nick_name'=>base64_decode($nick_name)]);
+        Session::set(RedisKey::$USER_SESSION_INFO,json_encode($user_info));
+    }
+    return $nick_name;
+}
+
+/**
+ * 从session中获取信息
+ * @param $key
+ * @return array
+ */
+function sessionInfo($key){
+    $info = json_decode(Session::get($key),true);
+    return $info;
 }
 

@@ -19,8 +19,6 @@ class ClubVipModel extends Model
      * 获取俱乐部的vip卡详情
      * @param $club_id
      * @return false|\PDOStatement|string|\think\Collection
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
     public function getClubVipCard($club_id){
@@ -29,5 +27,16 @@ class ClubVipModel extends Model
             ->where('a.club_id',$club_id)
             ->field('*')
             ->select();
+    }
+
+    /**
+     * 根据条件获取一条记录
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field)->find();
     }
 }
