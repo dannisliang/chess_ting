@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: 杨腾飞
  * Date: 2019/3/20
  * Time: 17:37
  */
@@ -23,6 +23,17 @@ class ClubShopModel extends Model
      * @throws \think\exception\DbException
      */
     public function getSomeByWhere($where , $order = ''){
-        $this -> where($where) -> order($order) -> select();
+       return $this -> where($where) -> order($order) -> select();
+    }
+
+    /**
+     * 根据条件查询一条记录
+     * @param $where
+     * @param $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) ->find();
     }
 }

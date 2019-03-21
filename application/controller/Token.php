@@ -48,7 +48,14 @@ class Token extends Base
             return jsonRes(3002);
         }
         //验证完成的信息存入session
-        Session::set(RedisKey::$USER_SESSION_INFO, $this->opt);
+        $user_info = [
+            'client_type'   => $this -> opt['client_type'],
+            'player_id'     => $this -> opt['player_id'],
+            'app_type'      => $this -> opt['app_type'],
+            'token'         => $this -> opt['token'],
+            'ip'            => $ip,
+        ];
+        Session::set(RedisKey::$USER_SESSION_INFO, json_encode($user_info));
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()
