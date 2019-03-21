@@ -21,6 +21,7 @@ use app\model\GameServiceNewModel;
 use app\model\UserRoomModel;
 use app\model\ServiceGatewayNewModel;
 use think\Session;
+use app\model\UserClubModel;
 
 class Room extends Base
 {
@@ -78,9 +79,9 @@ class Room extends Base
         }
 
         # 清数据
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomId, ['clubId', 'playerInfos']);
-        if(isset($roomHashInfo['clubId'])){
-            $sRemRes = $redisHandle->sRem($roomHashInfo['clubId'], $roomId);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomId, ['clubId', 'playerInfos', 'roomPlayInfo', 'clubType', 'needDiamond', 'roomOptionsId']);
+        if(isset($roomHashInfo['clubId']) && $roomHashInfo['clubId']){
+            $sRemRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $roomId);
             if(!$sRemRes){
                 $errorData = [
                     $roomHashInfo['clubId'],
@@ -90,7 +91,7 @@ class Room extends Base
             }
         }
 
-        if(isset($roomHashInfo['playerInfos'])){
+        if(isset($roomHashInfo['playerInfos']) && $roomHashInfo['playerInfos']){
             # 加锁删用户所在房间的记录
             $roomUserInfos = json_decode($roomHashInfo['playerInfos'], true);
             foreach ($roomUserInfos as $userId => $val){
@@ -125,6 +126,18 @@ class Room extends Base
                         $roomId
                     ];
                     errorLog(Definition::$DEL_USER_ROOM, $errorData);
+                }
+            }
+        }
+
+        # 还钻
+        if(isset($roomHashInfo['clubId']) && $roomHashInfo['clubId'] && isset($roomHashInfo['roomPlayInfo']) && $roomHashInfo['roomPlayInfo'] && isset($roomHashInfo['clubType']) && $roomHashInfo['clubType'] && ($roomHashInfo['clubType'] == 1) && isset($roomHashInfo['needDiamond']) && $roomHashInfo['needDiamond'] && isset($roomHashInfo['roomOptionsId']) && $roomHashInfo['roomOptionsId']){
+            $roomPlayInfo = json_decode($roomHashInfo['roomPlayInfo'], true);
+            if(is_array($roomPlayInfo)){ # 判断是否是数组
+                $round = count($roomPlayInfo);
+                if($round < 1){ # 一局都没玩
+                    $propertyType = $roomHashInfo['clubId'].'_'.$roomHashInfo['roomOptionsId'].'_'.Definition::$USER_PROPERTY_PRESIDENT;
+                    operaUserProperty($roomHashInfo['roomOptionsId'], $propertyType, $roomHashInfo['needDiamond']);
                 }
             }
         }
@@ -197,25 +210,23 @@ class Room extends Base
     }
     # 创建房间完成
     public function createRoom(){
+        $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa'];
+        Session::set(RedisKey::$USER_SESSION_INFO, $sess);
+
         # 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id']) || !is_numeric($this->opt['match_id']) || !is_numeric($this->opt['club_id'])){
             return jsonRes(3006);
         }
 
-//        删掉
-//        $this->opt['match_id'] = roomOptionId (各种玩法相关数据)
-//        $this->opt['club_id'] = clubId (俱乐部相关数据)
-        $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1'];
-        Session::set(RedisKey::$USER_SESSION_INFO, $sess);
-
         # 获取用户的session数据
-        $userSessionInfo = getUserSessionInfo();
+        $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
 
-//        # 检查用户登录状态
-//        $checkUserToken = checkUserToken($userSessionInfo);
-//        if($checkUserToken || !isset($checkUserToken['result']) || !$checkUserToken['result']){
-//            return jsonRes(9999);
-//        }
+        # 查询玩家是否加入此俱乐部
+        $userClub = new UserClubModel();
+        $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
+        if(!$userClubInfo){
+            return jsonRes(3511);
+        }
 
         # 根据俱乐部ID获取俱乐部相关数据
         $club = new ClubModel();
@@ -272,56 +283,52 @@ class Room extends Base
                 $vipCard = new VipCardModel();
                 $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($userVipInfo['vid']);
                 if($vipCardInfo){
-                    $discount = bcdiv($vipCardInfo['diamond_consumption'], 100, 1);
-                    $needDiamond = bcmul($needDiamond, $discount, 0);
+                    $needDiamond = bcmul($needDiamond, bcdiv($vipCardInfo['diamond_consumption'], 100, 1), 0);
                 }
             }
 
             # 获取非绑定钻石数 判断是否能够开房
-            $diamondNum = 0;
-            $propertyType = Definition::$USER_PROPERTY_TYPE_NOT_BINDING;
-            $diamondInfo = getUserProperty($userSessionInfo['userid'], $propertyType);
-
-            if($diamondInfo && isset($diamondInfo['data'][0]['property_num'])){
-                $diamondNum = $diamondInfo['data'][0]['property_num'];
-            }
-            if($diamondNum < $needDiamond){
-                $diamondInfo['noBind'] = $diamondNum; # 用于结算
-                $bindingDiamondNum = 0;
-                $propertyType = Definition::$USER_PROPERTY_TYPE_BINDING;
-                $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], $propertyType);
-                if($bindingDiamondInfo && isset($bindingDiamondInfo['data'][0]['property_num'])){
-                    $bindingDiamondNum = $bindingDiamondInfo['data'][0]['property_num'];
-                }
-                $userAllDiamond = bcadd($bindingDiamondNum, $diamondNum, 0);
-                if($userAllDiamond < $needDiamond){
-                    $resData['need_diamond'] = $needDiamond;
-                    return jsonRes(23401, $resData);
-                }else{
-                    $diamondInfo['bind'] = bcsub($needDiamond, $diamondInfo['noBind'], 0);
-                }
+            $diamondInfo = getUserProperty($userSessionInfo['userid'], Definition::$USER_PROPERTY_TYPE_NOT_BINDING);
+            if(!isset($diamondInfo['data'][0]['property_num'])){
+                $returnData = [
+                    'need_diamond' => $needDiamond
+                ];
+                return jsonRes(23401, $returnData);
             }else{
-                $diamondInfo['noBind'] = $diamondNum;
+                if($diamondInfo['data'][0]['property_num'] >= $needDiamond){
+                    $diamondInfo['noBind'] = $needDiamond; # 用于结算
+                }else{
+                    $diamondInfo['noBind'] = $diamondInfo['data'][0]['property_num']; # 用于结算
+                    $bindingDiamondInfo = getUserProperty($userSessionInfo['userid'], Definition::$USER_PROPERTY_TYPE_BINDING);
+                    if(!isset($bindingDiamondInfo['data'][0]['property_num'])){
+                        $returnData = [
+                            'need_diamond' => $needDiamond
+                        ];
+                        return jsonRes(23401, $returnData);
+                    }else{
+                        $userAllDiamond = bcadd($bindingDiamondInfo['data'][0]['property_num'], $diamondInfo['data'][0]['property_num'], 0);
+                        if($userAllDiamond >= $needDiamond){
+                            $diamondInfo['bind'] = bcsub($needDiamond, $diamondInfo['noBind'], 0);
+                        }else{
+                            $returnData = [
+                                'need_diamond' => $needDiamond
+                            ];
+                            return jsonRes(23401, $returnData);
+                        }
+                    }
+                }
             }
         }
 
         # 扣会长资产 判断会长资产是否充足 充足直接结算
-        if($clubInfo['club_type'] == 1){
-            $userDiamond = 0;
-            $propertyType = $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT;
-            $diamondInfo = getUserProperty($clubInfo['president_id'], $propertyType);
-            if($diamondInfo && isset($diamondInfo['data'][0]['property_num'])){
-                $userDiamond = $diamondInfo['data'][0]['property_num'];
-            }
-            if($userDiamond < $needDiamond){
-                $resData['need_diamond'] = $needDiamond;
-                return jsonRes(23401, $resData);
-            }else{ # 扣钻
-                $subDiamond = bcsub(0, $needDiamond, 0);
-                $operaRes = operaUserProperty($clubInfo['president_id'], $propertyType, $subDiamond);
-                if(!$operaRes || !isset($operaRes['code']) || ($operaRes['code'] != 0)){
-                    return jsonRes(23205);
-                }
+        if($clubInfo['club_type'] == 1){ # 直接扣钻
+            $subDiamond = bcsub(0, $needDiamond, 0);
+            $operaRes = operaUserProperty($clubInfo['president_id'], $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT, $subDiamond);
+            if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
+                $returnData = [
+                    'need_diamond' => $needDiamond
+                ];
+                return jsonRes(23401, $returnData);
             }
         }
 
