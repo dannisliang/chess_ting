@@ -8,6 +8,7 @@
 
 namespace app\controller;
 use app\definition\Definition;
+use app\model\ClubModel;
 use guzzle\GuzzleHttp;
 use think\Session;
 use app\definition\RedisKey;
@@ -105,7 +106,7 @@ class Mail extends Base
      */
     public function detail()
     {
-        $mail_id = $this->opt(['mail_id']);
+        $mail_id = 1055;//$this->opt(['mail_id']);
         $user_obj = getUserSessionInfo();
         $player_id = $user_obj['uid'];
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
@@ -116,12 +117,13 @@ class Mail extends Base
         $list = guzzleRequest($url,$url_area,$data);
         Log::write($list,'email_detail');
         if ($list['code'] == 0) {
-            $sender = $list['data']['sender'];
+            $sender = $list['data']['sender'];//发送的俱乐部ID
             if($sender == 0){
                 $email_type = 1;
             }else{
+                $club_obj = new ClubModel();
                 //如果不是,获取俱乐部的得名字
-                $club_name = getCLubName($sender);
+                $club_name =$club_obj->getClubNameById($sender);
                 $email_type = 2;
                 $result['club_name'] = $club_name;
             }
@@ -144,12 +146,12 @@ class Mail extends Base
                     array_push($goods_counts,$v);
                 }
                 $new_goods = array();
-                for ($i=0;$i<count($goods_name);$i++){
+                $foreach_num = count($goods_name);//物品的数量
+                for ($i=0;$i<$foreach_num;$i++){
                     $goods_type = $goods_name[$i];
                     if(strpos("$goods_type",'_') !== false){
                         //'包含_';
                         $opt = explode('_',"$goods_type");
-
                         $vip_id = $opt[1];
                         $num = count($opt);
                         if($num==3){
@@ -162,7 +164,7 @@ class Mail extends Base
                             $new_goods[$i]['vip_id'] = (int)$vip_id;
                             $new_goods[$i]['good_counts'] = $goods_counts[$i];
                             $vip_id = $opt[1];
-                            //查出vip卡的图片
+                            //查出vip卡的图片(实例化化模型)目前没有,自己单独查询
                             $vip_opt = Db::query("SELECT icon FROM tb_vip_card WHERE vip_id = $vip_id");
                             $vip_icon = $vip_opt[0]['icon'];
                             $new_goods[$i]['vip_icon'] = "https://tjmahjong.chessvans.com//GMBackstage/public/"."$vip_icon";
@@ -177,30 +179,15 @@ class Mail extends Base
             $result['content'] = $content;
             $result['email_type'] = $email_type;
             $liujinyon = $list['data'];
-
             $read_status = $liujinyon['read_status'];
             $recive_statua = $liujinyon['receive_status'];
-
-
-            if($read_status ==1 && $recive_statua ==1){
+            if(($read_status ==1 && $recive_statua ==1) || ($read_status ==1 && $liujinyon['goods'] == '')){
                 //都为1则删除
-                $url = WEB_USER_URL .'/api/email_del.php';
-
-                $datadel['appid'] = CESHI_APPID;
-                $datadel['id'] = $post['mail_id'];
-                $datadel = json_encode($datadel);
-
-                postInterface($url,$datadel);
-
-            }elseif($read_status ==1 && $liujinyon['goods'] == ''){
-                $url = WEB_USER_URL .'/api/email_del.php';
-
-                $datadel['appid'] = CESHI_APPID;
-                $datadel['id'] = $post['mail_id'];
-                $datadel = json_encode($datadel);
-
-                postInterface($url,$datadel);
-
+                $url = Definition::$WEB_USER_URL;
+                $url_area = Definition::$EMAIL_DELETE;
+                $datadel['appid'] = Definition::$CESHI_APPID;
+                $datadel['id'] = $mail_id;
+                guzzleRequest($url,$url_area,$datadel);
             }
             Log::write($result,'$result_$resultdetail');
             return json(['code' => 0, 'mess' => '请求成功', 'data' => $result]);
