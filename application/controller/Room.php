@@ -342,8 +342,8 @@ class Room extends Base
         if($clubSocketInfo){
             $serviceId = 1;
             $createRoomUrl = $clubSocketInfo['room_url'];
-            $returnArr['socket_h5'] = $clubSocket['socket_h5'];
-            $returnArr['socket_url'] = $clubSocket['socket_url'];
+            $returnArr['socket_h5'] = $clubSocketInfo['socket_h5'];
+            $returnArr['socket_url'] = $clubSocketInfo['socket_url'];
         }else{
             $gameServiceNew = new GameServiceNewModel();
             $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
@@ -765,13 +765,13 @@ class Room extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
         $changeRoomInfo = [
-            'joinStatus' => 2,
+            'joinStatus' => 2, # 游戏中
             'gameStartTime' => date('Y-m-d H:i:s', time())
         ];
-        $hSetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo); # 游戏中
+        $hSetRes = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
         if(!$hSetRes){
             $errorData = [
-                RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
+                $this->opt['roomId'],
             ];
             errorLog(Definition::$CHANGE_ROOM_STATUS, $errorData);
         }
@@ -811,7 +811,21 @@ class Room extends Base
     }
     # 房间游戏结束回调
     public function roomEndGameCallBack(){
+        if(!isset($this->opt['roomId']) || !$this->opt['roomId'] || !is_numeric($this->opt['roomId'])){
+            return jsonRes(3006);
+        }
 
+        # 修改房间的状态
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $hSetRes = $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'gameEndTime', date('Y-m-d H:i:s', time()));
+        if(!$hSetRes){
+            $errorData = [
+                $this->opt['roomId'],
+            ];
+            errorLog(Definition::$CHANGE_ROOM_STATUS, $errorData);
+        }
+        return jsonRes(0);
     }
     # 房间解散回调  加扣钻逻辑
     public function disBandRoomCallBack(){
