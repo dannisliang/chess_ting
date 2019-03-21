@@ -19,7 +19,15 @@ class GameServiceNewModel extends Model{
      * @return false|\PDOStatement|string|\think\Collection
      */
     public function getGameServiceNewInfosByRoomTypeId($roomType){
-        return $this->where('is_open', '=', 1)->where('room_type', '=', $roomType)->select();
+        return $this->where('is_open', '=', 1)->where('room_type', '=', $roomType)->distinct('service_id')->select();
+    }
+
+    /**
+     * 获取所有可连接的服务器
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getGameServiceNewInfos(){
+        return $this->where('is_open', '=', 1)->distinct('service_id')->select();
     }
 
     /**
