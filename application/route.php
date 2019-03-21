@@ -36,7 +36,8 @@ Route::rule('service/room/outRoom','Room/outRoomCallBack');
 /**
  * 商城相关
  */
-Route::rule('service/shop/shopDetail','shop/shopDetail');
+Route::rule('service/shop/shopDetail','shop/shopGoodsList'); //商城列表
+Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
 
 
 return [
