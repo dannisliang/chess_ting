@@ -38,6 +38,9 @@ Route::rule('service/room/outRoom','Room/outRoomCallBack');
  */
 Route::rule('service/shop/shopDetail','shop/shopGoodsList'); //商城列表
 Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
+Route::rule('service/shop/buygold','shop/buyGold'); //购买金币
+Route::rule('service/shop/orderPay','shop/orderPay'); //H5下单
+
 
 
 return [
