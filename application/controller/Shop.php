@@ -269,7 +269,7 @@ class Shop extends Base
     }
 
     /**
-     * H5下单
+     * H5下单 todo 测试服没有测
      * @return \think\response\Json\
      */
     public function orderPay(){
@@ -299,7 +299,7 @@ class Shop extends Base
             }
             $price  = $club_shop['price'];
             $type   = $club_shop['goods_type'];
-            $number = $club_shop['goods_number'];
+            $goods_number = $club_shop['goods_number'];
             $give_counts = $club_shop['give'];
             $goods_type  = 10001;
         }elseif (!empty($this->opt['vip_id'])){
@@ -309,19 +309,100 @@ class Shop extends Base
             }
             //如果表里的价格为0,再查tb_vip_card
             if(empty($club_vip['pricing'])){
-                //todo vip_card表后期会变
                 $vip_card = $vipCardModel -> getOneByWhere(['vip_id'=>$this -> opt['vip_id']]);
                 $price = $vip_card['price'];
             }
             $type = $this->opt['club_id'] . '_' . $this->opt['vip_id'];
-            $number = 1;
+            $goods_number = 1;
             $give_counts = 0;
-            $shop_id = $this->opt['vip_id'];
         }else{
             return jsonRes(23407);
         }
 
-        var_dump($user_name);die;
+        //生成订单号 保证13位数字输出
+        $order_num  = str_pad(substr(time(),-7) . $user_id,13,'0',STR_PAD_RIGHT);
+        $time = date('Y-m-d H:i:s');
+        $ret_url = urlencode($ret_url);
+
+        //异步回调地址
+        $notify_url = 'https://tjmahjong.chessvans.com/tianjin_mahjong/service/shop/reciveOrder.php';
+        $notify_url = urlencode($notify_url);
+        switch ($type){
+            case 10001:
+                $goods_info = '钻石';
+                break;
+            case 10002:
+                $goods_info = '钻石';
+                break;
+            case 10000:
+                $goods_info = '金币';
+                break;
+            default:
+                if (!empty($type)){
+                    $goods_info = 'vip卡';
+                }else{
+                    return jsonRes(23407);
+                }
+                break;
+        }
+        $sign_data = [
+            'app_id' => Definition::$CESHI_APPID,
+            'cp_order_id'=> $order_num,
+            'fee' => $price,
+            'goods_inf' => $goods_info,
+            'notify_url' => $notify_url,
+            'ret_url' => $ret_url,
+        ];
+        //获取签名？应该
+        $sign = $this -> get_sign($sign_data , 'c80b7d337dc57d5d');
+        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
+
+        $result = sendHttpRequest( $url );
+        if(json_decode($result)['ErrCode'] != 0){
+            return jsonRes(3004);
+        }
+        //获取机型 和 类型
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        $client_type= $user_session_info['client_type'];
+        $app_type   = $user_session_info['app_type'];
+
+        $data = [
+            'id'            => $order_num,
+            'fee'           => $price,
+            'vip_id'        => $this ->opt['vip_id'],
+            'club_id'       => $this->opt['club_id'],
+            'player_id'     => $user_id,
+            'order_time'    => $time,
+            'product_id'    => $this->opt['shop_id'],
+            'give_count'    => $give_counts,
+            'goods_type'    => $goods_type,
+            'system_type'   => $client_type,//机型
+            'player_name'   => base64_encode($user_name),
+            'client_type'   => $app_type, //app还是H5
+            'product_amount'=> $goods_number,
+        ];
+        $orderModel = new OrderModel();
+        $result = $orderModel ->insertData($data);
+        if(!$result){
+            return jsonRes(3004);
+        }
+        return jsonRes(0,$order_num);
+    }
+
+    /**
+     * @param $data_list
+     * @param $secret
+     * @return string
+     */
+    private function get_sign($data_list,$secret){
+        ksort($data_list);
+        $sign_data = '';
+        foreach ($data_list as $k=>$v){
+            $sign_data .= $k.'='.$v.'&';
+        }
+        $sign_data = substr($sign_data, 0,strlen($sign_data) - 1);
+        $sign_data .= $secret;
+        return strtoupper(md5($sign_data));
     }
 
     /**

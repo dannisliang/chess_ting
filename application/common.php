@@ -68,7 +68,7 @@ function getUserProperty($userIds, $propertyType){
  * @param array $headers 请求头
  * @return mixed|\Psr\Http\Message\StreamInterface 记录超时日志 记录状态码非200日志 请求正确返回array
  */
-function sendHttpRequest($url, $data, $type = 'POST', $headers = [], $config = []){
+function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
 //        'connect_timeout' => 1, # 最长握手时间
