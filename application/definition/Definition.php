@@ -15,7 +15,7 @@ class Definition{
      */
     public static $WEB_USER_URL = 'http://192.168.9.18:5204/operator_center/'; //运营中心接口
     public static $WEB_API_URL  = 'http://192.168.9.18:5204/user_center/'; # 宋福旺接口
-    public static $INFORM_URL   = 'http://192.168.9.18:5204/notice_center/'; //运营中心接口
+    public static $INFORM_URL   = 'http://192.168.9.18:5204/notice_center/'; //通知中心接口
     public static $ROOM_URL     = 'http://192.168.9.18:9910/'; //王朝翠的接口
 
     public static $ZHENGSHI_APPID = ''; //正式服appid
@@ -48,7 +48,8 @@ class Definition{
     public static $AUTHENTICATE         = 'api/v3/authenticate.php'; # 用户中心验证token接口
     public static $CHECK_TOKEN_TIME     = 'api/v3/check_token_time.php'; # 用户中心检查用户token接口请求地址
     public static $GET_PLAYER_PROPERTY  = 'api/get_player_property.php'; # 用户中心获取用户资产接口
-    public static $RAISE_PLAYER_PROPERTY = 'api/raise_player_property.php'; # 操作用户资产
+    public static $RAISE_PLAYER_PROPERTY= 'api/raise_player_property.php'; # 操作用户资产
+    public static $PROPERTY_CHANGE      = 'api/property_change.php'; #修改用户资产（可增加减掉）
 
     /**
      * 逻辑服接口
@@ -63,6 +64,11 @@ class Definition{
      * 运营中心
      */
     public static $EMAIL_LIST = 'api/email_list.php'; //运营中心获取邮件列表
+
+    /**
+     * 通知中心接口
+     */
+    public static $SEND = 'api/send.php'; //发送数据接口
 
     /**
      * 日志
