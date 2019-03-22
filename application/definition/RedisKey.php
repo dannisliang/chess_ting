@@ -21,6 +21,4 @@ class RedisKey{
 
     public static $USER_ROOM_KEY = 'user_room_'; # 用户房间对应关系
 
-    public static $USE_VIP_CARD = 'use_vip_card'; # 使用vip卡加锁
-
 }

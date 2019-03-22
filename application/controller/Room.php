@@ -14,7 +14,7 @@ use app\model\PlayModel;
 use app\model\ClubModel;
 use think\cache\driver\Redis;
 use app\definition\RedisKey;
-use app\model\UserClubVipUseModel;
+use app\model\UserVipModel;
 use app\model\VipCardModel;
 use app\model\ClubSocketModel;
 use app\model\GameServiceNewModel;
