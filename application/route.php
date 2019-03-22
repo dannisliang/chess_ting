@@ -39,6 +39,12 @@ Route::rule('service/room/outRoom','Room/outRoomCallBack');
 Route::rule('service/shop/shopDetail','shop/shopGoodsList'); //商城列表
 Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
 
+/**
+ * vip卡相关
+ */
+Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
+
+
 
 return [
     '__pattern__' => [
