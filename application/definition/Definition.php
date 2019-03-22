@@ -76,5 +76,10 @@ class Definition{
     public static $CHANGE_ROOM_STATUS = 'changeRoomStatus'; # 修改房间状态 参数 房间ID
     public static $CHANGE_ROOM_PLAY = 'changeRoomPlay'; # 修改房间牌局记录 参数 房间ID
 
+    /**
+     * vip卡相关
+     */
+    public static $VIP_CARD_ALL_TYPE_NUM = 6; # vip卡的类型的总数
+
 }
 
