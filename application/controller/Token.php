@@ -55,7 +55,7 @@ class Token extends Base
             'token'         => $this -> opt['token'],
             'ip'            => $ip,
         ];
-        Session::set(RedisKey::$USER_SESSION_INFO, json_encode($user_info));
+        Session::set(RedisKey::$USER_SESSION_INFO, $user_info);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()

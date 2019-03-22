@@ -21,4 +21,8 @@ class VipCardModel extends Model{
     public function getVipCardInfoByVipCardId($vipCardId){
         return $this->where('vip_id', '=', $vipCardId)->find();
     }
+
+    public function getOneByWhere(){
+
+    }
 }

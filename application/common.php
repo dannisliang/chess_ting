@@ -68,7 +68,7 @@ function getUserProperty($userIds, $propertyType){
  * @param array $headers 请求头
  * @return mixed|\Psr\Http\Message\StreamInterface 记录超时日志 记录状态码非200日志 请求正确返回array
  */
-function sendHttpRequest($url, $data, $type = 'POST', $headers = [], $config = []){
+function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
 //        'connect_timeout' => 1, # 最长握手时间
@@ -241,6 +241,36 @@ function operaUserProperty($player, $type, $diamond){
 }
 
 /**
+ * 操作用户资产
+ * @param $player_id /用户id
+ * @param $type /资产类型
+ * @param $diamond /钻石
+ * @param $event_type /操作类型
+ * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
+ * @param $property_name /操作资产说明
+ * @return mixed
+ */
+function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_id ,$property_name){
+    $url      = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$PROPERTY_CHANGE;
+    $data = [
+        'app_id' => Definition::$CESHI_APPID,
+        'upinfo' => [
+            [
+                'uid'           => $player_id,
+                "property_type" => $type,
+                "change_num"    => $diamond,
+                'event_type'    => $event_type, //" + 或者 -  或者 update ",
+                "reason_id"     => $reason_id,
+                "property_name" => $property_name,
+            ]
+        ],
+    ];
+    $res = guzzleRequest($url , $pathInfo ,$data);
+    return $res;
+}
+
+/**
  * 写redis错误日志
  * @param $key
  */
@@ -273,6 +303,26 @@ function errorLog($errorType, $data){
 //        return false;
 //    }
 //}
+function getUserIdFromSession(){
+    //杨腾飞调试专用
+    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
+//    $user_info = json_decode($user_info,true);
+    if(!is_array($user_info)){
+        $user_info = [];
+    }
+    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
+
+    try{
+        $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
+
+        if(!$user_id){
+            return false;
+        }
+        return $user_id;
+    }catch (\Exception $e){
+        return false;
+    }
+}
 
 /**
  * 验证token
@@ -298,7 +348,7 @@ function checkToken($data){
  * @return mixed
  */
 function backNickname($player_id){
-    $user_session_info = json_decode(Session::get(RedisKey::$USER_SESSION_INFO),true);
+    $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
     if(isset($user_info['nick_name'])){
         $nick_name = $user_session_info['nick_name'];
     }else{
@@ -314,19 +364,11 @@ function backNickname($player_id){
         if(!is_array($user_session_info)){
             $user_session_info = [];
         }
-        $user_info = array_merge($user_session_info,['nick_name'=>base64_decode($nick_name)]);
-        Session::set(RedisKey::$USER_SESSION_INFO,json_encode($user_info));
+        $user_info = array_merge($user_session_info,['nick_name'=>$nick_name]);
+        Session::set(RedisKey::$USER_SESSION_INFO,$user_info);
     }
     return $nick_name;
 }
 
-/**
- * 从session中获取信息
- * @param $key
- * @return array
- */
-function sessionInfo($key){
-    $info = json_decode(Session::get($key),true);
-    return $info;
-}
+
 
