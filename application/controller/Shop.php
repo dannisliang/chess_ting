@@ -9,6 +9,7 @@
 namespace app\controller;
 
 
+use app\definition\Definition;
 use app\definition\RedisKey;
 use app\model\ClubShopModel;
 use app\model\ClubVipModel;
@@ -18,6 +19,7 @@ use app\model\VipCardModel;
 use think\Db;
 use think\Session;
 use think\cache\driver\Redis;
+use think\Log;
 
 class Shop extends Base
 {
@@ -147,7 +149,7 @@ class Shop extends Base
         $order_num  = str_pad(substr(time(),-7) . $user_id,13,'0',STR_PAD_RIGHT);
         $time       = date('Y-m-d H:i:s',time());
         $nick_name  = backNickname($user_id);
-        $user_session_info = sessionInfo(RedisKey::$USER_SESSION_INFO);
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         $client_type= $user_session_info['client_type'];
         $app_type   = $user_session_info['app_type'];
         $data = [
@@ -170,6 +172,240 @@ class Shop extends Base
             return jsonRes(3004);
         }
         return jsonRes(0,$order_num);
+    }
+
+    /**
+     * 购买金币
+     * @return \think\response\Json\
+     */
+    public function buyGold(){
+        $user_id = $this -> user_id;
+        $opt = ['item_id'];
+        if(!has_keys($opt ,$this ->opt)){
+            return jsonRes(3006);
+        }
+        $clubShopModel = new ClubShopModel();
+        //获取商品内容
+        $club_shop = $clubShopModel ->getOneByWhere(['id'=>$this->opt['item_id']]);
+        $userProperty = getUserProperty($user_id , [10001,10002]);
+        $buyDiamond = 0; $freeDiamond = 0;
+        foreach ($userProperty['data'] as $property){
+            switch ($property['property_type']){
+                case 10001: //购买蓝钻
+                    $buyDiamond += $property['property_num'];
+                    break;
+                case 10002: //赠送蓝钻
+                    $freeDiamond += $property['property_num'];
+                    break;
+                default:
+                    break;
+            }
+        }
+        //钻石不够判断
+        if($buyDiamond + $freeDiamond < $club_shop['price']){
+            return jsonRes(3201);
+        }
+        //先扣购买蓝钻
+        if($buyDiamond >= $club_shop['price']){
+            $result = operateUserProperty($user_id,10001,$club_shop['price'], '-', 4,'购买蓝钻购买金币');
+            if($result['code'] != 0){
+                return jsonRes(23401);
+            }
+            //增加用户的金币
+            $gold = $club_shop['goods_number'] + $club_shop['give'];
+            $results = operaUserProperty($user_id,10002 , $gold , '+' , 4,'蓝钻购买金币');
+            if($results['code'] != 0){
+                $res = operateUserProperty($user_id,10001,$club_shop['price'], '+', 4,'增加金币失败回滚');
+                if($res['code'] != 0){
+                    //回滚失败
+                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error1');
+                }
+            }
+        }else{
+            //购买钻不够的话先扣完购买钻再扣赠送钻
+            $result = operateUserProperty($user_id,10001,1, '-', 4,'购买蓝钻购买金币');
+            if($result['code'] != 0){
+                return jsonRes(23401);
+            }
+            $result = operateUserProperty($user_id,10002,1 , '-' , 4,'赠送蓝钻购买金币');
+            if($result['code'] != 0){
+                return jsonRes(23401);
+            }
+            //增加用户的金币
+            $gold = $club_shop['goods_number'] + $club_shop['give'];
+            $results = operaUserProperty($user_id,10000 , $gold , '+' , 4,'蓝钻购买金币');
+            if($results['code'] != 0){
+                $res = operateUserProperty($user_id,10002,$club_shop['price'] - $buyDiamond , '-' , 4,'赠送蓝钻购买金币');
+                if($res['code'] != 0 ){
+                    //回滚失败
+                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error2');
+                }
+                $result = operateUserProperty($user_id,10001,$buyDiamond, '-', 4,'购买蓝钻购买金币');
+                if($result['code'] != 0 ){
+                    //回滚失败
+                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error3');
+                }
+            }
+        }
+
+        //购买完成发送通知
+        $data = [
+            'content' => [
+                'gold'    => $gold,
+                'diamond' => $buyDiamond + $freeDiamond - $club_shop['price'],
+            ],
+            'type'   => 1092,
+            'sender' => 0,
+            'reciver'=> [
+                $user_id,
+            ],
+            'appid'  => Definition::$CESHI_APPID,
+        ];
+        $url        = Definition::$INFORM_URL;
+        $pathInfo   = Definition::$SEND;
+        $res = guzzleRequest($url , $pathInfo , $data);
+        if($res['code'] != 0){
+            Log::write(date('Y-m-d H:i:s'));
+        }
+
+        return jsonRes(0);
+    }
+
+    /**
+     * H5下单 todo 测试服没有测
+     * @return \think\response\Json\
+     */
+    public function orderPay(){
+        $user_id = $this ->user_id;
+        $opt = ['shop_id','vip_id','club_id','url_id'];
+        if(!has_keys($opt , $this->opt)){
+            return jsonRes(3006);
+        }
+
+        $clubShopModel = new ClubShopModel();
+        $clubVipModel  = new ClubVipModel();
+        $vipCardModel  = new VipCardModel();
+
+        $ret_url = 'https://tjmahjong.chessvans.com/h5/index.php';
+        if($this->opt['url_id']){
+            $ret_url = 'https://tjmahjong.chessvans.com/h5/index.php' . $this -> opt['url_id'];
+        }
+        $user_info = Session::get(RedisKey::$USER_SESSION_INFO); //这里可以获取client_type 和 app_type
+        $user_name = backNickname($user_id);
+
+
+        //根据传输的shop_id和vip_id查找商品数据
+        if(!empty($this->opt['shop_id'])){
+            $club_shop = $clubShopModel -> getOneByWhere(['id'=>$this->opt['shop_id']]);
+            if(!$club_shop){
+                return jsonRes(23407);
+            }
+            $price  = $club_shop['price'];
+            $type   = $club_shop['goods_type'];
+            $goods_number = $club_shop['goods_number'];
+            $give_counts = $club_shop['give'];
+            $goods_type  = 10001;
+        }elseif (!empty($this->opt['vip_id'])){
+            $club_vip  = $clubVipModel -> getOneByWhere(['vip_id'=>$this->opt['vip_id'],'club_id'=>$this->opt['club_id']]);
+            if(!$club_vip){
+                return jsonRes(23407);
+            }
+            //如果表里的价格为0,再查tb_vip_card
+            if(empty($club_vip['pricing'])){
+                $vip_card = $vipCardModel -> getOneByWhere(['vip_id'=>$this -> opt['vip_id']]);
+                $price = $vip_card['price'];
+            }
+            $type = $this->opt['club_id'] . '_' . $this->opt['vip_id'];
+            $goods_number = 1;
+            $give_counts = 0;
+        }else{
+            return jsonRes(23407);
+        }
+
+        //生成订单号 保证13位数字输出
+        $order_num  = str_pad(substr(time(),-7) . $user_id,13,'0',STR_PAD_RIGHT);
+        $time = date('Y-m-d H:i:s');
+        $ret_url = urlencode($ret_url);
+
+        //异步回调地址
+        $notify_url = 'https://tjmahjong.chessvans.com/tianjin_mahjong/service/shop/reciveOrder.php';
+        $notify_url = urlencode($notify_url);
+        switch ($type){
+            case 10001:
+                $goods_info = '钻石';
+                break;
+            case 10002:
+                $goods_info = '钻石';
+                break;
+            case 10000:
+                $goods_info = '金币';
+                break;
+            default:
+                if (!empty($type)){
+                    $goods_info = 'vip卡';
+                }else{
+                    return jsonRes(23407);
+                }
+                break;
+        }
+        $sign_data = [
+            'app_id' => Definition::$CESHI_APPID,
+            'cp_order_id'=> $order_num,
+            'fee' => $price,
+            'goods_inf' => $goods_info,
+            'notify_url' => $notify_url,
+            'ret_url' => $ret_url,
+        ];
+        //获取签名？应该
+        $sign = $this -> get_sign($sign_data , 'c80b7d337dc57d5d');
+        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
+
+        $result = sendHttpRequest( $url );
+        if(json_decode($result)['ErrCode'] != 0){
+            return jsonRes(3004);
+        }
+        //获取机型 和 类型
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        $client_type= $user_session_info['client_type'];
+        $app_type   = $user_session_info['app_type'];
+
+        $data = [
+            'id'            => $order_num,
+            'fee'           => $price,
+            'vip_id'        => $this ->opt['vip_id'],
+            'club_id'       => $this->opt['club_id'],
+            'player_id'     => $user_id,
+            'order_time'    => $time,
+            'product_id'    => $this->opt['shop_id'],
+            'give_count'    => $give_counts,
+            'goods_type'    => $goods_type,
+            'system_type'   => $client_type,//机型
+            'player_name'   => base64_encode($user_name),
+            'client_type'   => $app_type, //app还是H5
+            'product_amount'=> $goods_number,
+        ];
+        $orderModel = new OrderModel();
+        $result = $orderModel ->insertData($data);
+        if(!$result){
+            return jsonRes(3004);
+        }
+        return jsonRes(0,$order_num);
+    }
+
+    /**
+     * @param $data_list
+     * @param $secret
+     * @return string
+     */
+    private function get_sign($data_list,$secret){
+        ksort($data_list);
+        $sign_data = '';
+        foreach ($data_list as $k=>$v){
+            $sign_data .= $k.'='.$v.'&';
+        }
+        $sign_data = substr($sign_data, 0,strlen($sign_data) - 1);
+        $sign_data .= $secret;
+        return strtoupper(md5($sign_data));
     }
 
     /**

@@ -539,6 +539,7 @@ class Club extends Base
                 '>',date('Y-m-d H:i:s',time())
             ]
         ];
+        //todo user_vip表删除
         $userVipInfo = $userVipModel -> getOneByWhere($where);
         if($userVipInfo){
             //拼接的数据
