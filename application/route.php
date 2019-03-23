@@ -24,9 +24,14 @@ Route::rule('service/room/joinRoom','Room/joinRoom');
 /**
  * 邮件相关
  */
-Route::rule('service/Mail/lists','mail/lists');
-Route::rule('service/Mail/detail','mail/detail');
-
+Route::rule('service/getMailList','mail/lists');
+Route::rule('service/GetMailDetail','mail/detail');
+Route::rule('service/Mail/delete','mail/delete');
+/*领取邮件里附加你接口地址service/reciveGoods*/
+/*跑马灯*/
+Route::rule('service/getBulletinList','HorseLamp/lists');
+/*公告*/
+Route::rule('service/getnotice','notice/lists');
 return [
     '__pattern__' => [
         'name' => '\w+',
