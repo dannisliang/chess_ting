@@ -270,4 +270,29 @@ function getUserIdFromSession(){
     $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
     return $user_id;
 }
+/**
+ * 操作文件
+ */
+function operaFile($path,$data,$type){
+    switch ($type){
+        case  'write':
+            $myfile = fopen("$path", "w") or die("Unable to open file!");
+            $txt = json_encode($data, JSON_UNESCAPED_UNICODE);//设置为中文不unicode
+            fwrite($myfile, $txt);
+            fclose($myfile);
+            break;
+        case 'read':
+            $str = file_get_contents($path);//将整个文件内容读入到一个字符串中
+            $str = str_replace("\r\n","<br />",$str);
+            $str = json_decode($str,true);
+            return $str;
+            break;
+        case 'creat':
+            break;
+        case 'delete':
+            break;
+        default:
+            return false;
+    }
+}
 
