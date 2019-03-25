@@ -45,4 +45,25 @@ class UserVipModel extends Model{
             return false;
         }
     }
+
+    /**
+     * 查用户俱乐部的vip卡
+     * @param $userId
+     * @param $clubId
+     * @param $vid
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getUserVipCardInfo($userId, $clubId, $vid){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vid', '=', $vid)->where('card_number', '>', 0)->find();
+    }
+
+    /**
+     * 查询用户俱乐部的所有可用vip卡
+     * @param $userId
+     * @param $clubId
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getUserAllVipCard($userId, $clubId){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('card_number', '>', 0)->select();
+    }
 }
