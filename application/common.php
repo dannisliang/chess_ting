@@ -244,7 +244,7 @@ function operaUserProperty($player, $type, $diamond){
  * 操作用户资产
  * @param $player_id /用户id
  * @param $type /资产类型
- * @param $diamond /钻石
+ * @param $diamond /数量
  * @param $event_type /操作类型
  * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
  * @param $property_name /操作资产说明
@@ -267,6 +267,28 @@ function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_
         ],
     ];
     $res = guzzleRequest($url , $pathInfo ,$data);
+    var_dump($res);die();
+    return $res;
+}
+
+/**
+ * 批量操作用户资产
+ * @param $player_id /用户id
+ * @param $type /资产类型
+ * @param $diamond /数量
+ * @param $event_type /操作类型
+ * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
+ * @param $property_name /操作资产说明
+ * @return mixed
+ */
+function operatePlayerProperty($data){
+    $url      = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$PROPERTY_CHANGE;
+    $info = [
+        'app_id' => Definition::$CESHI_APPID,
+        'upinfo' => $data,
+    ];
+    $res = guzzleRequest($url , $pathInfo , $info);
     return $res;
 }
 
@@ -283,26 +305,6 @@ function errorLog($errorType, $data){
  * 从session获取
  * @return mixed
  */
-//function getUserIdFromSession(){
-//    //杨腾飞调试专用
-//    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
-//    $user_info = json_decode($user_info,true);
-//    if(!is_array($user_info)){
-//        $user_info = [];
-//    }
-//    Session::set(RedisKey::$USER_SESSION_INFO,json_encode(array_merge($user_info,['player_id'=>328946])));
-//
-//    try{
-//        $user_id = json_decode(Session::get(RedisKey::$USER_SESSION_INFO),true)['player_id'];
-//
-//        if(!$user_id){
-//            return false;
-//        }
-//        return $user_id;
-//    }catch (\Exception $e){
-//        return false;
-//    }
-//}
 function getUserIdFromSession(){
     //杨腾飞调试专用
     $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
