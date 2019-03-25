@@ -31,7 +31,7 @@ class UserVipModel extends Model{
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function getOneByWhere($where){
+    public function getOneByJoinWhere($where){
 
         try{
             return $this -> where($where)
@@ -65,5 +65,35 @@ class UserVipModel extends Model{
      */
     public function getUserAllVipCard($userId, $clubId){
         return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('card_number', '>', 0)->select();
+    }
+
+    /**
+     * 获取一条数据
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
+    }
+
+    /**
+     * 根据条件更新数据
+     * @param $where
+     * @param $data
+     * @return UserVipModel
+     */
+    public function updateByWhere($where , $data){
+        return $this -> where($where) -> update($data);
+    }
+
+    /**
+     * 插入数据
+     * @param $data
+     * @return int|string
+     */
+    public function insertData($data){
+        return $this -> insert($data);
     }
 }
