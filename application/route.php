@@ -42,6 +42,12 @@ Route::rule('service/shop/buygold','shop/buyGold'); //购买金币
 Route::rule('service/shop/orderPay','shop/orderPay'); //H5下单
 
 
+/**
+ * vip卡相关
+ */
+Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
+
+
 
 return [
     '__pattern__' => [
