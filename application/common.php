@@ -48,7 +48,7 @@ function checkUserToken($userSessionInfo){
 /**
  * 获取用户资产
  * @param $userIds 用户ID或用户ID集
- * @param $propertyType 请求类型固定值
+ * @param $propertyType 请求类型固定值可以为数组
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
@@ -152,7 +152,7 @@ function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJson
 function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $roomOptionsInfoOptionsJsonDecode, $keyName){
 //    print_r($playInfoPlayJsonDecodeChecksGroup);die;
     $ret = '';
-    if(is_array($playInfoPlayJsonDecodeChecksGroup)){
+    if(is_array($playInfoPlayJsonDecodeChecksGroup) && is_array($roomOptionsInfoOptionsJsonDecode)){
         foreach($playInfoPlayJsonDecodeChecksGroup as $k => $v){
             if($k === $keyName){
                 if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
@@ -370,5 +370,25 @@ function backNickname($player_id){
     return $nick_name;
 }
 
+/**
+ * 批量操作用户资产
+ * @param $player_id /用户id
+ * @param $type /资产类型
+ * @param $diamond /数量
+ * @param $event_type /操作类型
+ * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
+ * @param $property_name /操作资产说明
+ * @return mixed
+ */
+function operatePlayerProperty($data){
+    $url      = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$PROPERTY_CHANGE;
+    $info = [
+        'app_id' => Definition::$CESHI_APPID,
+        'upinfo' => $data,
+    ];
+    $res = guzzleRequest($url , $pathInfo , $info);
+    return $res;
+}
 
 

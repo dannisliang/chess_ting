@@ -40,6 +40,7 @@ class Definition{
     public static $USER_PROPERTY_TYPE_BINDING = 10002; # 绑定钻石
     public static $USER_PROPERTY_TYPE_NOT_BINDING = 10001; # 非绑定钻石
     public static $USER_PROPERTY_PRESIDENT = 10003; # 会长资产
+    public static $PRESIDENT_REBATE = 10009; # 会长返利
 
     /**
      * 用户中心接口+++++++++++++++++++++++++++++++++++++++++++++++
