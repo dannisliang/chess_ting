@@ -389,6 +389,10 @@ class Shop extends Base
         return jsonRes(0,$order_num);
     }
 
+    public function reciveOrder(){
+
+    }
+
     /**
      * @param $data_list
      * @param $secret
