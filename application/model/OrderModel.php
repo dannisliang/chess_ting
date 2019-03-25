@@ -23,4 +23,23 @@ class OrderModel extends Model
     public function insertData($data){
         return $this -> insert($data);
     }
+
+    /**
+     * 根据条件查出一条数据
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this ->where($where) -> field($field) ->find();
+    }
+
+    /**
+     * 根据条件修改字段值
+     * @return OrderModel
+     */
+    public function setFieldByWhere($where , $field){
+        return $this -> where($where) ->update($field);
+    }
 }

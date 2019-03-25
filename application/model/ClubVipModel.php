@@ -39,4 +39,15 @@ class ClubVipModel extends Model
     public function getOneByWhere($where , $field = '*'){
         return $this -> where($where) -> field($field)->find();
     }
+
+    /**
+     * 根据条件某字段自减一
+     * @param $where
+     * @param $field
+     * @return int|true
+     * @throws \think\Exception
+     */
+    public function setDecByWhere($where , $field){
+        return $this -> where($where) ->setDec($field);
+    }
 }

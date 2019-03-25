@@ -25,15 +25,15 @@ class Shop extends Base
 {
     protected $user_id; //储存用户id
 
-//    public function _initialize()
-//    {
-//        parent::_initialize();
-//        $this -> user_id = getUserIdFromSession();
-//        if(!$this -> user_id){
-//            return json(['code'=>3400,'mess'=>'用户不存在'])->send();
-//            exit;
-//        }
-//    }
+    public function _initialize()
+    {
+        parent::_initialize();
+        $this -> user_id = getUserIdFromSession();
+        if(!$this -> user_id){
+            return json(['code'=>3400,'mess'=>'用户不存在'])->send();
+            exit;
+        }
+    }
 
     /**
      * 获取商城商品列表
@@ -390,10 +390,6 @@ class Shop extends Base
             return jsonRes(3004);
         }
         return jsonRes(0,$order_num);
-    }
-
-    public function reciveOrder(){
-
     }
 
     /**

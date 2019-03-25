@@ -41,6 +41,8 @@ Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
 Route::rule('service/shop/buygold','shop/buyGold'); //购买金币
 Route::rule('service/shop/orderPay','shop/orderPay'); //H5下单
 
+Route::rule('service/shop/reciveOrder','paySuccessCallBack/receiveOrder'); //支付订单回调
+
 
 /**
  * vip卡相关

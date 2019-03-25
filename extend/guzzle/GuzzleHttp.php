@@ -63,7 +63,6 @@ class GuzzleHttp
 
             $logInfo = date('Y-m-d H:i:s', time()) . '|' . '请求超时' . '|' . self::$url . $pathInfo;
             trace($logInfo);
-
             return false;
 
         }

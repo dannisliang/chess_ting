@@ -22,7 +22,14 @@ class VipCardModel extends Model{
         return $this->where('vip_id', '=', $vipCardId)->find();
     }
 
-    public function getOneByWhere(){
-
+    /**
+     * 根据条件获取一条数据
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
     }
 }
