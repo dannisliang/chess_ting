@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: 杨腾飞
  * Date: 2019/3/25
  * Time: 10:58
  */
@@ -77,6 +77,7 @@ class PaySuccessCallBack
         if(!$clubShop){
             return -1;
         }
+
         $data = [
             [
                 'player_id' => $order['player_id'],
@@ -95,9 +96,8 @@ class PaySuccessCallBack
                 'property_name' => '玩家购买钻石赠送数量'
             ]
         ];
-        //操作用户钻石增减
+        //操作用户钻石增减 cehsi
         $res = operateUserProperty($order['player_id'] ,10002,$clubShop['give'],'+',4,'sss');
-        var_dump($res);die();
         $operateRes = operatePlayerProperty($data);
         var_dump($operateRes);die();
         if($operateRes['code'] != 0){
@@ -136,8 +136,8 @@ class PaySuccessCallBack
         //先查看用户有没有这张卡,有的话修改,没有的话增加
         $userVipModel = new UserVipModel();
         $where = [
-            'uid' => $order['player_id'] ,
-            'vid' => $order['vip_id'] ,
+            'uid' => $order['player_id'],
+            'vid' => $order['vip_id'],
             'club_id' => $order['club_id']
         ];
         $user_vip = $userVipModel -> getOneByWhere(['uid' => $order['player_id'] , 'vid' => $order['vip_id'] , 'club_id' => $order['club_id']]);
