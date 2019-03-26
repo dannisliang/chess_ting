@@ -18,7 +18,6 @@ use app\model\UserVipModel;
 use app\model\VipCardModel;
 use app\model\ClubSocketModel;
 use app\model\GameServiceNewModel;
-use app\model\UserRoomModel;
 use app\model\ServiceGatewayNewModel;
 use think\Session;
 use app\model\UserClubModel;
@@ -26,222 +25,10 @@ use app\model\UserClubModel;
 
 class Room extends Base
 {
-    # 强制解散玩家房间完成 缺少扣钻还钻逻辑
-    public function disBandRoom(){
-        if(!isset($this->opt['uid']) || !is_numeric($this->opt['uid'])){
-            return jsonRes(3006);
-        }
 
-        $isDisBand = false; # 标记没有解散
-        $roomId = ''; # 房间ID
-
-        # 先在redis查找数据
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
-        if($userRoom){
-            $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$userRoom, 'roomUrl');
-            if($roomUrl){
-                # 请求逻辑服解散房间
-                $disBandRes = sendHttpRequest($roomUrl.Definition::$DIS_BAND_ROOM.$userRoom, ['playerId' => $this->opt['uid']]);
-                if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
-                    $isDisBand = true;
-                    $roomId = $userRoom;
-                }
-            }
-        }
-
-        # 依靠redis没能解散房间
-        if(!$isDisBand){
-            $gameServiceNew = new GameServiceNewModel();
-            $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
-            $serviceGatewayNew = new ServiceGatewayNewModel();
-            foreach ($gameServiceNewInfos as $k => $v){
-                $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($v['service_id']);
-                $userRoom = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$GET_USER_ROOM, ['playerId' => $this->opt['uid']]);
-                if($userRoom && isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
-                    $disBandRes = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $this->opt['uid']]);
-                    if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
-                        $isDisBand = true;
-                        $roomId = $userRoom['content']['roomId'];
-                    }
-                }
-            }
-        }
-
-        # 解散失败
-        if(!$isDisBand){
-            return jsonRes(3508);
-        }
-
-        # 清数据
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomId)){
-            return jsonRes(3507); # redis中没有房间数据 直接返回成功
-        }
-
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomId, ['clubId', 'playerInfos', 'roomPlayInfo', 'clubType', 'needDiamond', 'presidentId', 'set', 'round', 'generalRebate', 'seniorPresidentId', 'seniorRebate', 'roomRate']);
-        $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $roomId);
-        $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
-        # 加锁删用户所在房间的记录
-        if(is_array($playerInfo)){
-            foreach ($playerInfo as $k => $userInfo){
-                # 使用redis锁处理
-                $getLock = false;
-                $timeOut = bcadd(time(), 2, 0);
-                $lockKey = RedisKey::$USER_ROOM_KEY.$userInfo['userId'].'lock';
-                while(!$getLock){
-                    if(time() > $timeOut){
-                        break;
-                    }
-                    $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-                    if($getLock){
-                        break;
-                    }
-                }
-                if($getLock){
-                    if($redisHandle->get(RedisKey::$USER_ROOM_KEY.$userInfo['userId']) == $roomId){ # 判断用户当前房间是否是被解散的房间
-                        $redisHandle->del(RedisKey::$USER_ROOM_KEY.$userInfo['userId']); # 删除用户所在房间
-                    }
-                    $redisHandle->del($lockKey); # 解锁
-                }
-            }
-        }
-
-        # 房主模式还钻 玩家模式扣钻
-        if($roomHashInfo['clubType'] == 1){ # 会长模式 如果第一局没打完需要还钻
-            if((!$roomHashInfo['set']) && (!$roomHashInfo['round'])){
-                $operateData[] = [
-                    'uid' => $roomHashInfo['presidentId'],
-                    'event_type' => '+',
-                    'reason_id' => 8,
-                    'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
-                    'property_name' => '赠送蓝钻',
-                    'change_num' => $roomHashInfo['diamond']
-                ];
-                $res = operatePlayerProperty($operateData);
-                if(!isset($res['code']) || ($res['code'] != 0)){ # 还钻失败 记录日志
-                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
-                }
-            }
-        }
-
-        if($roomHashInfo['clubType'] == 0 && is_array($playerInfo)){ # 玩家模式
-            if($roomHashInfo['set'] || $roomHashInfo['round']){ # 第一句结束扣钻
-                # 组装扣钻数组
-                if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
-                    $userScore = [];
-                    foreach ($this->opt['statistics'] as $k => $v){
-                        $userScore[$v['playerId']] = $v['totalScore'];
-                    }
-                    $userId = array_search(max($userScore), $userScore);
-                    foreach ($playerInfo as $k => $userInfo){
-                        if($userInfo['userId'] == $userId){
-                            foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
-                                if($diamondType == 'bind'){
-                                    $operateData[] = [
-                                        'uid' => $userId,
-                                        'event_type' => '-',
-                                        'reason_id' => 7,
-                                        'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
-                                        'property_name' => '赠送蓝钻',
-                                        'change_num' => $diamondValue,
-                                    ];
-                                }
-                                if($diamondType == 'noBind'){
-                                    $operateData[] = [
-                                        'uid' => $userId,
-                                        'event_type' => '-',
-                                        'reason_id' => 7,
-                                        'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
-                                        'property_name' => '赠送蓝钻',
-                                        'change_num' => $diamondValue,
-                                    ];
-                                    $rebate = $diamondValue;
-                                }
-                            }
-                        }
-                    }
-                }
-                if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
-                    $operateData = [];
-                    $rebate = 0;
-                    foreach ($playerInfo as $k => $userInfo){
-                        foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
-                            if($diamondType == 'bind'){
-                                $operateData[] = [
-                                    'uid' => $userInfo['userId'],
-                                    'event_type' => '-',
-                                    'reason_id' => 7,
-                                    'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
-                                    'property_name' => '赠送蓝钻',
-                                    'change_num' => $diamondValue,
-                                ];
-                            }
-                            if($diamondType == 'noBind'){
-                                $operateData[] = [
-                                    'uid' => $userInfo['userId'],
-                                    'event_type' => '-',
-                                    'reason_id' => 7,
-                                    'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
-                                    'property_name' => '赠送蓝钻',
-                                    'change_num' => $diamondValue,
-                                ];
-                                $rebate = bcadd($rebate, $diamondValue, 0);
-                            }
-                        }
-                    }
-                }
-                # 组装扣钻数组结束
-
-                # 扣钻返利
-                if(isset($operateData)){
-                    $res = operatePlayerProperty($operateData);
-                    if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
-                        errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
-                    }
-                    if(isset($rebate)){ # 需要返利
-                        if($roomHashInfo['presidentId']){
-                            $generalChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['generalRebate'], 0), 100, 0);
-                            if($generalChangeNum > 0){
-                                $generalRebateData[] = [
-                                    'uid' => $roomHashInfo['presidentId'],
-                                    'event_type' => '+',
-                                    'reason_id' => 5,
-                                    'property_type' => Definition::$PRESIDENT_REBATE,
-                                    'property_name' => '赠送蓝钻',
-                                    'change_num' =>  $generalChangeNum# 普通会长返利,
-                                ];
-                                $res = operatePlayerProperty($generalRebateData);
-                                if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $generalRebateData);
-                                }
-                            }
-                        }
-
-                        if($roomHashInfo['seniorPresidentId']){
-                            $seniorChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['seniorRebate'], 0), 100, 0);
-                            if($seniorChangeNum > 0){
-                                $seniorRebateData[] = [
-                                    'uid' => $roomHashInfo['seniorPresidentId'],
-                                    'event_type' => '+',
-                                    'reason_id' => 5,
-                                    'property_type' => Definition::$PRESIDENT_REBATE,
-                                    'property_name' => '赠送蓝钻',
-                                    'change_num' => $seniorChangeNum, # 高级会长返利
-                                ];
-                                $res = operatePlayerProperty($seniorRebateData);
-                                if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $seniorRebateData);
-                                }
-                            }
-                        }
-                    }
-                }
-                # 扣钻返利结束
-            }
-        }
-        return jsonRes(3507);
-    }
+    /**
+     * 客户端
+     */
     # 获取gps相关信息完成
     public function getRoomGpsInfo(){
         # 根据房间ID获取
@@ -281,33 +68,6 @@ class Room extends Base
         }
 
         return jsonRes(3006); # 请求参数有误
-    }
-    # 查询玩家所在的房间完成
-    public function getUserRoom(){
-        if(!isset($this->opt['uid']) || !$this->opt['uid'] || !is_numeric($this->opt['uid'])){
-            return jsonRes(3006);
-        }
-
-        # 先在redis查
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
-        if($userRoom){
-            return jsonRes(0, [$userRoom]);
-        }
-
-        # 去逻辑服获取玩家所在房间
-        $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
-        $serviceGatewayNew = new ServiceGatewayNewModel();
-        foreach ($gameServiceNewInfos as $k => $v){
-            $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($v['service_id']);
-            $userRoom = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$GET_USER_ROOM, ['playerId' => $this->opt['uid']]);
-            if($userRoom && isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
-                return jsonRes(0, [$userRoom['content']['roomId']]);
-            }
-        }
-        return jsonRes(3509);
     }
     # 创建房间完成
     public function createRoom(){
@@ -371,8 +131,6 @@ class Room extends Base
             return jsonRes(3503);
         }
 
-
-
         # 根据俱乐部ID获取俱乐部socket通道
         $clubSocket = new ClubSocketModel();
         $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
@@ -400,6 +158,9 @@ class Room extends Base
             $socketUrl = $serviceGatewayNewInfo['gateway_app'];
         }
 
+        # 获取玩家vipID
+        $userVip = new UserVipModel();
+        $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
         # 计算房费
         $needDiamond = $roomOptionsInfo['diamond'];
         if($clubInfo['club_type'] == 0){
@@ -409,8 +170,6 @@ class Room extends Base
             }
 
             # 获取折扣
-            $userVip = new UserVipModel();
-            $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
             if($userVipInfo){
                 $vipCard = new VipCardModel();
                 $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($userVipInfo['vid']);
@@ -516,7 +275,9 @@ class Room extends Base
             'userId' => $userSessionInfo['userid'],
             'nickName' => $userSessionInfo['nickname'],
             'headImgUrl' => $userSessionInfo['headimgurl'],
-            'ipAddr' => $userSessionInfo['ip']
+            'ipAddr' => $userSessionInfo['ip'],
+            'sex' => $userSessionInfo['sex'],
+            'vipId' => isset($userVipInfo['vid']) ? $userVipInfo['vid'] : ''
         ];
         if(isset($diamondInfo)){
             $userInfo['needDiamond'] = $diamondInfo;
@@ -548,6 +309,11 @@ class Room extends Base
             'generalRebate' => $clubInfo['pin_drilling_ratio'], # 普通会长返利比
             'seniorPresidentId' => $clubInfo['senior_president'], # 高级会长ID
             'seniorRebate' => $clubInfo['rebate'], # 高级会长返利比
+            'gameStartTime' => '', # 房间开始时间
+            'gameEndTime' => '', # 房间结束时间
+            'set' => '', # 圈数
+            'round' => '', # 局数
+            'roomPlayInfo' => '', # 对局相关数据
         ];
 
         # 写房间hash 写失败记录日志
@@ -616,6 +382,9 @@ class Room extends Base
 //            return jsonRes(3511);
 //        }
 
+        # 获取玩家vip卡
+        $userVip = new UserVipModel();
+        $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
         # 计算房费
         $needDiamond = $roomHashInfo['diamond']; # 基础房费
         if($roomHashInfo['clubType'] == 0){
@@ -625,8 +394,6 @@ class Room extends Base
             }
 
             # 获取折扣
-            $userVip = new UserVipModel();
-            $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
             if($userVipInfo){
                 $vipCard = new VipCardModel();
                 $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($userVipInfo['vid']);
@@ -722,7 +489,9 @@ class Room extends Base
                 'userId' => $userSessionInfo['userid'],
                 'nickName' => $userSessionInfo['nickname'],
                 'headImgUrl' => $userSessionInfo['headimgurl'],
-                'ipAddr' => $userSessionInfo['ip']
+                'ipAddr' => $userSessionInfo['ip'],
+                'sex' => $userSessionInfo['sex'],
+                'vipId' => isset($userVipInfo['vid']) ? $userVipInfo['vid'] : ''
             ];
             if(isset($diamondInfo)){
                 $userInfo['needDiamond'] = $diamondInfo;
@@ -756,6 +525,164 @@ class Room extends Base
         ];
         return jsonRes(0, $returnData);
     }
+    # 游戏房间列表完成
+    public function getRoomList(){
+        if(!isset($this->opt['club_id']) || !is_numeric($this->opt['club_id'])){
+            return jsonRes(3006);
+        }
+
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $sMembers = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
+        if(!$sMembers){
+            return jsonRes(0, []);
+        }
+
+        $clubRoomReturn = [];
+        foreach ($sMembers as $k => $roomNum){
+            $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$roomNum);
+//            p($roomHashValue);
+            if($roomHashValue){
+                $clubRoomReturn[$k]['diamond'] = $roomHashValue['diamond'];
+                $clubRoomReturn[$k]['match_id'] = $roomHashValue['roomOptionsId'];
+                $clubRoomReturn[$k]['player_size'] = $roomHashValue['needUserNum'];
+                $playChecksJsonDecode = json_decode($roomHashValue['playChecks'], true);
+                $clubRoomReturn[$k]['room_code'] = $playChecksJsonDecode['code'];
+                $clubRoomReturn[$k]['room_id'] = $roomNum;
+                $clubRoomReturn[$k]['room_rate'] = $roomHashValue['roomRate'];
+                $clubRoomReturn[$k]['socket_h5'] = $roomHashValue['socketH5'];
+                $clubRoomReturn[$k]['socket_url'] = $roomHashValue['socketUrl'];
+                $clubRoomReturn[$k]['options'] = $roomHashValue['roomOptions'];
+                if($roomHashValue['playerInfos']){
+                    $roomUserInfos = json_decode($roomHashValue['playerInfos'], true);
+                    foreach ($roomUserInfos as $userInfo){
+                        $userInfoReturn['image'] = $userInfo['headImgUrl'];
+                        $userInfoReturn['nickname'] = $userInfo['nickName'];
+                        $userInfoReturn['player_id'] = $userInfo['userId'];
+                        $userInfoReturn['player_status'] = '';
+                        $clubRoomReturn[$k]['player_info'][] = $userInfoReturn;
+                    }
+                }else{
+                    $clubRoomReturn[$k]['player_info'] = [];
+                }
+                $clubRoomReturn[$k]['createTime'] = strtotime($roomHashValue['createTime']);
+                $nowUserNum = count($clubRoomReturn[$k]['player_info']);
+                if($nowUserNum >= $clubRoomReturn[$k]['player_size']){
+                    $clubRoomReturn[$k]['nowNeedUserNum'] = 100;
+                }else{
+                    $clubRoomReturn[$k]['nowNeedUserNum'] = bcsub($clubRoomReturn[$k]['player_size'], $nowUserNum, 0);
+                }
+            }
+        }
+        $len = count($clubRoomReturn)-1;
+        while(true){
+            $flag = true;
+            for($i = 0; $i < $len; $i++){
+                if($clubRoomReturn[$i]['nowNeedUserNum'] > $clubRoomReturn[$i+1]['nowNeedUserNum']){
+                    $tmp = $clubRoomReturn[$i];
+                    $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
+                    $clubRoomReturn[$i+1] = $tmp;
+                    $flag = false;
+                }
+                if($clubRoomReturn[$i]['nowNeedUserNum'] == $clubRoomReturn[$i+1]['nowNeedUserNum']){
+                    if($clubRoomReturn[$i]['createTime'] > $clubRoomReturn[$i+1]['createTime']){
+                        $tmp = $clubRoomReturn[$i];
+                        $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
+                        $clubRoomReturn[$i+1] = $tmp;
+                        $flag = false;
+                    }
+                }
+            }
+            $len--;
+            if($flag == true){
+                break;
+            }
+        }
+
+        return jsonRes(0, $clubRoomReturn);
+    }
+
+    /**
+     * 后台
+     */
+    # 查询玩家所在的房间完成
+    public function getUserRoom(){
+        if(!isset($this->opt['uid']) || !$this->opt['uid'] || !is_numeric($this->opt['uid'])){
+            return jsonRes(3006);
+        }
+
+        # 先在redis查
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
+        if($userRoom){
+            return jsonRes(0, [$userRoom]);
+        }
+
+        # 去逻辑服获取玩家所在房间
+        $gameServiceNew = new GameServiceNewModel();
+        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        $serviceGatewayNew = new ServiceGatewayNewModel();
+        foreach ($gameServiceNewInfos as $k => $v){
+            $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($v['service_id']);
+            $userRoom = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$GET_USER_ROOM, ['playerId' => $this->opt['uid']]);
+            if($userRoom && isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
+                return jsonRes(0, [$userRoom['content']['roomId']]);
+            }
+        }
+        return jsonRes(3509);
+    }
+    # 强制解散玩家房间完成
+    public function disBandRoom(){
+        if(!isset($this->opt['uid']) || !is_numeric($this->opt['uid'])){
+            return jsonRes(3006);
+        }
+
+        $isDisBand = false; # 标记没有解散
+
+        # 先在redis查找数据
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $userRoom = $redisHandle->get(RedisKey::$USER_ROOM_KEY.$this->opt['uid']);
+        if($userRoom){
+            $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$userRoom, 'roomUrl');
+            if($roomUrl){
+                # 请求逻辑服解散房间
+                $disBandRes = sendHttpRequest($roomUrl.Definition::$DIS_BAND_ROOM.$userRoom, ['playerId' => $this->opt['uid']]);
+                if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                    $isDisBand = true;
+                }
+            }
+        }
+
+        # 依靠redis没能解散房间
+        if(!$isDisBand){
+            $gameServiceNew = new GameServiceNewModel();
+            $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+            $serviceGatewayNew = new ServiceGatewayNewModel();
+            foreach ($gameServiceNewInfos as $k => $v){
+                $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($v['service_id']);
+                $userRoom = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$GET_USER_ROOM, ['playerId' => $this->opt['uid']]);
+                if($userRoom && isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
+                    $disBandRes = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $this->opt['uid']]);
+                    if($disBandRes && isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                        $isDisBand = true;
+                    }
+                }
+            }
+        }
+
+        # 解散失败
+        if(!$isDisBand){
+            return jsonRes(3508);
+        }
+
+        return jsonRes(0);
+    }
+
+    /**
+     * 逻辑服回调
+     */
     # 玩家加入房间回调完成
     public function joinRoomCallBack()
     {
@@ -793,7 +720,7 @@ class Room extends Base
         if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
             return jsonRes(0);
         }
-        # 使用redis锁重写roomhash
+        # 使用redis加锁重写roomHash
         $getLock = false;
         $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
@@ -809,18 +736,19 @@ class Room extends Base
         if($getLock){ # 重写hash中的用户数据
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'needUserNum']);
             $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
-            $roomUserNum = count($roomUserInfo); # 房间用户数
 
-            foreach ($roomUserInfo as $k => $userInfo){
-                if($userInfo['userId'] == $this->opt['playerId']){
-                    unset($roomUserInfo[$k]);
+            if(is_array($roomUserInfo)){
+                $roomUserNum = count($roomUserInfo); # 房间用户数
+                foreach ($roomUserInfo as $k => $userInfo){
+                    if($userInfo['userId'] == $this->opt['playerId']){
+                        unset($roomUserInfo[$k]);
+                    }
                 }
-            }
-
-            if($roomUserNum >= $roomHashInfo['needUserNum']){
-                $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['joinStatus' => 1, 'playerInfos' => json_encode($roomUserInfo)]);
-            }else{
-                $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'playerInfos', json_encode($roomUserInfo));
+                if($roomUserNum >= $roomHashInfo['needUserNum']){
+                    $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['joinStatus' => 1, 'playerInfos' => json_encode($roomUserInfo)]);
+                }else{
+                    $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'playerInfos', json_encode($roomUserInfo));
+                }
             }
             $redisHandle->del($lockKey); # 解锁
         }
@@ -906,9 +834,9 @@ class Room extends Base
     }
     # 房间解散回调完成
     public function disBandRoomCallBack(){
-        if(!isset($this->opt['statistics']) || !is_array($this->opt['statistics']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['set']) || !is_numeric($this->opt['set'])){
-            return jsonRes(0);
-        }
+//        if(!isset($this->opt['statistics']) || !is_array($this->opt['statistics']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['set']) || !is_numeric($this->opt['set'])){
+//            return jsonRes(0);
+//        }
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
@@ -969,43 +897,54 @@ class Room extends Base
         # 玩家模式扣钻
         if(($roomHashInfo['clubType'] == 0) && is_array($playerInfo)){
             if($roomHashInfo['set'] || $roomHashInfo['round']){ # 需要扣钻
+                $rebate = 0;
                 if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
-                    $userScore = [];
-                    foreach ($this->opt['statistics'] as $k => $v){
-                        $userScore[$v['playerId']] = $v['totalScore'];
-                    }
-                    $userId = array_search(max($userScore), $userScore);
-                    foreach ($playerInfo as $k => $userInfo){
-                        if($userInfo['userId'] == $userId){
-                            foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
-                                if($diamondType == 'bind'){
-                                    $operateData[] = [
-                                        'uid' => $userId,
-                                        'event_type' => '-',
-                                        'reason_id' => 7,
-                                        'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
-                                        'property_name' => '赠送蓝钻',
-                                        'change_num' => $diamondValue,
-                                    ];
-                                }
-                                if($diamondType == 'noBind'){
-                                    $operateData[] = [
-                                        'uid' => $userId,
-                                        'event_type' => '-',
-                                        'reason_id' => 7,
-                                        'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
-                                        'property_name' => '赠送蓝钻',
-                                        'change_num' => $diamondValue,
-                                    ];
-                                    $rebate = $diamondValue;
+                    if(is_array($this->opt['statistics'])){
+                        $userScore = [];
+                        foreach ($this->opt['statistics'] as $k => $v){
+                            $userScore[$v['playerId']] = $v['totalScore'];
+                        }
+                        $userIds = [];
+                        $maxScore = max($userScore);
+                        foreach ($userScore as $playerId => $score){
+                            if($score == $maxScore){
+                                $userIds[] = $playerId;
+                            }
+                        }
+
+                        if(is_array($userIds) && $userIds){
+                            $userNum = count($userIds);
+                            foreach ($playerInfo as $k => $userInfo){
+                                if(in_array($userInfo['userId'], $userIds)){
+                                    foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
+                                        if($diamondType == 'bind'){
+                                            $operateData[] = [
+                                                'uid' => $userInfo['userId'],
+                                                'event_type' => '-',
+                                                'reason_id' => 7,
+                                                'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
+                                                'property_name' => '赠送蓝钻',
+                                                'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                            ];
+                                        }
+                                        if($diamondType == 'noBind'){
+                                            $operateData[] = [
+                                                'uid' => $userInfo['userId'],
+                                                'event_type' => '-',
+                                                'reason_id' => 7,
+                                                'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
+                                                'property_name' => '赠送蓝钻',
+                                                'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                            ];
+                                            $rebate = bcadd(bcdiv($diamondValue, $userNum, 0), $rebate, 0);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
                 if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
-                    $operateData = [];
-                    $rebate = 0;
                     foreach ($playerInfo as $k => $userInfo){
                         foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
                             if($diamondType == 'bind'){
@@ -1032,13 +971,13 @@ class Room extends Base
                         }
                     }
                 }
-            }
-            if(isset($operateData)){
-                $res = operatePlayerProperty($operateData);
-                if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
-                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
+                if(isset($operateData)){
+                    $res = operatePlayerProperty($operateData);
+                    if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
+                        errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
+                    }
                 }
-                if(isset($rebate)){ # 需要返利
+                if(isset($rebate) && $rebate){ # 需要返利
                     if($roomHashInfo['presidentId']){
                         $generalChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['generalRebate'], 0), 100, 0);
                         if($generalChangeNum > 0){
@@ -1077,104 +1016,7 @@ class Room extends Base
                 }
             }
         }
-        # 玩家模式扣钻完成
+        # 玩家扣钻模式完成
         return jsonRes(0);
     }
-    # 游戏房间列表完成 排序算法需要review
-    public function getRoomList(){
-        if(!isset($this->opt['club_id']) || !is_numeric($this->opt['club_id'])){
-            return jsonRes(3006);
-        }
-
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $sMembers = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
-        if(!$sMembers){
-            return jsonRes(0, []);
-        }
-
-        $clubRoomReturn = [];
-        foreach ($sMembers as $k => $roomNum){
-            $roomHashValue = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$roomNum);
-//            p($roomHashValue);
-            if($roomHashValue){
-                $clubRoomReturn[$k]['diamond'] = $roomHashValue['diamond'];
-                $clubRoomReturn[$k]['match_id'] = $roomHashValue['roomOptionsId'];
-                $clubRoomReturn[$k]['player_size'] = $roomHashValue['needUserNum'];
-                $playChecksJsonDecode = json_decode($roomHashValue['playChecks'], true);
-                $clubRoomReturn[$k]['room_code'] = $playChecksJsonDecode['code'];
-                $clubRoomReturn[$k]['room_id'] = $roomNum;
-                $clubRoomReturn[$k]['room_rate'] = $roomHashValue['roomRate'];
-                $clubRoomReturn[$k]['socket_h5'] = $roomHashValue['socketH5'];
-                $clubRoomReturn[$k]['socket_url'] = $roomHashValue['socketUrl'];
-                $clubRoomReturn[$k]['options'] = $roomHashValue['roomOptions'];
-                if($roomHashValue['playerInfos']){
-                    $roomUserInfos = json_decode($roomHashValue['playerInfos'], true);
-                    foreach ($roomUserInfos as $userInfo){
-                        $userInfoReturn['image'] = $userInfo['headImgUrl'];
-                        $userInfoReturn['nickname'] = $userInfo['nickName'];
-                        $userInfoReturn['player_id'] = $userInfo['userId'];
-                        $userInfoReturn['player_status'] = '';
-                        $clubRoomReturn[$k]['player_info'][] = $userInfoReturn;
-                    }
-                }else{
-                    $clubRoomReturn[$k]['player_info'] = [];
-                }
-                $clubRoomReturn[$k]['createTime'] = strtotime($roomHashValue['createTime']);
-                $nowUserNum = count($clubRoomReturn[$k]['player_info']);
-                if($nowUserNum >= $clubRoomReturn[$k]['player_size']){
-                    $clubRoomReturn[$k]['nowNeedUserNum'] = 100;
-                }else{
-                    $clubRoomReturn[$k]['nowNeedUserNum'] = bcsub($clubRoomReturn[$k]['player_size'], $nowUserNum, 0);
-                }
-            }
-        }
-        $len = count($clubRoomReturn)-1;
-        while(true){
-            $flag = true;
-            for($i = 0; $i < $len; $i++){
-                if($clubRoomReturn[$i]['nowNeedUserNum'] > $clubRoomReturn[$i+1]['nowNeedUserNum']){
-                    $tmp = $clubRoomReturn[$i];
-                    $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-                    $clubRoomReturn[$i+1] = $tmp;
-                    $flag = false;
-                }
-                if($clubRoomReturn[$i]['nowNeedUserNum'] == $clubRoomReturn[$i+1]['nowNeedUserNum']){
-                    if($clubRoomReturn[$i]['createTime'] > $clubRoomReturn[$i+1]['createTime']){
-                        $tmp = $clubRoomReturn[$i];
-                        $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-                        $clubRoomReturn[$i+1] = $tmp;
-                        $flag = false;
-                    }
-                }
-            }
-            $len--;
-            if($flag == true){
-                break;
-            }
-        }
-
-        return jsonRes(0, $clubRoomReturn);
-    }
-
-//Lua脚本测试redis
-//$lua = <<<SCRIPT
-//        local key = KEYS[1]
-//        local hashkey = ARGV[1]
-//        local hashval = ARGV[2]
-//        local hashke = ARGV[3]
-//        local hashva = ARGV[4]
-//
-//        local list = redis.call("hMset", key, hashkey, hashval, hashke, hashva);
-//        return list;
-//SCRIPT;
-//
-//$redis = new Redis();
-//$redisHandle = $redis->handler();
-//$s = $redisHandle->eval($lua, array('hh', 'age', 10, 'name', 'xie'), 1);
-////        $s = $redisHandle->hGetAll('hh');
-//p($s);
-
-
-
 }
