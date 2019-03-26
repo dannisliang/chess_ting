@@ -267,7 +267,6 @@ function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_
         ],
     ];
     $res = guzzleRequest($url , $pathInfo ,$data);
-    var_dump($res);die();
     return $res;
 }
 
@@ -370,6 +369,28 @@ function backNickname($player_id){
         Session::set(RedisKey::$USER_SESSION_INFO,$user_info);
     }
     return $nick_name;
+}
+
+/**
+ * 获取用户的基本信息
+ * @param $user_id
+ * @return mixed
+ */
+function getUserBaseInfo($user_id)
+{
+
+    //请求用户中心接口地址
+    $url = Definition::$WEB_API_URL;
+    //获取用户中心接口路径
+    $userInfo_url = Definition::$GET_INFO;
+    //向用户中心传输的请求参数
+    $data = [
+        'uid' => $user_id,
+        'app_id'=> Definition::$CESHI_APPID,
+    ];
+    $result = guzzleRequest( $url , $userInfo_url , $data);
+
+    return $result['data'];
 }
 
 

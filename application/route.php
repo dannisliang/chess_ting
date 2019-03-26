@@ -34,6 +34,9 @@ Route::rule('service/room/outRoom','Room/outRoomCallBack');
 Route::rule('service/room/room_list','Room/getRoomList');
 Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
 
+Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
+
+
 /**
  * 商城相关
  */

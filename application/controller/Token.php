@@ -47,15 +47,20 @@ class Token extends Base
         if($result['result'] === false){
             return jsonRes(3002);
         }
+        $user_info = getUserBaseInfo($this->opt['player_id']);
         //验证完成的信息存入session
-        $user_info = [
+        $user_data = [
             'client_type'   => $this -> opt['client_type'],
             'player_id'     => $this -> opt['player_id'],
             'app_type'      => $this -> opt['app_type'],
             'token'         => $this -> opt['token'],
             'ip'            => $ip,
+            'sex'           => $user_info['sex'],
+            'userid'        => $this -> opt['player_id'],
+            'headimgurl'    => $user_info['headimgurl'],
+            'nickname'      => $user_info['nickname'],
         ];
-        Session::set(RedisKey::$USER_SESSION_INFO, $user_info);
+        Session::set(RedisKey::$USER_SESSION_INFO, $user_data);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()
