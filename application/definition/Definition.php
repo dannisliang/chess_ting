@@ -37,9 +37,10 @@ class Definition{
     /**
      * 资产类型
      */
-    public static $USER_PROPERTY_TYPE_BINDING = 10002; # 绑定钻石
     public static $USER_PROPERTY_TYPE_NOT_BINDING = 10001; # 非绑定钻石
+    public static $USER_PROPERTY_TYPE_BINDING = 10002; # 绑定钻石
     public static $USER_PROPERTY_PRESIDENT = 10003; # 会长资产
+    public static $PRESIDENT_REBATE = 10009; # 会长返利
 
     /**
      * 用户中心接口+++++++++++++++++++++++++++++++++++++++++++++++
@@ -81,6 +82,7 @@ class Definition{
     public static $CHANGE_ROOM_HASH = 'changeRoomHash'; # 修改房间hash数据 参数 用户ID 房间ID
     public static $CHANGE_ROOM_STATUS = 'changeRoomStatus'; # 修改房间状态 参数 房间ID
     public static $CHANGE_ROOM_PLAY = 'changeRoomPlay'; # 修改房间牌局记录 参数 房间ID
+    public static $FAILED_TO_OPERATE_PROPERTY = 'failed_to_operate_property'; # 还钻会长失败
 
 }
 

@@ -30,8 +30,9 @@ Route::rule('service/room/disBandRoom','Room/disBandRoom');
 Route::rule('service/room/joinRoom','Room/joinRoom');
 Route::rule('service/room/getUserRoom','Room/getUserRoom');
 Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
-Route::rule('service/room/test','Room/test');
 Route::rule('service/room/outRoom','Room/outRoomCallBack');
+Route::rule('service/room/room_list','Room/getRoomList');
+Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
 
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
 
