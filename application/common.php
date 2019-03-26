@@ -297,7 +297,7 @@ function operatePlayerProperty($data){
  * @param $key
  */
 function errorLog($errorType, $data){
-    $errorStr = date('Y-m-d H:i:s', time()).'|'.implode('|', $data).PHP_EOL;
+    $errorStr = date('Y-m-d H:i:s', time()).'|'.json_encode($data).PHP_EOL;
     file_put_contents(APP_LOG_PATH.$errorType.'.log', $errorStr, FILE_APPEND);
 }
 
@@ -370,27 +370,6 @@ function backNickname($player_id){
         Session::set(RedisKey::$USER_SESSION_INFO,$user_info);
     }
     return $nick_name;
-}
-
-/**
- * 批量操作用户资产
- * @param $player_id /用户id
- * @param $type /资产类型
- * @param $diamond /数量
- * @param $event_type /操作类型
- * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
- * @param $property_name /操作资产说明
- * @return mixed
- */
-function operatePlayerProperty($data){
-    $url      = Definition::$WEB_API_URL;
-    $pathInfo = Definition::$PROPERTY_CHANGE;
-    $info = [
-        'app_id' => Definition::$CESHI_APPID,
-        'upinfo' => $data,
-    ];
-    $res = guzzleRequest($url , $pathInfo , $info);
-    return $res;
 }
 
 

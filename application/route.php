@@ -31,7 +31,8 @@ Route::rule('service/room/joinRoom','Room/joinRoom');
 Route::rule('service/room/getUserRoom','Room/getUserRoom');
 Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
 Route::rule('service/room/outRoom','Room/outRoomCallBack');
-Route::rule('service/room/roomList','Room/roomList');
+Route::rule('service/room/roomList','Room/getRoomList');
+Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
 
 /**
  * 商城相关
