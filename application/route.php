@@ -33,6 +33,9 @@ Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
 Route::rule('service/room/test','Room/test');
 Route::rule('service/room/outRoom','Room/outRoomCallBack');
 
+Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
+
+
 /**
  * 商城相关
  */

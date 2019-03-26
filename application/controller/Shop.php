@@ -293,7 +293,6 @@ class Shop extends Base
         $user_info = Session::get(RedisKey::$USER_SESSION_INFO); //这里可以获取client_type 和 app_type
         $user_name = backNickname($user_id);
 
-
         //根据传输的shop_id和vip_id查找商品数据
         if(!empty($this->opt['shop_id'])){
             $club_shop = $clubShopModel -> getOneByWhere(['id'=>$this->opt['shop_id']]);
@@ -361,7 +360,7 @@ class Shop extends Base
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
 
         $result = sendHttpRequest( $url );
-        if(json_decode($result)['ErrCode'] != 0){
+        if($result['ErrCode'] != 0){
             return jsonRes(3004);
         }
         //获取机型 和 类型

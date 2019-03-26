@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: 杨腾飞
  * Date: 2019/3/25
  * Time: 10:58
  */
@@ -9,6 +9,7 @@
 namespace app\controller;
 
 
+use app\definition\Definition;
 use app\model\ClubModel;
 use app\model\ClubShopModel;
 use app\model\ClubVipModel;
@@ -34,14 +35,13 @@ class PaySuccessCallBack
         $pay_type = $_GET['pay_type'];
         //验证签名是否合法
         $key_sign = $this ->get_sign($sign_data,'c80b7d337dc57d5d');
-//        var_dump($key_sign);die;
-//        if($key_sign != $sign_data['sign']){
-//            return json(['result'=>3]); //签名不合法
-//        }
+        if($key_sign != $sign_data['sign']){
+            return json(['result'=>3]); //签名不合法
+        }
 
         //查出订单的详细信息
         $orderModel = new OrderModel();
-        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'vip_id,product_id,player_id,club_id,system_type,client_type');
+        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,product_id,player_id,club_id,system_type,client_type');
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
@@ -55,10 +55,16 @@ class PaySuccessCallBack
                 Log::write($result , 'buy_vip_card_error'); //根据不同的返回码确认报错信息
                 return json(['result'=>3]);
             }
+            //请求成功
             return json(['result'=>1]);
         }elseif(!empty($order['product_id'])){
-            $result = $this ->buyDiamond($order);
-
+            $result = $this ->buyDiamond($order,$pay_type);
+            if($result !=1){
+                Log::write($result , 'buy_diamond_error'); //根据不同的返回码确认报错信息
+                return json(['result'=>3]);
+            }
+            //请求成功
+            return json(['result' => 1]);
         }else{
             return json(['result' => 3]); //都不存在
         }
@@ -70,25 +76,26 @@ class PaySuccessCallBack
      * @return bool
      * @throws \think\exception\DbException
      */
-    private function buyDiamond($order){
+    private function buyDiamond($order,$pay_type){
         //玩家买钻回调
         $clubShopModel = new ClubShopModel();
         $clubShop = $clubShopModel -> getOneByWhere(['id'=>$order['product_id']]);
         if(!$clubShop){
             return -1;
         }
+
         $data = [
             [
-                'player_id' => $order['player_id'],
-                'type' => 10001,
+                'uid' => $order['player_id'],
+                'property_type' => 10001,
                 'change_num' => $clubShop['goods_number'], //购买数量
                 'event_type' => '+',
                 'reason_id' => 4,
                 'property_name' => '玩家购买钻石数量'
             ],
             [
-                'player_id' => $order['player_id'],
-                'type' => 10002,
+                'uid' => $order['player_id'],
+                'property_type' => 10002,
                 'change_num' => $clubShop['give'], //赠送数量数量
                 'event_type' => '+',
                 'reason_id' => 4,
@@ -96,13 +103,69 @@ class PaySuccessCallBack
             ]
         ];
         //操作用户钻石增减
-        $res = operateUserProperty($order['player_id'] ,10002,$clubShop['give'],'+',4,'sss');
-        var_dump($res);die();
         $operateRes = operatePlayerProperty($data);
-        var_dump($operateRes);die();
         if($operateRes['code'] != 0){
             //操作失败
-            return -1;
+            return -2;
+        }
+        //向客户端发送消息
+        $user_property = getUserProperty($order['player_id'],[10000,10001,10002]);
+        if($user_property['code'] !==0){
+            return -3;
+        }
+        $gold = 0;$buyDiamond = 0;//购买钻
+        $freeDiamond = 0; //赠送钻
+        foreach ($user_property['data'] as $value){
+            switch ($value['property_type']){
+                case 10000: //金币
+                    $gold += $value['property_num'];
+                    break;
+                case 10001: //购买蓝钻
+                    $buyDiamond += $value['property_num'];
+                    break;
+                case 10002: //赠送蓝钻
+                    $freeDiamond += $value['property_num'];
+                    break;
+                default:
+                    break;
+            }
+        }
+        $notice_data = [
+            'appid' => Definition::$CESHI_APPID,
+            'content' => [
+                'diamond' => $buyDiamond + $freeDiamond,
+                'gold'    => $gold,
+            ],
+            'reciver' => [
+                $order['player_id'],
+            ],
+            'sender'  => 0,
+            'type'    => 1029
+        ];
+        $sendResult = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $notice_data);
+        $orderModel = new OrderModel();
+        Db::startTrans();
+        try{
+            if($sendResult['code'] == 0){
+                $orderModel -> setFieldByWhere(['id' => $order['id']],['notify_status' => 1]);
+            }else{
+                $orderModel -> setFieldByWhere(['id' => $order['id']],['notify_status' => 2]);
+            }
+            //修改订单状态
+            $orderModel -> setFieldByWhere(['id' => $order['id']],['order_status' => 1]);
+            //todo 报送大数据（支付完成部分）
+
+            //支付类型转换
+            $type_num = $this -> getPayType($pay_type);
+            $res = $orderModel ->setFieldByWhere(['id'=> $order['id']] , ['pay_type'=>$type_num]);
+            if(!$res){
+                Db::rollback();
+                return -4;
+            }
+            Db::commit();
+        }catch (\Exception $e){
+            Db::rollback();
+            return -5;
         }
 
         return 1;
@@ -136,8 +199,8 @@ class PaySuccessCallBack
         //先查看用户有没有这张卡,有的话修改,没有的话增加
         $userVipModel = new UserVipModel();
         $where = [
-            'uid' => $order['player_id'] ,
-            'vid' => $order['vip_id'] ,
+            'uid' => $order['player_id'],
+            'vid' => $order['vip_id'],
             'club_id' => $order['club_id']
         ];
         $user_vip = $userVipModel -> getOneByWhere(['uid' => $order['player_id'] , 'vid' => $order['vip_id'] , 'club_id' => $order['club_id']]);
@@ -212,6 +275,35 @@ class PaySuccessCallBack
 
         $clubVipModel = new ClubVipModel();
         $orderModel   = new OrderModel();
+        //支付类型转换
+        $type_num = $this -> getPayType($pay_type);
+        Db::startTrans();
+        try{
+            //减少库存
+            $clubVipModel ->setDecByWhere(['vid'=>$order['vip_id'],'cid'=>$order['club_id']],'number');
+            //修改订单状态和支付类型
+            $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>1,'pay_type'=>$type_num]);
+            Db::commit();
+        }catch(\Exception $e){
+            Db::rollback();
+            $orderRes = $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>2,'pay_type'=>$type_num]);
+            if(!$orderRes){
+                Log::write('修改订单状态失败','update_order_status_error');
+            }
+            return -1;
+        }
+        //todo 报送大数据（支付完成部分）
+
+        //todo 给客户端发送一条数据
+        return 1; //操作成功
+    }
+
+    /**
+     * 判断支付类型
+     * @param $pay_type
+     * @return int
+     */
+    private function getPayType($pay_type){
         switch (strtoupper($pay_type)){
             case 'ALIPAYWEB':
                 $type_num = 1;
@@ -235,25 +327,7 @@ class PaySuccessCallBack
                 $type_num = 5;
                 break;
         }
-        Db::startTrans();
-        try{
-            //减少库存
-            $clubVipModel ->setDecByWhere(['vid'=>$order['vip_id'],'cid'=>$order['club_id']],'number');
-            //修改订单状态和支付类型
-            $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>1,'pay_type'=>$type_num]);
-            Db::commit();
-        }catch(\Exception $e){
-            Db::rollback();
-            $orderRes = $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>2,'pay_type'=>$type_num]);
-            if(!$orderRes){
-                Log::write('修改订单状态失败','update_order_status_error');
-            }
-            return -1;
-        }
-        //todo 报送大数据（支付完成部分）
-
-        //todo 给客户端发送一条数据
-        return 1; //操作成功
+        return $type_num;
     }
 
     /**
