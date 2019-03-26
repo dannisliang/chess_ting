@@ -71,7 +71,7 @@ class Room extends Base
     }
     # 创建房间完成
     public function createRoom(){
-        $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa'];
+        $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa', 'sex' => '1'];
         Session::set(RedisKey::$USER_SESSION_INFO, $sess);
 
         # 判断传参是否有效
@@ -375,12 +375,12 @@ class Room extends Base
 
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['diamond', 'needUserNum', 'clubType', 'roomRate', 'clubId', 'roomUrl']);
 
-//        # 查询玩家是否加入此俱乐部
-//        $userClub = new UserClubModel();
-//        $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
-//        if(!$userClubInfo){
-//            return jsonRes(3511);
-//        }
+        # 查询玩家是否加入此俱乐部
+        $userClub = new UserClubModel();
+        $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
+        if(!$userClubInfo){
+            return jsonRes(3511);
+        }
 
         # 获取玩家vip卡
         $userVip = new UserVipModel();
@@ -553,8 +553,8 @@ class Room extends Base
                 $clubRoomReturn[$k]['socket_h5'] = $roomHashValue['socketH5'];
                 $clubRoomReturn[$k]['socket_url'] = $roomHashValue['socketUrl'];
                 $clubRoomReturn[$k]['options'] = $roomHashValue['roomOptions'];
-                if($roomHashValue['playerInfos']){
-                    $roomUserInfos = json_decode($roomHashValue['playerInfos'], true);
+                $roomUserInfos = json_decode($roomHashValue['playerInfos'], true);
+                if(is_array($roomUserInfos)){
                     foreach ($roomUserInfos as $userInfo){
                         $userInfoReturn['image'] = $userInfo['headImgUrl'];
                         $userInfoReturn['nickname'] = $userInfo['nickName'];
@@ -599,7 +599,8 @@ class Room extends Base
             }
         }
 
-        return jsonRes(0, $clubRoomReturn);
+        $data['roominfo'] = $clubRoomReturn;
+        return jsonRes(0, $data);
     }
 
     /**
@@ -677,7 +678,7 @@ class Room extends Base
             return jsonRes(3508);
         }
 
-        return jsonRes(0);
+        return jsonRes(3507);
     }
 
     /**
