@@ -32,7 +32,7 @@ class User
         $email_num  = $this ->getEmailNum($user_id);
 
         //获取用户基本信息
-        $user_info  = $this -> getUserBaseInfo($user_id);
+        $user_info  = getUserBaseInfo($user_id);
 
         //获取用户电话
         $phone_num  = isset($user_info['tel_number']) ? $user_info['tel_number'] : '' ;
@@ -47,6 +47,7 @@ class User
         if ($club_id){
             $club_name = $this -> getClubName($club_id);
         }
+
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
@@ -83,7 +84,6 @@ class User
         ];
         return jsonRes( 0 , $result);
     }
-
 
     /**
      * 获取用户资产
@@ -262,28 +262,6 @@ class User
         $str = str_replace("\r\n","<br />",$str);
         $str = json_decode($str,true);
         return $str['is_open'];
-    }
-
-    /**
-     * 获取用户的基本信息
-     * @param $user_id
-     * @return mixed
-     */
-    private function getUserBaseInfo($user_id)
-    {
-
-        //请求用户中心接口地址
-        $url = Definition::$WEB_API_URL;
-        //获取用户中心接口路径
-        $userInfo_url = Definition::$GET_INFO;
-        //向用户中心传输的请求参数
-        $data = [
-            'uid' => $user_id,
-            'app_id'=> Definition::$CESHI_APPID,
-        ];
-        $result = guzzleRequest( $url , $userInfo_url , $data);
-
-        return $result['data'];
     }
 
     /**

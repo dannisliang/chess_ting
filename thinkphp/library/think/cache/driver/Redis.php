@@ -26,7 +26,7 @@ class Redis extends Driver
         'host'       => '192.168.9.18',
         'port'       => 6379,
         'password'   => 'samsung',
-        'select'     => 0,
+        'select'     => 1,
         'timeout'    => 0,
         'expire'     => 0,
         'persistent' => false,
