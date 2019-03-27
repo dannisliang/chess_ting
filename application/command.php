@@ -11,4 +11,5 @@
 
 return [
     'app\command\RoomNumPush',
+    'app\command\Test',
 ];
