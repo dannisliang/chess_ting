@@ -669,10 +669,6 @@ class Room extends Base
             return jsonRes(0, []);
         }
 
-        foreach ($playerInfos as $k => $v){
-            $playerInfos[$k]['player_id'] = $v['userId'];
-        }
-
         $returnData = [];
         foreach ($gameEndInfo as $k => $v){
             $returnData[$k]['playBack'] = $v[1];
