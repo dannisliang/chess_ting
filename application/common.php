@@ -48,7 +48,7 @@ function checkUserToken($userSessionInfo){
 /**
  * 获取用户资产
  * @param $userIds 用户ID或用户ID集
- * @param $propertyType 请求类型固定值
+ * @param $propertyType 请求类型固定值可以为数组
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
@@ -152,7 +152,7 @@ function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJson
 function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $roomOptionsInfoOptionsJsonDecode, $keyName){
 //    print_r($playInfoPlayJsonDecodeChecksGroup);die;
     $ret = '';
-    if(is_array($playInfoPlayJsonDecodeChecksGroup)){
+    if(is_array($playInfoPlayJsonDecodeChecksGroup) && is_array($roomOptionsInfoOptionsJsonDecode)){
         foreach($playInfoPlayJsonDecodeChecksGroup as $k => $v){
             if($k === $keyName){
                 if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
@@ -296,7 +296,7 @@ function operatePlayerProperty($data){
  * @param $key
  */
 function errorLog($errorType, $data){
-    $errorStr = date('Y-m-d H:i:s', time()).'|'.implode('|', $data).PHP_EOL;
+    $errorStr = date('Y-m-d H:i:s', time()).'|'.json_encode($data).PHP_EOL;
     file_put_contents(APP_LOG_PATH.$errorType.'.log', $errorStr, FILE_APPEND);
 }
 
@@ -392,6 +392,5 @@ function getUserBaseInfo($user_id)
 
     return $result['data'];
 }
-
 
 
