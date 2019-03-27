@@ -33,6 +33,7 @@ Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
 Route::rule('service/room/outRoom','Room/outRoomCallBack');
 Route::rule('service/room/room_list','Room/getRoomList');
 Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
+Route::rule('service/room/roundEndGameCallBack','Room/roundEndGameCallBack');
 
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
 
@@ -52,6 +53,13 @@ Route::rule('service/shop/reciveOrder','paySuccessCallBack/receiveOrder'); //支
  * vip卡相关
  */
 Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
+
+/**
+ * 牌局记录相关
+ */
+Route::rule('service/room/getRecordRoomList','Room/getRecordRoomList'); # 牌局记录列表
+Route::rule('service/room/getRecordList','Room/getRecordList'); # 牌局记录列表
+
 
 
 
