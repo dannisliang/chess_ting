@@ -66,6 +66,11 @@ class Definition{
      * 运营中心
      */
     public static $EMAIL_LIST = 'api/email_list.php'; //运营中心获取邮件列表
+    public static $EMAIL_DETAIL = '/api/email_detail.php'; //运营中心获取邮件详情
+    public static $EMAIL_DELETE = '/api/email_del.php'; //运营中心删除邮件列表地址
+    public static $EMAIL_DELETE_MORE = '/api/email_del_list.php';//运营中心批量删除邮件
+    public static $HORSE_LAMP = '/api/horse_list.php';//运营中心获取跑马灯列表
+    public static $NOTICE_LIST = '/api/notice_list.php';//公告列表
 
     /**
      * 通知中心接口
@@ -93,6 +98,8 @@ class Definition{
     public static $OBS_KEY = 'CJTRUPEZBC2RVGFBAB6T';
     public static $OBS_SECRET = 'hodhHpjMIIDhl6KXbpDB35bzjLFG5KisKATnigcE';
     public static $OBS_ENDPOINT = 'obs.cn-north-1.myhuaweicloud.com';
+
+
 
 }
 

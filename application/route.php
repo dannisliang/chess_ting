@@ -65,7 +65,21 @@ Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
  */
 Route::rule('service/room/getRecordRoomList','Room/getRecordRoomList'); # 牌局记录列表
 Route::rule('service/room/getRecordList','Room/getRecordList'); # 牌局记录列表
-
+/**
+ * 邮件相关
+ */
+Route::rule('service/getMailList','Mail/lists');
+Route::rule('service/GetMailDetail','Mail/detail');
+Route::rule('service/deleteMail','Mail/delete');
+/*领取邮件里附加你接口地址service/reciveGoods*/
+/*跑马灯*/
+Route::rule('service/getBulletinList','HorseLamp/lists');
+/*公告*/
+Route::rule('service/getnotice','Notice/lists');
+/*代理招募部分*/
+Route::rule('service/agent/open_recruit','Agent/openRecruit');
+Route::rule('service/agent/recruit_state','Agent/state');
+Route::rule('service/agent/recive_recruit','Agent/recive');
 
 
 
