@@ -770,8 +770,7 @@ class Room extends Base
      * 逻辑服回调
      */
     # 玩家加入房间回调完成
-    public function joinRoomCallBack()
-    {
+    public function joinRoomCallBack(){
         return jsonRes(0);
     }
     # 玩家退出房间回调完成
