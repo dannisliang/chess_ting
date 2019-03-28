@@ -40,24 +40,14 @@ class Club extends Base
         if (!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
-        //获取用户的vip信息
-//        $userVipInfo = $this -> getUserVipInfo($user_id,$this ->opt['club_id']);
 
         //获取俱乐部信息
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
-        //获取用户资产 （废弃）
-//        $gold = $this -> getUserProperty($user_id);
 
         //TODO 报送大数据
         $this -> beeSender();
 
         $data = [
-//            //vip信息
-//            'end_day'       => $userVipInfo['end_day'], //玩家vip到期时间
-//            'cards_num'     => $userVipInfo['cards_num'],
-//            'surplus_day'   => $userVipInfo['surplus_day'],
-//            'user_vipinfos' => $userVipInfo['user_vipinfos'],
-
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
             'club_id'       => $clubMessage['club_id'],     //俱乐部id
@@ -66,10 +56,7 @@ class Club extends Base
             'club_name'     => $clubMessage['club_name'],   // 俱乐部名称
             'club_icon'     => $clubMessage['club_icon'],   // 俱乐部图标
             'club_type'     => $clubMessage['club_type'],   //0:A模式 1：B模式
-            'club_notice'   => $clubMessage['club_notice'],
-
-            //用户资产（废弃）
-//            'gold' => $gold,
+            'club_notice'   => $clubMessage['club_notice'], //俱乐部公告
         ];
         return jsonRes(0,$data);
     }
@@ -122,7 +109,7 @@ class Club extends Base
      * 获取加俱乐部列表（现在是查找俱乐部也在这里）
      * @return \think\response\Json\
      */
-    public function getClubInfos(){
+    public function getClubListOrSearch(){
         $user_id = getUserIdFromSession();
         if(!$user_id){
             return jsonRes(9999);
