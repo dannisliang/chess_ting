@@ -25,18 +25,21 @@ Route::rule('service/club/outClub','club/outClub');
 /**
  * 房间相关
  */
-Route::rule('service/room/createRoom','Room/createRoom');
-Route::rule('service/room/disBandRoom','Room/disBandRoom');
-Route::rule('service/room/joinRoom','Room/joinRoom');
-Route::rule('service/room/getUserRoom','Room/getUserRoom');
-Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
-Route::rule('service/room/outRoom','Room/outRoomCallBack');
-Route::rule('service/room/room_list','Room/getRoomList');
-Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
-Route::rule('service/room/roundEndGameCallBack','Room/roundEndGameCallBack');
+Route::rule('service/room/cheatRoom','Room/getRoomGpsInfo'); # 获取房间的gps相关数据
+Route::rule('service/room/room_list','Room/getRoomList'); # 俱乐部房间列表
 
+Route::rule('service/disband/getroom_list','Room/getUserRoom'); # 获取玩家房间
+Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散房间
+Route::rule('service/room/createRoom','Room/createRoom'); # 创建房间
+Route::rule('service/room/joinRoom','Room/joinRoom'); # 加入房间
+Route::rule('service/api/joinRoom','Room/joinRoomCallBack'); # 加入房间回调
+Route::rule('service/api/outRoom','Room/outRoomCallBack'); # 退出房间回调
+Route::rule('service/api/roomStartGame','Room/roomStartGameCallBack'); # 房间游戏开始回调
+Route::rule('service/api/roomEndGame','Room/roomEndGameCallBack'); # 房间游戏结束回调
+Route::rule('service/api/roundStartGame','Room/roundStartGameCallBack'); # 牌局游戏开始回调
+Route::rule('service/api/roundEndGame','Room/roundEndGameCallBack'); # 牌局游戏结束回调
+Route::rule('service/api/roomDisband','Room/disBandRoomCallBack'); # 房间解散回调
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
-
 
 /**
  * 商城相关
