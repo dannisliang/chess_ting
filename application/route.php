@@ -81,9 +81,6 @@ Route::rule('service/getnotice','Notice/lists');
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
-
-
-
 return [
     '__pattern__' => [
         'name' => '\w+',

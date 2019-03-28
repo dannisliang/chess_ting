@@ -20,8 +20,6 @@ class Mail extends Base
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function lists(){
-
-
         $mail_type = $this->opt['mail_type'];//邮件的类型
         $mail_limit = $this->opt['limit'];//查询的邮件的数量
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
