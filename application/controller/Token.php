@@ -11,6 +11,7 @@ namespace app\controller;
 
 use app\definition\Definition;
 use app\definition\RedisKey;
+use think\Log;
 use think\Session;
 
 class Token extends Base
@@ -25,6 +26,7 @@ class Token extends Base
         if(!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
+
         //获取ip
         $unknown = 'unknown';
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] && strcasecmp($_SERVER['HTTP_X_FORWARDED_FOR'], $unknown)) {

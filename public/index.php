@@ -10,7 +10,13 @@
 // +----------------------------------------------------------------------
 
 // [ 应用入口文件 ]
-header('Access-Control-Allow-Origin:*');
+if(isset($_SERVER['HTTP_ORIGIN'])){
+    $Access_Control_Allow_Origin = $_SERVER['HTTP_ORIGIN'];
+    header("Access-Control-Allow-Credentials: true");
+}else{
+    $Access_Control_Allow_Origin = '*';
+}
+header("Access-Control-Allow-Origin: " . $Access_Control_Allow_Origin);
 
 // 定义应用目录
 define('APP_PATH', __DIR__ . '/../application/');

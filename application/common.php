@@ -306,16 +306,16 @@ function errorLog($errorType, $data){
  */
 function getUserIdFromSession(){
     //杨腾飞调试专用
-    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
-//    $user_info = json_decode($user_info,true);
-    if(!is_array($user_info)){
-        $user_info = [];
-    }
-    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
+//    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
+//    var_dump($user_info);die;
+////    $user_info = json_decode($user_info,true);
+//    if(!is_array($user_info)){
+//        $user_info = [];
+//    }
+//    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
 
     try{
         $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
-
         if(!$user_id){
             return false;
         }
@@ -341,6 +341,31 @@ function checkToken($data){
     $pathInfo = Definition::$AUTHENTICATE;
     $result = guzzleRequest( $url , $pathInfo , $data );
     return $result;
+}
+/**
+ * 操作文件
+ */
+function operaFile($path,$data,$type){
+    switch ($type){
+        case  'write':
+            $myfile = fopen("$path", "w") or die("Unable to open file!");
+            $txt = json_encode($data, JSON_UNESCAPED_UNICODE);//设置为中文不unicode
+            fwrite($myfile, $txt);
+            fclose($myfile);
+            break;
+        case 'read':
+            $str = file_get_contents($path);//将整个文件内容读入到一个字符串中
+            $str = str_replace("\r\n","<br />",$str);
+            $str = json_decode($str,true);
+            return $str;
+            break;
+        case 'creat':
+            break;
+        case 'delete':
+            break;
+        default:
+            return false;
+    }
 }
 
 /**
