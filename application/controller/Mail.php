@@ -15,18 +15,22 @@ use app\definition\RedisKey;
 class Mail extends Base
 {
 
+    public static $player_id = '';
+    public function __construct(Request $request)
+    {
+        $player_id = self::$player_id = getUserIdFromSession();
+        if(!$player_id){
+            return jsonRes(9999);
+        }
+    }
     /**
      *获取邮件列表
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function lists(){
-
-
         $mail_type = $this->opt['mail_type'];//邮件的类型
-        $mail_limit = $this->opt['limit'];//查询的邮件的数量
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
-        $user_object = getUserSessionInfo();//获取用户详细信息
-        $player_id = $user_object['uid'];//用户ID
+        $player_id = self::$player_id;//用户ID
         if($mail_type == 1){
             //1代表是自己收到的邮件列表
             $data['recipient'] = $player_id;
@@ -107,8 +111,7 @@ class Mail extends Base
     public function detail()
     {
         $mail_id = $this->opt['mail_id'];
-        $user_obj = getUserSessionInfo();
-        $player_id = $user_obj['uid'];
+        $player_id = self::$player_id;
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
         $data['id'] = $mail_id;
         $data['playerId'] = $player_id;
@@ -203,8 +206,7 @@ class Mail extends Base
         $data['appid'] = Definition::$CESHI_APPID;//游戏的appID
         $id = $this->opt['mail_id'];
         $data['id'] = $id;//邮件的ID
-        $player_opt = getUserSessionInfo();
-        $player = $player_opt['uid'];
+        $player = self::$player_id;
         $url = Definition::$WEB_USER_URL;//运营中心的域名
         if($id == '0'){
             //查询该玩家所有的邮件,然后再循环获取所有邮件的id数组

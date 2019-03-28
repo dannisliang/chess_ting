@@ -15,6 +15,15 @@ class Agent extends Base
 {
     private $path = 'application/open_recruit.php';
     private $data = array();
+    public static $player_id = '';
+    public function __construct(Request $request)
+    {
+        $player_id = self::$player_id = getUserIdFromSession();
+        if(!$player_id){
+            return jsonRes(9999);
+        }
+
+    }
 
     /*控制招募代理按钮的显示*/
     public function openRecruit()
@@ -58,9 +67,10 @@ class Agent extends Base
     /*接收客户端表单的提交*/
     public function recive(){
         $opt = $this->opt;//1234566
-        $player_obj = getUserSessionInfo();
-        $data['player_id'] = $player_obj['uid'];
-        //$player_name = $player_obj['nickname'];
+        $player_id = self::$player_id;
+        $data['player_id'] = $player_id;
+        //获取用户信息
+        $player_obj = getUserBaseInfo($player_id);
         $data['phone'] = $player_obj['phone_num'];
         $data['application_time'] = date('Y-m-d H:i:s');
         $area = $opt['area'];
