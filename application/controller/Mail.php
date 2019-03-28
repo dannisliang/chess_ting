@@ -115,7 +115,7 @@ class Mail extends Base
         $url = Definition::$WEB_USER_URL;//运营中心域名
         $url_area = Definition::$EMAIL_DETAIL;//邮件详情
         $list = guzzleRequest($url,$url_area,$data);
-        Log::write($list,'email_detail');
+
         if ($list['code'] == 0) {
             $sender = $list['data']['sender'];//发送的俱乐部ID
             if($sender == 0){
@@ -138,7 +138,6 @@ class Mail extends Base
             } else {
                 $goods = $list['data']['goods'];
                 $goods = json_decode($goods,true);
-                halt($goods);
                 $goods_name = array();
                 $goods_counts = array();
                 foreach ($goods as $k=>$v){
