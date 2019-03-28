@@ -57,7 +57,7 @@ class User
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
 
-//        获取用户评价数量
+        //获取用户评价数量
         $evaluate = $this -> getEvaluate($user_id);
 
         //获取用户资产（返回钻石数量）
@@ -87,64 +87,6 @@ class User
             'diamond_num'=> $assets['diamond_num'],
             'gold_num' => $assets['gold_num']
         ];
-        return jsonRes( 0 , $result);
-    }
-
-    /**
-     * 获取玩家的好评和差评数
-     * @return \think\response\Json\
-     */
-    public function getComment(){
-        $user_id = getUserIdFromSession();
-        //获取用户评价数量
-        $evaluate = $this -> getEvaluate($user_id);
-        $result = [
-            'good_nums'=> $evaluate['good_num'],
-            'bad_nums' => $evaluate['bad_num'],
-        ];
-        return jsonRes(0,$result);
-    }
-
-    /**
-     * 检测玩家是否在房间中
-     * @return \think\response\Json\
-     * @throws \think\exception\DbException
-     */
-    public function checkUserInRoom(){
-        //实例化model
-        $lastClubModel = new UserLastClubModel();
-        $user_id = getUserIdFromSession();
-
-        //获取上次登录的俱乐部id
-        $lastClub = $lastClubModel -> getLastClubId($user_id);
-        $club_id = $lastClub['club_id'];
-        //获取俱乐部名称
-        if(!$club_id){
-            return jsonRes(3300);
-        }
-        $club_name = $this -> getClubName($club_id);
-
-        //检测玩家是否存在于房间中
-        $user_room_info = $this -> checkPlayer($user_id);
-
-        //返回房间信息
-        $roomInfo = $this -> getRoomInfo($user_room_info);
-        if(!$roomInfo){
-            return jsonRes(23202);
-        }
-        $result = [
-            'club_name'=> $club_name,
-            'club_id'  => $club_id,
-            'room_id'  => $roomInfo['room_id'],
-            'socket_url'=>$roomInfo['socket_url'],
-            'socket_h5'=> $roomInfo['socket_h5'],
-            'check'    => $roomInfo['check'],
-            'options'  => $roomInfo['options'],
-            'socket_ssl'=> Definition::$SOCKET_SSL,
-            'notification_h5'=> Definition::$NOTIFICATION_H5,
-            'notification_url'=> Definition::$NOTIFICATION_URL,
-        ];
-
         return jsonRes( 0 , $result);
     }
 
@@ -257,6 +199,7 @@ class User
     private function checkPlayer($user_id){
         $userRoomModel = new UserRoomModel();
         $serviceGatewayModel = new ServiceGatewayNewModel();
+        //todo 修改这里（房间信息）
         $user_room_info = $userRoomModel -> getUserRoomInfo($user_id);
         $data = [
             'playerId' => (int)$user_id,
@@ -350,5 +293,63 @@ class User
         $result = guzzleRequest( $url , $email_url , $email_data);
 
         return count($result['data']);
+    }
+
+    /**
+     * 获取玩家的好评和差评数(暂弃)
+     * @return \think\response\Json\
+     */
+    public function getComment(){
+        $user_id = getUserIdFromSession();
+        //获取用户评价数量
+        $evaluate = $this -> getEvaluate($user_id);
+        $result = [
+            'good_nums'=> $evaluate['good_num'],
+            'bad_nums' => $evaluate['bad_num'],
+        ];
+        return jsonRes(0,$result);
+    }
+
+    /**
+     * 检测玩家是否在房间中(暂弃)
+     * @return \think\response\Json\
+     * @throws \think\exception\DbException
+     */
+    public function checkUserInRoom(){
+        //实例化model
+        $lastClubModel = new UserLastClubModel();
+        $user_id = getUserIdFromSession();
+
+        //获取上次登录的俱乐部id
+        $lastClub = $lastClubModel -> getLastClubId($user_id);
+        $club_id = $lastClub['club_id'];
+        //获取俱乐部名称
+        if(!$club_id){
+            return jsonRes(3300);
+        }
+        $club_name = $this -> getClubName($club_id);
+
+        //检测玩家是否存在于房间中
+        $user_room_info = $this -> checkPlayer($user_id);
+
+        //返回房间信息
+        $roomInfo = $this -> getRoomInfo($user_room_info);
+        if(!$roomInfo){
+            return jsonRes(23202);
+        }
+        $result = [
+            'club_name'=> $club_name,
+            'club_id'  => $club_id,
+            'room_id'  => $roomInfo['room_id'],
+            'socket_url'=>$roomInfo['socket_url'],
+            'socket_h5'=> $roomInfo['socket_h5'],
+            'check'    => $roomInfo['check'],
+            'options'  => $roomInfo['options'],
+            'socket_ssl'=> Definition::$SOCKET_SSL,
+            'notification_h5'=> Definition::$NOTIFICATION_H5,
+            'notification_url'=> Definition::$NOTIFICATION_URL,
+        ];
+
+        return jsonRes( 0 , $result);
     }
 }

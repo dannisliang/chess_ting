@@ -10,6 +10,7 @@ namespace app\controller;
 
 
 use app\definition\RedisKey;
+use app\model\UserEvaluateModel;
 use think\cache\driver\Redis;
 
 class GamingRoomInfo extends Base
@@ -26,24 +27,50 @@ class GamingRoomInfo extends Base
         }
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $room_id    = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $this->opt['player_id']);
+        $room_id      = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $this->opt['player_id']);
         $player_infos = $redisHandler -> hGet(RedisKey::$USER_ROOM_KEY_HASH . $room_id,'playerInfos');
         if(!$player_infos){
-            return jsonRes(3006);
+            return jsonRes(3518);
         }
         $result = [];
         $play_infos = json_decode($player_infos,true);
         foreach ($play_infos as $play_info){
+            $evalInfo = $this ->getEvaluate($play_info['userId']);
             $player = [
-                'ip' => $play_info['ipAddr'],
-                'nickname' => $play_info['nickName'],
-                'head_img' => $play_info['headImgUrl'],
-                'gender' => $play_info['sex'],
-                'vip_id' => $play_info['vipId'],
+                'nickname'  => $play_info['nickName'],
+                'head_img'  => $play_info['headImgUrl'],
+                'gender'    => $play_info['sex'],
+                'vip_id'    => $play_info['vipId'],
+                'ip'        => $play_info['ipAddr'],
+                'good_num'  => $evalInfo['good_num'],
+                'bad_num'   => $evalInfo['bad_num'],
             ];
             $result[] =  $player;
         }
         return jsonRes(0 , $result);
+    }
+
+    /**
+     * 获取用户点赞数
+     * @param $user_id
+     * @return array
+     */
+    private function getEvaluate($user_id){
+        $evaluateModel = new UserEvaluateModel();
+        $evalInfo = $evaluateModel ->getInfoById($user_id);
+        $evaluate = [
+            'good_num' => 0 ,
+            'bad_num'   => 0,
+        ];
+        if(!empty($evalInfo)){
+            $evaluate = [
+                'good_num' => $evalInfo['good_num'] ,
+                'bad_num'   => $evalInfo['bad_num'],
+            ];
+        }
+
+
+        return $evaluate;
     }
 
     /**
