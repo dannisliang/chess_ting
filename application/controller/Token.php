@@ -16,7 +16,7 @@ use think\Session;
 class Token extends Base
 {
     /**
-     * 获取token
+     * 获取token1
      * @return \think\response\Json\
      */
     public function getToken(){
