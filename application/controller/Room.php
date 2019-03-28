@@ -71,7 +71,7 @@ class Room extends Base
 
         return jsonRes(3006); # 请求参数有误
     }
-    # 创建房间完成
+    # 创建房间完成  review完成没有优化余地
     public function createRoom(){
         $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa', 'sex' => '1'];
         Session::set(RedisKey::$USER_SESSION_INFO, $sess);
