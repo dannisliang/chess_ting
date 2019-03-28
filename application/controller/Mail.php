@@ -20,10 +20,10 @@ class Mail extends Base
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function lists(){
-        $sess = ['uid' => 328946, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1'];//调试代码用
-        Session::set(RedisKey::$USER_SESSION_INFO, $sess);//保存在redis里面
-        $mail_type = 1;//$this->opt['mail_type'];//邮件的类型
-        $mail_limit = 60;//$this->opt['limit'];//查询的邮件的数量
+
+
+        $mail_type = $this->opt['mail_type'];//邮件的类型
+        $mail_limit = $this->opt['limit'];//查询的邮件的数量
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
         $user_object = getUserSessionInfo();//获取用户详细信息
         $player_id = $user_object['uid'];//用户ID
@@ -106,7 +106,7 @@ class Mail extends Base
      */
     public function detail()
     {
-        $mail_id = 1055;//$this->opt['mail_id'];
+        $mail_id = $this->opt['mail_id'];
         $user_obj = getUserSessionInfo();
         $player_id = $user_obj['uid'];
         $data['appid'] = Definition::$CESHI_APPID;//省份的appid
