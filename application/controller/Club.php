@@ -33,29 +33,21 @@ class Club extends Base
      */
     public function getClubInfo(){
         $user_id = getUserIdFromSession();
+        if(!$user_id){
+            return jsonRes(9999);
+        }
         $opt = ['club_id'];
         if (!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
-        //获取用户的vip信息
-        $userVipInfo = $this -> getUserVipInfo($user_id,$this ->opt['club_id']);
 
         //获取俱乐部信息
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
-
-        //获取用户资产 （废弃）
-//        $gold = $this -> getUserProperty($user_id);
 
         //TODO 报送大数据
         $this -> beeSender();
 
         $data = [
-            //vip信息
-            'end_day'       => $userVipInfo['end_day'], //玩家vip到期时间
-            'cards_num'     => $userVipInfo['cards_num'],
-            'surplus_day'   => $userVipInfo['surplus_day'],
-            'user_vipinfos' => $userVipInfo['user_vipinfos'],
-
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
             'club_id'       => $clubMessage['club_id'],     //俱乐部id
@@ -64,19 +56,60 @@ class Club extends Base
             'club_name'     => $clubMessage['club_name'],   // 俱乐部名称
             'club_icon'     => $clubMessage['club_icon'],   // 俱乐部图标
             'club_type'     => $clubMessage['club_type'],   //0:A模式 1：B模式
-            'club_notice'   => $clubMessage['club_notice'],
-
-            //用户资产（废弃）
-//            'gold' => $gold,
+            'club_notice'   => $clubMessage['club_notice'], //俱乐部公告
         ];
         return jsonRes(0,$data);
+    }
+
+    /**
+     * 获取会员卡信息
+     * @return \think\response\Json\
+     */
+    public function getUserVipInfo(){
+        $user_id = getUserIdFromSession();
+        if(!$user_id){
+            return jsonRes(9999);
+        }
+        $opt = ['club_id'];
+        if (!has_keys($opt,$this->opt,true)){
+            return jsonRes(3006);
+        }
+        $userVipModel = new UserVipModel();
+        $where = [
+            'a.club_id' => $this->opt['club_id'],
+            'vip_status'=> 1,
+            'uid'       => $user_id,
+            'end_day'   => [
+                '>',date('Y-m-d H:i:s',time())
+            ]
+        ];
+
+        $userVipInfo = $userVipModel -> getOneByJoinWhere($where);
+        $list = [];
+        if($userVipInfo){
+            //拼接的数据
+            $user_vipinfos = [
+                'vip_level' => $userVipInfo['type'],
+                'vid'       => $userVipInfo['vid'],
+                'vip_name'  => $userVipInfo['v_name']
+            ];
+            //获取用户的vip信息
+            $list = [
+                'end_day'     => strtotime($userVipInfo['end_day']),
+                'cards_num'   => $userVipInfo['card_number'],
+                'surplus_day' => strtotime($userVipInfo['end_day']) - time(),//会员卡剩余时间
+                'user_vipinfos'=>$user_vipinfos,
+            ];
+        }
+
+        return jsonRes(0,$list);
     }
 
     /**
      * 获取加俱乐部列表（现在是查找俱乐部也在这里）
      * @return \think\response\Json\
      */
-    public function getClubInfos(){
+    public function getClubListOrSearch(){
         $user_id = getUserIdFromSession();
         if(!$user_id){
             return jsonRes(9999);
@@ -449,7 +482,6 @@ class Club extends Base
             'club_name' => base64_decode($clubInfo['club_name']),
             'club_type' => $clubInfo['club_type'], //0:A模式 1：B模式
         ];
-
         return $list;
     }
 
@@ -519,43 +551,4 @@ class Club extends Base
         ];
     }
 
-
-    /**
-     * 获取用户的会员卡信息
-     * @param $user_id
-     * @param $club_id
-     * @return array
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
-    private function getUserVipInfo($user_id,$club_id){
-        $userVipModel = new UserVipModel();
-        $where = [
-            'a.club_id' => $club_id,
-            'vip_status'=> 1,
-            'uid'       => $user_id,
-            'end_day'   => [
-                '>',date('Y-m-d H:i:s',time())
-            ]
-        ];
-
-        $userVipInfo = $userVipModel -> getOneJoinByWhere($where);
-        if($userVipInfo){
-            //拼接的数据
-            $user_vipinfos = [
-                'vip_level' => $userVipInfo['type'],
-                'vid'       => $userVipInfo['vid'],
-                'vip_name'  => $userVipInfo['v_name']
-            ];
-            //获取用户的vip信息
-            $list = [
-                'end_day'     => strtotime($userVipInfo['end_day']),
-                'cards_num'   => $userVipInfo['card_number'],
-                'surplus_day' => strtotime($userVipInfo['end_day']) - time(),//会员卡剩余时间
-                'user_vipinfos'=>$user_vipinfos,
-            ];
-        }
-        return $list;
-    }
 }
