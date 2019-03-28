@@ -15,6 +15,15 @@ class Agent extends Base
 {
     private $path = 'application/open_recruit.php';
     private $data = array();
+    public static $player_id = '';
+    public function __construct(Request $request)
+    {
+        $player_id = self::$player_id = getUserIdFromSession();
+        if(!$player_id){
+            return jsonRes(9999);
+        }
+
+    }
 
     /*控制招募代理按钮的显示*/
     public function openRecruit()
