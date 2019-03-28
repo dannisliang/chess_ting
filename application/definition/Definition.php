@@ -99,5 +99,7 @@ class Definition{
     public static $OBS_SECRET = 'hodhHpjMIIDhl6KXbpDB35bzjLFG5KisKATnigcE';
     public static $OBS_ENDPOINT = 'obs.cn-north-1.myhuaweicloud.com';
 
+
+
 }
 
