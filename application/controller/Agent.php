@@ -57,7 +57,7 @@ class Agent extends Base
     }
     /*接收客户端表单的提交*/
     public function recive(){
-        $opt = $this->opt;//1234566545
+        $opt = $this->opt;//1234566
         $player_obj = getUserSessionInfo();
         $data['player_id'] = $player_obj['uid'];
         //$player_name = $player_obj['nickname'];
