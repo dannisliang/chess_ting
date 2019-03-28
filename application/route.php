@@ -15,14 +15,14 @@ use think\Route;
  */
 Route::rule('service/getUserInfo','user/getUserInfo'); //获取大厅玩家信息
 Route::rule('service/getToken','token/getToken');  //验证token
-Route::rule('service/getComment','user/getComment'); //获取玩家的好评差评数量
-Route::rule('service/checkUserInRoom','user/checkUserInRoom'); //检测玩家是否在游戏房间中
+Route::rule('service/getComment','user/getComment'); //获取玩家的好评差评数量（暂时废弃）
+Route::rule('service/checkUserInRoom','user/checkUserInRoom'); //检测玩家是否在游戏房间中（暂时废弃）
 
 /**
  * 与俱乐部相关
  */
 Route::rule('service/club/getClubInfo','club/getClubInfo');  //首页点击进入俱乐部
-Route::rule('service/club/getClubInfos','club/getClubInfos'); //俱乐部列表
+Route::rule('service/club/getClubInfos','club/getClubListOrSearch'); //俱乐部列表合查找俱乐部
 Route::rule('service/club/JoinClub','club/joinClub'); //加入俱乐部
 Route::rule('service/club/outClub','club/outClub'); //退出俱乐部
 Route::rule('service/club/getUserVipInfo','club/getUserVipInfo'); //获取玩家的vip信息
@@ -65,6 +65,7 @@ Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
  */
 Route::rule('service/room/getRecordRoomList','Room/getRecordRoomList'); # 牌局记录列表
 Route::rule('service/room/getRecordList','Room/getRecordList'); # 牌局记录列表
+
 /**
  * 邮件相关
  */
@@ -80,9 +81,6 @@ Route::rule('service/getnotice','Notice/lists');
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
-
-
-
 return [
     '__pattern__' => [
         'name' => '\w+',
