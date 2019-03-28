@@ -25,13 +25,14 @@ class Definition{
 
 //    public static $INFORM_URL = 'http://gezeal.f3322.net:8800/notice_center/');//王朝翠的接口
     public static $IS_DEBUG         = '1';//报送大数据是否为测试
-    public static $SOCKET_H5        ='ws://mp.snplay.com:5201';//H5的socket地址
-    public static $SOCKET_URL       ='mp.snplay.com:5200';//超哥的socket
+    public static $SOCKET_H5        = 'ws://mp.snplay.com:5201';//H5的socket地址
+    public static $SOCKET_URL       = 'mp.snplay.com:5200';//超哥的socket
     public static $SERVICE_IP       = '192.168.9.18';//项目的服务器IP地址
-    public static $MY_APP_NAME      ='tianjin_mahjong';//报送大数据是传送的项目名字
-    public static $NEED_DIAMOND     ='10';//结束后扣除的钻石数
-    public static $NOTIFICATION_H5  ='http://mp.snplay.com:5202';//H5的通知地址
-    public static $NOTIFICATION_URL ='http://mp.snplay.com:5202';//通知中心服务器地址,
+    public static $MY_APP_NAME      = 'tianjin_mahjong';//报送大数据是传送的项目名字
+    public static $NEED_DIAMOND     = '10';//结束后扣除的钻石数
+    public static $MATCH_SERVICE    = 'http://mp.snplay.com:5417'; //匹配服地址 （河南专用）
+    public static $NOTIFICATION_H5  = 'http://mp.snplay.com:5202';//H5的通知地址
+    public static $NOTIFICATION_URL = 'http://mp.snplay.com:5202';//通知中心服务器地址,
 
 
     /**

@@ -24,10 +24,6 @@ class UserEvaluateModel extends Model
      * @throws \think\exception\DbException
      */
     public function getInfoById($id){
-        try{
-            return $this -> where('player_id',$id)->find();
-        }catch(\Exception $e){
-            return false;
-        }
+        return $this -> where('player_id',$id)->find();
     }
 }

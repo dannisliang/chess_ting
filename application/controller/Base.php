@@ -10,6 +10,7 @@ namespace app\controller;
 
 use think\Config;
 use think\Controller;
+use think\Log;
 use think\Request;
 
 
@@ -41,4 +42,5 @@ class Base extends Controller
             exit();
         }
     }
+    //jjjj
 }
