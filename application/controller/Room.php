@@ -8,21 +8,20 @@
 
 namespace app\controller;
 
-use app\definition\Definition;
-use app\model\RoomOptionsModel;
+use think\Session;
+use Obs\ObsClient;
 use app\model\PlayModel;
 use app\model\ClubModel;
-use think\cache\driver\Redis;
-use app\definition\RedisKey;
-use app\model\UserVipModel;
 use app\model\VipCardModel;
+use app\model\UserVipModel;
+use app\model\UserClubModel;
+use app\definition\RedisKey;
+use think\cache\driver\Redis;
 use app\model\ClubSocketModel;
+use app\definition\Definition;
+use app\model\RoomOptionsModel;
 use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
-use think\Session;
-use app\model\UserClubModel;
-use Obs\ObsClient;
-use app\model\UserClubRoomRecordModel;
 
 
 class Room extends Base
@@ -84,6 +83,9 @@ class Room extends Base
 
         # 获取用户的session数据
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!$userSessionInfo){
+            return jsonRes(3006);
+        }
 
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
@@ -267,8 +269,12 @@ class Room extends Base
                 ];
                 $operaRes = operatePlayerProperty($operateData);
                 if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
-
+                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
                 }
+            }
+
+            if($createRoomInfo['content']['result'] == 10002){
+                return jsonRes(3519);
             }
             return jsonRes(3517);
         }
@@ -304,6 +310,7 @@ class Room extends Base
             'socketSsl' => Definition::$SOCKET_SSL, # socket证书
             'roomUrl' => $createRoomUrl, # 房间操作的接口的请求地址
             'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), # 玩法数据中的play的checks json
+            'roomCode' => $playInfoPlayJsonDecode['code'], # 客户端需要
             'roomOptions' => $roomOptionsInfo['options'], # 玩法相关数据 json
             'playerInfos' => json_encode($playerInfo), # 用户信息集 json
             'isGps' => $roomOptionsInfo['cheat'], # 是否判断gps 0不检测
@@ -545,15 +552,14 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['diamond', 'roomOptionsId', 'needUserNum', 'playChecks', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
+                $clubRoomReturn[$k]['room_id'] = $roomNum;
                 $clubRoomReturn[$k]['diamond'] = $roomHashValue['diamond'];
                 $clubRoomReturn[$k]['match_id'] = $roomHashValue['roomOptionsId'];
                 $clubRoomReturn[$k]['player_size'] = $roomHashValue['needUserNum'];
-                $playChecksJsonDecode = json_decode($roomHashValue['playChecks'], true);
-                $clubRoomReturn[$k]['room_code'] = $playChecksJsonDecode['code'];
-                $clubRoomReturn[$k]['room_id'] = $roomNum;
+                $clubRoomReturn[$k]['room_code'] = $roomHashValue['roomCode'];
                 $clubRoomReturn[$k]['room_rate'] = $roomHashValue['roomRate'];
                 $clubRoomReturn[$k]['socket_h5'] = $roomHashValue['socketH5'];
                 $clubRoomReturn[$k]['socket_url'] = $roomHashValue['socketUrl'];
@@ -605,87 +611,6 @@ class Room extends Base
         }
 
         return jsonRes(0, $clubRoomReturn);
-    }
-    # 获取用户的历史纪录
-    public function getRecordRoomList(){
-        # 获取三天内玩过的房间
-        if(!isset($this->opt['club_id']) || !is_numeric($this->opt['club_id'])){
-            return jsonRes(3006);
-        }
-        $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
-
-        # 获取所有的用户玩过的房间
-        $userClubRoomRecord = new UserClubRoomRecordModel();
-        $userClubRoomRecordInfo = $userClubRoomRecord->getUserClubRoomRecord($userSessionInfo['userid'], $this->opt['club_id']);
-        if(!$userClubRoomRecordInfo){
-            return jsonRes(0, []);
-        }
-
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $returnData = [];
-        foreach ($userClubRoomRecordInfo as $k => $v){
-            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomChecks']);
-                $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
-                $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
-                $roomChecks = json_decode($roomHashInfo['roomChecks'], true);
-                # 处理数据
-                $userScore = [];
-                foreach ($gameEndInfo as $kk => $scoreInfo){
-                    $userScore[$scoreInfo['playerId']] = $scoreInfo['totalScore'];
-                }
-                foreach ($roomUserInfo as $kkk => $userInfo){
-                    $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
-                }
-                $return = [];
-                $return['player_infos'] = $roomUserInfo;
-                $return['time'] = $roomHashInfo['gameEndTime'];
-                $return['room_id'] = $v['room_id'];
-                $return['Options'] = $roomHashInfo['roomOptions'];
-                $return['room_code'] = $roomChecks['code'];
-
-                $returnData[] = $return;
-            }
-        }
-
-        return jsonRes(0, $returnData);
-    }
-    # 获取房间的牌局记录
-    public function getRecordList(){
-        if(!isset($this->opt['room_id']) || !is_numeric($this->opt['room_id'])){
-            return jsonRes(3006);
-        }
-
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
-            return jsonRes(3006);
-        }
-
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['gameEndInfo', 'playerInfos']);
-        $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
-        $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
-
-        if(!is_array($playerInfos) || !is_array($gameEndInfo)){
-            return jsonRes(0, []);
-        }
-
-        $returnData = [];
-        foreach ($gameEndInfo as $k => $v){
-            $returnData[$k]['playBack'] = $v[1];
-            $returnData[$k]['time'] = $v[2];
-            $returnData[$k]['record_id'] = $k;
-            $returnData[$k]['info'] = $playerInfos;
-            $userScore = [];
-            foreach ($v[0] as $kk => $vv){
-                $userScore[$vv['playerId']] = $vv['score'];
-            }
-            foreach ($returnData[$k]['info'] as $kkk => $vvv){
-                $returnData[$k]['info'][$kkk]['score'] = $userScore[$vvv['userId']];
-            }
-        }
-        return jsonRes(0, $returnData);
     }
 
     /**

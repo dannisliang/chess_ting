@@ -54,20 +54,19 @@ Route::rule('service/shop/shopDetail','shop/shopGoodsList'); //商城列表
 Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
 Route::rule('service/shop/buygold','shop/buyGold'); //购买金币
 Route::rule('service/shop/orderPay','shop/orderPay'); //H5下单
-
 Route::rule('service/shop/reciveOrder','paySuccessCallBack/receiveOrder'); //支付订单回调
-
 
 /**
  * vip卡相关
  */
-Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
+Route::rule('service/shop/userVip','Vip/useVipCard'); # 使用vip卡
+Route::rule('service/shop/use_vipcard','Vip/getUserVipCard'); # 使用vip卡
 
 /**
  * 牌局记录相关
  */
-Route::rule('service/room/getRecordRoomList','Room/getRecordRoomList'); # 牌局记录列表
-Route::rule('service/room/getRecordList','Room/getRecordList'); # 牌局记录列表
+Route::rule('service/room/getRecordRoomList','Record/getRecordRoomList'); # 牌局记录列表
+Route::rule('service/room/getRecordList','Record/getRecordList'); # 牌局记录列表
 
 /**
  * 邮件相关
@@ -80,10 +79,17 @@ Route::rule('service/deleteMail','Mail/delete');
 Route::rule('service/getBulletinList','HorseLamp/lists');
 /*公告*/
 Route::rule('service/getnotice','Notice/lists');
+
 /*代理招募部分*/
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
+
+
+
+
+
+
 return [
     '__pattern__' => [
         'name' => '\w+',
