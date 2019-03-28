@@ -33,19 +33,6 @@ function jsonRes($code, $data = [] ){
 }
 
 /**
- * 获取用户的session数据
- * @return mixed   {’nickname’:’昵称’,’sex’:1,’province’:’省份’,’city’:’城市’,’country’:’国家’,’headimgurl’:’头像图片url’}  'userid'  '1'
- */
-function getUserSessionInfo(){
-    $userInfo = Session::get(RedisKey::$USER_SESSION_INFO);
-    if(!$userInfo){
-        return json(['code'=>9999, 'mess' => '请重新登录'])->send();
-        exit();
-    }
-    return $userInfo;
-}
-
-/**
  * 检查用户token是否有效
  * @return mixed ture/false
  */
@@ -61,7 +48,7 @@ function checkUserToken($userSessionInfo){
 /**
  * 获取用户资产
  * @param $userIds 用户ID或用户ID集
- * @param $propertyType 请求类型固定值
+ * @param $propertyType 请求类型固定值可以为数组
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
@@ -81,7 +68,7 @@ function getUserProperty($userIds, $propertyType){
  * @param array $headers 请求头
  * @return mixed|\Psr\Http\Message\StreamInterface 记录超时日志 记录状态码非200日志 请求正确返回array
  */
-function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
+function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
 //        'connect_timeout' => 1, # 最长握手时间
@@ -90,6 +77,12 @@ function sendHttpRequest($url, $data, $type = 'POST', $headers = []){
         'decode_content' => 'gzip',
         'http_errors' => false, # 非200状态码不抛出异常
     ];
+
+    if($config){
+        foreach ($config as $k => $v){
+            $requestConfig[$k] = $v;
+        }
+    }
 
     if($headers){
         foreach ($headers as $k => $v){
@@ -159,7 +152,7 @@ function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJson
 function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $roomOptionsInfoOptionsJsonDecode, $keyName){
 //    print_r($playInfoPlayJsonDecodeChecksGroup);die;
     $ret = '';
-    if(is_array($playInfoPlayJsonDecodeChecksGroup)){
+    if(is_array($playInfoPlayJsonDecodeChecksGroup) && is_array($roomOptionsInfoOptionsJsonDecode)){
         foreach($playInfoPlayJsonDecodeChecksGroup as $k => $v){
             if($k === $keyName){
                 if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
@@ -247,9 +240,55 @@ function operaUserProperty($player, $type, $diamond){
     return sendHttpRequest($url, $data);
 }
 
-function disBandRoom($service, $playerId, $roomId){
-    $data['playerId'] = $playerId;
-    sendHttpRequest($service.Definition::$DIS_BAND_ROOM.$roomId, $data);
+/**
+ * 操作用户资产
+ * @param $player_id /用户id
+ * @param $type /资产类型
+ * @param $diamond /数量
+ * @param $event_type /操作类型
+ * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
+ * @param $property_name /操作资产说明
+ * @return mixed
+ */
+function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_id ,$property_name){
+    $url      = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$PROPERTY_CHANGE;
+    $data = [
+        'app_id' => Definition::$CESHI_APPID,
+        'upinfo' => [
+            [
+                'uid'           => $player_id,
+                "property_type" => $type,
+                "change_num"    => $diamond,
+                'event_type'    => $event_type, //" + 或者 -  或者 update ",
+                "reason_id"     => $reason_id,
+                "property_name" => $property_name,
+            ]
+        ],
+    ];
+    $res = guzzleRequest($url , $pathInfo ,$data);
+    return $res;
+}
+
+/**
+ * 批量操作用户资产
+ * @param $player_id /用户id
+ * @param $type /资产类型
+ * @param $diamond /数量
+ * @param $event_type /操作类型
+ * @param $reason_id /reason_id说明： 1 -牌局消耗 2-GM后台修改 3-邮件管理 4-商城购买 5-会长返利 6-提现 7-房费扣减 8-房费退还
+ * @param $property_name /操作资产说明
+ * @return mixed
+ */
+function operatePlayerProperty($data){
+    $url      = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$PROPERTY_CHANGE;
+    $info = [
+        'app_id' => Definition::$CESHI_APPID,
+        'upinfo' => $data,
+    ];
+    $res = guzzleRequest($url , $pathInfo , $info);
+    return $res;
 }
 
 /**
@@ -257,7 +296,7 @@ function disBandRoom($service, $playerId, $roomId){
  * @param $key
  */
 function errorLog($errorType, $data){
-    $errorStr = date('Y-m-d H:i:s', time()).'|'.implode('|', $data).PHP_EOL;
+    $errorStr = date('Y-m-d H:i:s', time()).'|'.json_encode($data).PHP_EOL;
     file_put_contents(APP_LOG_PATH.$errorType.'.log', $errorStr, FILE_APPEND);
 }
 
@@ -266,9 +305,42 @@ function errorLog($errorType, $data){
  * @return mixed
  */
 function getUserIdFromSession(){
-    Session::set(RedisKey::$USER_SESSION_INFO,['player_id'=>328946]);
-    $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
-    return $user_id;
+    //杨腾飞调试专用
+//    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
+//    var_dump($user_info);die;
+////    $user_info = json_decode($user_info,true);
+//    if(!is_array($user_info)){
+//        $user_info = [];
+//    }
+//    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
+
+    try{
+        $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
+        if(!$user_id){
+            return false;
+        }
+        return $user_id;
+    }catch (\Exception $e){
+        return false;
+    }
+}
+
+/**
+ * 验证token
+ * $data = [
+        'ip'    => $ip,
+        'token' => $this->opt['token'],
+        'uid'   => $this->opt['player_id'],
+    ];
+ * @param $data
+ * @return mixed
+ */
+function checkToken($data){
+    //验证传输的token是否可靠
+    $url = Definition::$WEB_API_URL;
+    $pathInfo = Definition::$AUTHENTICATE;
+    $result = guzzleRequest( $url , $pathInfo , $data );
+    return $result;
 }
 /**
  * 操作文件
@@ -295,4 +367,55 @@ function operaFile($path,$data,$type){
             return false;
     }
 }
+
+/**
+ * 返回用户昵称
+ * @param $player_id
+ * @return mixed
+ */
+function backNickname($player_id){
+    $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+    if(isset($user_info['nick_name'])){
+        $nick_name = $user_session_info['nick_name'];
+    }else{
+        $data = [
+            'uid'=>$player_id,
+            'app_id'=>Definition::$CESHI_APPID,
+        ];
+        $url = Definition::$WEB_API_URL;
+        $path_info = Definition::$GET_INFO;
+        $user_info = guzzleRequest($url , $path_info , $data);
+        $nick_name = $user_info['data']['nickname'];
+        //再存入session
+        if(!is_array($user_session_info)){
+            $user_session_info = [];
+        }
+        $user_info = array_merge($user_session_info,['nick_name'=>$nick_name]);
+        Session::set(RedisKey::$USER_SESSION_INFO,$user_info);
+    }
+    return $nick_name;
+}
+
+/**
+ * 获取用户的基本信息
+ * @param $user_id
+ * @return mixed
+ */
+function getUserBaseInfo($user_id)
+{
+
+    //请求用户中心接口地址
+    $url = Definition::$WEB_API_URL;
+    //获取用户中心接口路径
+    $userInfo_url = Definition::$GET_INFO;
+    //向用户中心传输的请求参数
+    $data = [
+        'uid' => $user_id,
+        'app_id'=> Definition::$CESHI_APPID,
+    ];
+    $result = guzzleRequest( $url , $userInfo_url , $data);
+
+    return $result['data'];
+}
+
 

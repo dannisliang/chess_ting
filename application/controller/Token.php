@@ -11,6 +11,7 @@ namespace app\controller;
 
 use app\definition\Definition;
 use app\definition\RedisKey;
+use think\Log;
 use think\Session;
 
 class Token extends Base
@@ -25,6 +26,7 @@ class Token extends Base
         if(!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
         }
+
         //获取ip
         $unknown = 'unknown';
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] && strcasecmp($_SERVER['HTTP_X_FORWARDED_FOR'], $unknown)) {
@@ -36,22 +38,31 @@ class Token extends Base
             $ip = reset(explode(',', $ip));
         }
 
-        //验证传输的token是否可靠
-        $url = Definition::$WEB_API_URL;
-        $pathInfo = Definition::$AUTHENTICATE;
+        //验证token
         $data = [
             'ip'    => $ip,
             'token' => $this->opt['token'],
             'uid'   => $this->opt['player_id'],
         ];
-
-        $result = guzzleRequest( $url , $pathInfo , $data );
+        $result = checkToken( $data );
 
         if($result['result'] === false){
             return jsonRes(3002);
         }
+        $user_info = getUserBaseInfo($this->opt['player_id']);
         //验证完成的信息存入session
-        Session::set(RedisKey::$USER_SESSION_INFO, $this->opt);
+        $user_data = [
+            'client_type'   => $this -> opt['client_type'],
+            'player_id'     => $this -> opt['player_id'],
+            'app_type'      => $this -> opt['app_type'],
+            'token'         => $this -> opt['token'],
+            'ip'            => $ip,
+            'sex'           => $user_info['sex'],
+            'userid'        => $this -> opt['player_id'],
+            'headimgurl'    => $user_info['headimgurl'],
+            'nickname'      => $user_info['nickname'],
+        ];
+        Session::set(RedisKey::$USER_SESSION_INFO, $user_data);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()

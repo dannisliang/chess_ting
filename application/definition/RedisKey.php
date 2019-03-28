@@ -21,5 +21,6 @@ class RedisKey{
 
     public static $USER_ROOM_KEY = 'user_room_'; # 用户房间对应关系
 
-    public static $JOIN_OR_OUT_ROOM_LIST = 'join_or_out_room_list'; # 玩家加入房间或退出房间的队列
+    public static $USE_VIP_CARD = 'use_vip_card'; # 使用vip卡加锁
+
 }

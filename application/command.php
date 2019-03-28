@@ -11,5 +11,5 @@
 
 return [
     'app\command\RoomNumPush',
-    'app\command\JoinOrOutRoom',
+    'app\command\Test',
 ];

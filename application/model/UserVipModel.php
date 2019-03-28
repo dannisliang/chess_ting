@@ -19,7 +19,8 @@ class UserVipModel extends Model{
      * @return array|false|\PDOStatement|string|Model
      */
     public function getUserVipInfoByUserIdAndClubId($userId, $clubId){
-        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vip_status', '=', 1)->find();
+        $date = date("Y-m-d H:i:s", time());
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vip_status', '=', 1)->where('end_day', '>', $date)->find();
     }
 
     /**
@@ -30,7 +31,7 @@ class UserVipModel extends Model{
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function getOneByWhere($where){
+    public function getOneByJoinWhere($where){
 
         try{
             return $this -> where($where)
@@ -43,5 +44,56 @@ class UserVipModel extends Model{
         }catch(\Exception $e){
             return false;
         }
+    }
+
+    /**
+     * 查用户俱乐部的vip卡
+     * @param $userId
+     * @param $clubId
+     * @param $vid
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getUserVipCardInfo($userId, $clubId, $vid){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vid', '=', $vid)->where('card_number', '>', 0)->find();
+    }
+
+    /**
+     * 查询用户俱乐部的所有可用vip卡
+     * @param $userId
+     * @param $clubId
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getUserAllVipCard($userId, $clubId){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('card_number', '>', 0)->select();
+    }
+
+    /**
+     * 获取一条数据
+     * @param $where
+     * @param string $field
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\exception\DbException
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this -> where($where) -> field($field) -> find();
+    }
+
+    /**
+     * 根据条件更新数据
+     * @param $where
+     * @param $data
+     * @return UserVipModel
+     */
+    public function updateByWhere($where , $data){
+        return $this -> where($where) -> update($data);
+    }
+
+    /**
+     * 插入数据
+     * @param $data
+     * @return int|string
+     */
+    public function insertData($data){
+        return $this -> insert($data);
     }
 }

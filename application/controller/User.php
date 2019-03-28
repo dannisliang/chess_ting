@@ -19,19 +19,24 @@ use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 class User
 {
+    /**
+     * 获取用户的信息
+     * @return \think\response\Json\
+     */
     public function getUserInfo()
     {
         //实例化model
         $lastClubModel = new UserLastClubModel();
-        session('player_id',328946);
-        $user_id    = session('player_id'); //收件人id
+        $user_id = getUserIdFromSession();
+        if(!$user_id){
+            return jsonRes(9999);
+        }
 
         //获取未读取邮件数量
         $email_num  = $this ->getEmailNum($user_id);
 
         //获取用户基本信息
-        $user_info  = $this -> getUserBaseInfo($user_id);
-
+        $user_info  = getUserBaseInfo($user_id);
         //获取用户电话
         $phone_num  = isset($user_info['tel_number']) ? $user_info['tel_number'] : '' ;
         //获取是否显示招募代理入口参数
@@ -45,13 +50,14 @@ class User
         if ($club_id){
             $club_name = $this -> getClubName($club_id);
         }
+
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
 
-        //获取用户评价数量
+//        获取用户评价数量
         $evaluate = $this -> getEvaluate($user_id);
 
         //获取用户资产（返回钻石数量）
@@ -59,11 +65,12 @@ class User
 
         $result = [
             'phone_num' => $phone_num,
-            'agent_recruit'=>$is_open,
+            'agent_recruit'=> $is_open,
             'player_id'=> $user_id,
             'new_mail' => $email_num,
             'nickname' => $user_info['nickname'],
             'head_img' => $user_info['headimgurl'],
+            'is_mark'   => $user_info['ismark'], //是否绑定手机
             'club_name'=> $club_name,
             'club_id'  => $club_id,
             'room_id'  => $roomInfo['room_id'],
@@ -74,6 +81,7 @@ class User
             'socket_ssl'=> Definition::$SOCKET_SSL,
             'notification_h5'=> Definition::$NOTIFICATION_H5,
             'notification_url'=> Definition::$NOTIFICATION_URL,
+            'match_service' => Definition::$MATCH_SERVICE,
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
             'diamond_num'=> $assets['diamond_num'],
@@ -82,6 +90,63 @@ class User
         return jsonRes( 0 , $result);
     }
 
+    /**
+     * 获取玩家的好评和差评数
+     * @return \think\response\Json\
+     */
+    public function getComment(){
+        $user_id = getUserIdFromSession();
+        //获取用户评价数量
+        $evaluate = $this -> getEvaluate($user_id);
+        $result = [
+            'good_nums'=> $evaluate['good_num'],
+            'bad_nums' => $evaluate['bad_num'],
+        ];
+        return jsonRes(0,$result);
+    }
+
+    /**
+     * 检测玩家是否在房间中
+     * @return \think\response\Json\
+     * @throws \think\exception\DbException
+     */
+    public function checkUserInRoom(){
+        //实例化model
+        $lastClubModel = new UserLastClubModel();
+        $user_id = getUserIdFromSession();
+
+        //获取上次登录的俱乐部id
+        $lastClub = $lastClubModel -> getLastClubId($user_id);
+        $club_id = $lastClub['club_id'];
+        //获取俱乐部名称
+        if(!$club_id){
+            return jsonRes(3300);
+        }
+        $club_name = $this -> getClubName($club_id);
+
+        //检测玩家是否存在于房间中
+        $user_room_info = $this -> checkPlayer($user_id);
+
+        //返回房间信息
+        $roomInfo = $this -> getRoomInfo($user_room_info);
+        if(!$roomInfo){
+            return jsonRes(23202);
+        }
+        $result = [
+            'club_name'=> $club_name,
+            'club_id'  => $club_id,
+            'room_id'  => $roomInfo['room_id'],
+            'socket_url'=>$roomInfo['socket_url'],
+            'socket_h5'=> $roomInfo['socket_h5'],
+            'check'    => $roomInfo['check'],
+            'options'  => $roomInfo['options'],
+            'socket_ssl'=> Definition::$SOCKET_SSL,
+            'notification_h5'=> Definition::$NOTIFICATION_H5,
+            'notification_url'=> Definition::$NOTIFICATION_URL,
+        ];
+
+        return jsonRes( 0 , $result);
+    }
 
     /**
      * 获取用户资产
@@ -138,6 +203,7 @@ class User
             ];
         }
 
+
         return $evaluate;
     }
 
@@ -160,7 +226,7 @@ class User
             $room_id    = $user_room_info['room_num'];
             $socket_h5  = $user_room_info['socket_h5'];
             $socket_url = $user_room_info['socket_url'];
-            $roomOption = $roomOptionModel ->getInfoById($user_room_info['match_id']);
+            $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
             if (!$roomOption){
                 $roomOption = $userRoomModel -> getOptionsByRoomNum($user_room_info['room_id']);
                 $roomOption['room_type'] = $roomOption['play_type'];
@@ -170,7 +236,7 @@ class User
                 $options = json_decode($roomOption['options']);
             }
             //获取play中的玩法
-            $play = $playModel -> getInfoById($roomOption['room_type']);
+            $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
             //获取check
             $check = json_decode($play['play'],true)['checks'];
         }
@@ -203,7 +269,7 @@ class User
             $socket_url = $item['socket_url'];
             $serviceInfo = $serviceGatewayModel ->getService($service_id);
             $url = $serviceInfo['service'];
-            $path_info = Definition::$CHECK_PLAYER;
+            $path_info = Definition::$GET_USER_ROOM;
             //请求逻辑服
             $lists = guzzleRequest( $url , $path_info , $data);
             $serviceInfo = $lists['content'];
@@ -260,28 +326,6 @@ class User
         $str = str_replace("\r\n","<br />",$str);
         $str = json_decode($str,true);
         return $str['is_open'];
-    }
-
-    /**
-     * 获取用户的基本信息
-     * @param $user_id
-     * @return mixed
-     */
-    private function getUserBaseInfo($user_id)
-    {
-
-        //请求用户中心接口地址
-        $url = Definition::$WEB_API_URL;
-        //获取用户中心接口路径
-        $userInfo_url = Definition::$GET_INFO;
-        //向用户中心传输的请求参数
-        $data = [
-            'uid' => $user_id,
-            'app_id'=> Definition::$CESHI_APPID,
-        ];
-        $result = guzzleRequest( $url , $userInfo_url , $data);
-
-        return $result['data'];
     }
 
     /**
