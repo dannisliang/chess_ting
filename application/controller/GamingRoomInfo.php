@@ -26,8 +26,8 @@ class GamingRoomInfo extends Base
         }
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $player_id    = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $this->opt['player_id']);
-        $player_infos = $redisHandler -> hGet(RedisKey::$USER_ROOM_KEY_HASH . $player_id,'playerInfos');
+        $room_id    = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $this->opt['player_id']);
+        $player_infos = $redisHandler -> hGet(RedisKey::$USER_ROOM_KEY_HASH . $room_id,'playerInfos');
         if(!$player_infos){
             return jsonRes(3006);
         }
@@ -43,7 +43,44 @@ class GamingRoomInfo extends Base
             ];
             $result[] =  $player;
         }
-
         return jsonRes(0 , $result);
+    }
+
+    /**
+     * 获取房间内玩家的资产信息(暂时没有用)
+     * @return \think\response\Json\
+     */
+    public function getUserProperty(){
+        $opt = ['room_id'];
+        if(!has_keys($opt,$this->opt)){
+            return jsonRes(3006);
+        }
+        //从Redis里获取房间内用户的信息
+        $redis = new Redis();
+        $redisHandler = $redis -> handler();
+        $player_infos = $redisHandler -> hGet(RedisKey::$USER_ROOM_KEY_HASH . $this->opt['room_id'],'playerInfos');
+        if(!$player_infos){
+            return jsonRes(3006);
+        }
+        $player_infos = json_decode($player_infos,true);
+        $userIds = [];
+        foreach ($player_infos as $player_info){
+            $userIds[] = $player_info['userId'];
+        }
+        $user_propertys = getUserProperty($userIds , 10001);
+        if($user_propertys['code'] != 0){
+            return jsonRes(23406);
+        }
+
+        //拼接返回值
+        $data = [];
+        foreach ($user_propertys['data'] as $user_property){
+            $temp = [
+                'have_gold' => $user_property['property_num'],
+                'player_id' => $user_property['uid'],
+            ];
+            $data[] = $temp;
+        }
+        return jsonRes(0 , $data);
     }
 }

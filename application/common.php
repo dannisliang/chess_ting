@@ -306,16 +306,16 @@ function errorLog($errorType, $data){
  */
 function getUserIdFromSession(){
     //杨腾飞调试专用
-    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
-//    $user_info = json_decode($user_info,true);
-    if(!is_array($user_info)){
-        $user_info = [];
-    }
-    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
+//    $user_info = Session::get(RedisKey::$USER_SESSION_INFO);
+//    var_dump($user_info);die;
+////    $user_info = json_decode($user_info,true);
+//    if(!is_array($user_info)){
+//        $user_info = [];
+//    }
+//    Session::set(RedisKey::$USER_SESSION_INFO,array_merge($user_info,['player_id'=>328946]));
 
     try{
         $user_id = Session::get(RedisKey::$USER_SESSION_INFO)['player_id'];
-
         if(!$user_id){
             return false;
         }
