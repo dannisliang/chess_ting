@@ -342,6 +342,7 @@ function checkToken($data){
     $result = guzzleRequest( $url , $pathInfo , $data );
     return $result;
 }
+
 /**
  * 操作文件
  */
