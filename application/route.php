@@ -85,6 +85,11 @@ Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
 
+//测试
+Route::rule('service/test','AsyncTest/test');
+Route::rule('service/demo','AsyncTest/demo');
+Route::rule('service/demo1','AsyncTest/demo1');
+
 
 
 
