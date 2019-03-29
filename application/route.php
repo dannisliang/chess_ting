@@ -30,19 +30,22 @@ Route::rule('service/club/getUserVipInfo','club/getUserVipInfo'); //获取玩家
 /**
  * 房间相关
  */
-Route::rule('service/room/createRoom','Room/createRoom');
-Route::rule('service/room/disBandRoom','Room/disBandRoom');
-Route::rule('service/room/joinRoom','Room/joinRoom');
-Route::rule('service/room/getUserRoom','Room/getUserRoom');
-Route::rule('service/room/getRoomGpsInfo','Room/getRoomGpsInfo');
-Route::rule('service/room/outRoom','Room/outRoomCallBack');
-Route::rule('service/room/room_list','Room/getRoomList');
-Route::rule('service/room/disBandRoomCallBack','Room/disBandRoomCallBack');
-Route::rule('service/room/roundEndGameCallBack','Room/roundEndGameCallBack');
+Route::rule('service/room/cheatRoom','Room/getRoomGpsInfo'); # 获取房间的gps相关数据
+Route::rule('service/room/room_list','Room/getRoomList'); # 俱乐部房间列表
 
+Route::rule('service/disband/getroom_list','Room/getUserRoom'); # 获取玩家房间
+Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散房间
+Route::rule('service/room/createRoom','Room/createRoom'); # 创建房间
+Route::rule('service/room/joinRoom','Room/joinRoom'); # 加入房间
+Route::rule('service/api/joinRoom','Room/joinRoomCallBack'); # 加入房间回调
+Route::rule('service/api/outRoom','Room/outRoomCallBack'); # 退出房间回调
+Route::rule('service/api/roomStartGame','Room/roomStartGameCallBack'); # 房间游戏开始回调
+Route::rule('service/api/roomEndGame','Room/roomEndGameCallBack'); # 房间游戏结束回调
+Route::rule('service/api/roundStartGame','Room/roundStartGameCallBack'); # 牌局游戏开始回调
+Route::rule('service/api/roundEndGame','Room/roundEndGameCallBack'); # 牌局游戏结束回调
+Route::rule('service/api/roomDisband','Room/disBandRoomCallBack'); # 房间解散回调
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
 Route::rule('service/room/getusergold','gamingRoomInfo/getUserProperty');  //获取房间用户资产
-
 
 /**
  * 商城相关
@@ -51,20 +54,19 @@ Route::rule('service/shop/shopDetail','shop/shopGoodsList'); //商城列表
 Route::rule('service/shop/getOrder','shop/getOrder'); //获取订单号
 Route::rule('service/shop/buygold','shop/buyGold'); //购买金币
 Route::rule('service/shop/orderPay','shop/orderPay'); //H5下单
-
 Route::rule('service/shop/reciveOrder','paySuccessCallBack/receiveOrder'); //支付订单回调
-
 
 /**
  * vip卡相关
  */
-Route::rule('service/vip/useVipCard','Shop/useVipCard'); # 使用vip卡
+Route::rule('service/shop/userVip','Vip/useVipCard'); # 使用vip卡
+Route::rule('service/shop/use_vipcard','Vip/getUserVipCard'); # 使用vip卡
 
 /**
  * 牌局记录相关
  */
-Route::rule('service/room/getRecordRoomList','Room/getRecordRoomList'); # 牌局记录列表
-Route::rule('service/room/getRecordList','Room/getRecordList'); # 牌局记录列表
+Route::rule('service/room/getRecordRoomList','Record/getRecordRoomList'); # 牌局记录列表
+Route::rule('service/room/getRecordList','Record/getRecordList'); # 牌局记录列表
 
 /**
  * 邮件相关
@@ -77,10 +79,17 @@ Route::rule('service/deleteMail','Mail/delete');
 Route::rule('service/getBulletinList','HorseLamp/lists');
 /*公告*/
 Route::rule('service/getnotice','Notice/lists');
+
 /*代理招募部分*/
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
+
+
+
+
+
+
 return [
     '__pattern__' => [
         'name' => '\w+',

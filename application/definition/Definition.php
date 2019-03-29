@@ -88,13 +88,13 @@ class Definition{
     public static $CHANGE_ROOM_HASH = 'changeRoomHash'; # 修改房间hash数据 参数 用户ID 房间ID
     public static $CHANGE_ROOM_STATUS = 'changeRoomStatus'; # 修改房间状态 参数 房间ID
     public static $CHANGE_ROOM_PLAY = 'changeRoomPlay'; # 修改房间牌局记录 参数 房间ID
-    public static $FAILED_TO_OPERATE_PROPERTY = 'failed_to_operate_property'; # 还钻会长失败
+    public static $FAILED_TO_OPERATE_PROPERTY = 'failed_to_operate_property'; # 钻失败
 
     /**
      * obs存储的桶
      */
     public static $CHESS_RECORD_TEST = 'chess-record-test'; # 测试桶
-    public static $CHESS_RECORD = 'chess-record'; # 测试桶
+    public static $CHESS_RECORD = 'chess-record'; # 桶
     public static $OBS_KEY = 'CJTRUPEZBC2RVGFBAB6T';
     public static $OBS_SECRET = 'hodhHpjMIIDhl6KXbpDB35bzjLFG5KisKATnigcE';
     public static $OBS_ENDPOINT = 'obs.cn-north-1.myhuaweicloud.com';
