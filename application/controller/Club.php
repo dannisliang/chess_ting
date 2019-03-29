@@ -57,7 +57,7 @@ class Club extends Base
             'club_icon'     => $clubMessage['club_icon'],   // 俱乐部图标
             'club_type'     => $clubMessage['club_type'],   //0:A模式 1：B模式
             'club_notice'   => $clubMessage['club_notice'], //俱乐部公告
-            'roomlist_area' => Definition::$ROOMLIST_AREA
+            'roomlist_area' => Definition::$ROOMLIST_AREA,  //控制优先显示房间列表
         ];
         return jsonRes(0,$data);
     }
