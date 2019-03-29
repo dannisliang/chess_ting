@@ -22,6 +22,7 @@ use app\definition\Definition;
 use app\model\RoomOptionsModel;
 use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
+use app\model\UserClubRoomRecordModel;
 
 
 class Room extends Base
@@ -73,9 +74,6 @@ class Room extends Base
     }
     # 创建房间完成  review完成没有优化余地
     public function createRoom(){
-        $sess = ['userid' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa', 'sex' => '1'];
-        Session::set(RedisKey::$USER_SESSION_INFO, $sess);
-
         # 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id']) || !is_numeric($this->opt['match_id']) || !is_numeric($this->opt['club_id'])){
             return jsonRes(3006);
@@ -456,6 +454,9 @@ class Room extends Base
         $joinRoomInfo = sendHttpRequest($roomHashInfo['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
 //        p($joinRoomInfo);
         if(!isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
+            if($joinRoomInfo['content']['result'] == 10002){
+                return jsonRes(3519);
+            }
             return jsonRes(3506);
         }
 
@@ -610,7 +611,8 @@ class Room extends Base
             }
         }
 
-        return jsonRes(0, $clubRoomReturn);
+        $return['roominfo'] = $clubRoomReturn;
+        return jsonRes(0, $return);
     }
 
     /**
@@ -812,7 +814,7 @@ class Room extends Base
             date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
             date("Y-m-d H:i", time())
         ];
-        $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
+        $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
         # 上传牌局记录到华为云
         require APP_LOG_PATH.'../vendor/HWOBS/obs-autoloader.php';
@@ -1021,6 +1023,26 @@ class Room extends Base
                             errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $seniorRebateData);
                         }
                     }
+                }
+            }
+        }
+
+        if($playerInfo){ # 用户牌局记录入库
+            $insertAll = [];
+            foreach ($playerInfo as $k => $userInfo){
+                $insert = [
+                    'room_id' => $this->opt['roomId'],
+                    'user_id' => $userInfo['userId'],
+                    'club_id' => $roomHashInfo['clubId'],
+                    'add_time' => date("Y-m-d H:i:s", time()),
+                ];
+                $insertAll[] = $insert;
+            }
+            if($insertAll){
+                $userClubRoomRecord = new UserClubRoomRecordModel();
+                $res = $userClubRoomRecord->insertAllUserRecord($insertAll);
+                if(!$res){
+
                 }
             }
         }
