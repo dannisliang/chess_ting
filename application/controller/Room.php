@@ -151,7 +151,6 @@ class Room extends Base
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
 
         if(config('app_debug')){ # 测试模式
-            p(1);
             $serviceId = 4;
             $createRoomUrl = 'http://192.168.9.18:9938/';
             $socketH5 = 'ws://192.168.9.18:5251';
