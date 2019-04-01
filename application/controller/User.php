@@ -211,7 +211,7 @@ class User
         $redis = new Redis();
         $redisHandler = $redis -> handler();
         $user_room_info = $redisHandler -> hGetAll(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
-
+        
         if(!$user_room_info){
             return false;
         }
