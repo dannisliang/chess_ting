@@ -119,6 +119,7 @@ abstract class Connection
         PDO::ATTR_ORACLE_NULLS      => PDO::NULL_NATURAL,
         PDO::ATTR_STRINGIFY_FETCHES => false,
         PDO::ATTR_EMULATE_PREPARES  => false,
+        PDO::ATTR_PERSISTENT         => true
     ];
 
     // 绑定参数

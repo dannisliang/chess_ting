@@ -18,4 +18,13 @@ class UserClubRoomRecordModel extends Model
         $timeEnd = date("Y-m-d H:i:s", bcsub(time(), bcmul(bcmul(3600, 24, 0), 3, 0), 0)); # 三天前
         return $this->where('user_id', '=', $userId)->where('club_id', '=', $clubId)->where('add_time', '>', $timeEnd)->select();
     }
+
+    /**
+     * 批量插入用户牌局记录
+     * @param $data
+     * @return int|string
+     */
+    public function insertAllUserRecord($data){
+        return $this->insertAll($data);
+    }
 }

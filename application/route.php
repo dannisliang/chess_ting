@@ -35,7 +35,7 @@ Route::rule('service/room/room_list','Room/getRoomList'); # 俱乐部房间列�
 
 Route::rule('service/disband/getroom_list','Room/getUserRoom'); # 获取玩家房间
 Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散房间
-Route::rule('service/room/createRoom','Room/createRoom'); # 创建房间
+Route::rule('service/room/creatroom','Room/createRoom'); # 创建房间
 Route::rule('service/room/joinRoom','Room/joinRoom'); # 加入房间
 Route::rule('service/api/joinRoom','Room/joinRoomCallBack'); # 加入房间回调
 Route::rule('service/api/outRoom','Room/outRoomCallBack'); # 退出房间回调
