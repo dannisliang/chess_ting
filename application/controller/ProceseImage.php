@@ -9,7 +9,7 @@
 namespace app\controller;
 
 
-class ProceseImage extends Base
+class ProceseImage
 {
     /**
      * 处理图片
