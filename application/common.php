@@ -441,7 +441,7 @@ function getRoomIdFromService($user_id){
         }
         if(array_key_exists('roomId',$serviceInfo['content'])){
             $room_id = $serviceInfo['content']['roomId'];
-            continue;
+            break;
         }
     }
 
