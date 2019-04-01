@@ -17,6 +17,7 @@ Route::rule('service/getUserInfo','user/getUserInfo'); //获取大厅玩家信�
 Route::rule('service/getToken','token/getToken');  //验证token
 Route::rule('service/getComment','user/getComment'); //获取玩家的好评差评数量（暂时废弃）
 Route::rule('service/checkUserInRoom','user/checkUserInRoom'); //检测玩家是否在游戏房间中（暂时废弃）
+Route::rule('service/getImage','proceseImage/getImage'); //处理图片
 
 /**
  * 与俱乐部相关
@@ -35,7 +36,7 @@ Route::rule('service/room/room_list','Room/getRoomList'); # 俱乐部房间列�
 
 Route::rule('service/disband/getroom_list','Room/getUserRoom'); # 获取玩家房间
 Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散房间
-Route::rule('service/room/createRoom','Room/createRoom'); # 创建房间
+Route::rule('service/room/creatroom','Room/createRoom'); # 创建房间
 Route::rule('service/room/joinRoom','Room/joinRoom'); # 加入房间
 Route::rule('service/api/joinRoom','Room/joinRoomCallBack'); # 加入房间回调
 Route::rule('service/api/outRoom','Room/outRoomCallBack'); # 退出房间回调
@@ -85,6 +86,11 @@ Route::rule('service/receive','Notice/lists');
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
 Route::rule('service/agent/recruit_state','Agent/state');
 Route::rule('service/agent/recive_recruit','Agent/recive');
+
+//测试
+Route::rule('service/test','AsyncTest/test');
+Route::rule('service/demo','AsyncTest/demo');
+Route::rule('service/demo1','AsyncTest/demo1');
 
 
 

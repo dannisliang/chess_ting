@@ -24,14 +24,8 @@ class ServiceGatewayNewModel extends Model
      * @throws \think\exception\DbException
      */
     public function getService($id){
-        try{
-            $result = $this -> where('id',$id)->field('service')->find();
-            return $result;
-
-        }catch (\Exception $e){
-            return false;
-        }
-
+        $result = $this -> where('id',$id)->field('service')->find();
+        return $result;
     }
 
     /**
@@ -47,7 +41,7 @@ class ServiceGatewayNewModel extends Model
      * 根据条件获取一条记录
      * @param $where
      * @param string $field
-     * @return ServiceGatewayNewModel
+     * @return array|false|\PDOStatement|string|Model
      */
     public function getOneByWhere($where , $field = '*'){
         return $this -> where($where) -> field($field) -> find();

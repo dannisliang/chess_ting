@@ -9,9 +9,16 @@
 namespace app\controller;
 
 
-class ProceseImage extends Base
+use think\Request;
+
+class ProceseImage
 {
+    /**
+     * 处理图片
+     * @return string|\think\response\Json
+     */
     public function getImage(){
+
         $request = Request::instance();
         $method = $request->method();//获取上传方式
         if ($method == 'GET') {

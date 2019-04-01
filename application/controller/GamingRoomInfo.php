@@ -16,7 +16,7 @@ use think\cache\driver\Redis;
 class GamingRoomInfo extends Base
 {
     /**
-     * 获取房间内其他玩家的信息 todo 传输为二维数组
+     * 获取房间内其他玩家的信息
      * @return \think\response\Json\
      */
     public function getOtherUserInfo(){
@@ -25,29 +25,32 @@ class GamingRoomInfo extends Base
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
+        //从逻辑服获取房间id
+        $room_id = getRoomIdFromService($this->opt['player_id']);
+
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $room_id      = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $this->opt['player_id']);
         $player_infos = $redisHandler -> hGet(RedisKey::$USER_ROOM_KEY_HASH . $room_id,'playerInfos');
         if(!$player_infos){
             return jsonRes(3518);
         }
-        $result = [];
         $play_infos = json_decode($player_infos,true);
         foreach ($play_infos as $play_info){
-            $evalInfo = $this ->getEvaluate($play_info['userId']);
-            $player = [
-                'nickname'  => $play_info['nickName'],
-                'head_img'  => $play_info['headImgUrl'],
-                'gender'    => $play_info['sex'],
-                'vip_id'    => $play_info['vipId'],
-                'ip'        => $play_info['ipAddr'],
-                'good_num'  => $evalInfo['good_num'],
-                'bad_num'   => $evalInfo['bad_num'],
-            ];
-            $result[] =  $player;
+            $player = [];
+            if($play_info['userId'] == $this ->opt['player_id']){
+                $evalInfo = $this ->getEvaluate($play_info['userId']);
+                $player = [
+                    'nickname'  => $play_info['nickName'],
+                    'head_img'  => $play_info['headImgUrl'],
+                    'gender'    => (int)$play_info['sex'],
+                    'vip_id'    => $play_info['vipId'],
+                    'ip'        => $play_info['ipAddr'],
+                    'good_num'  => $evalInfo['good_num'],
+                    'bad_num'   => $evalInfo['bad_num'],
+                ];
+            }
         }
-        return jsonRes(0 , $result);
+        return jsonRes(0 , $player);
     }
 
     /**
@@ -68,7 +71,6 @@ class GamingRoomInfo extends Base
                 'bad_num'   => $evalInfo['bad_num'],
             ];
         }
-
 
         return $evaluate;
     }
