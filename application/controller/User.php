@@ -47,9 +47,12 @@ class User
 
         //获取上次登录的俱乐部id
         $lastClub = $lastClubModel -> getLastClubId($user_id);
+
         if(!$lastClub){
             $club_name = '';
+            $club_id = '';
         }else{
+            $club_id = $lastClub['club_id'];
             $club_name = $this -> getClubName($lastClub['club_id']);
         }
 
