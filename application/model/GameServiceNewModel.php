@@ -27,7 +27,7 @@ class GameServiceNewModel extends Model{
      * @return false|\PDOStatement|string|\think\Collection
      */
     public function getGameServiceNewInfos(){
-        return $this->where('is_open', '=', 1)->distinct('service_id')->select();
+        return $this->where('is_open', '=', 1)->group('service_id')->select();
     }
 
     /**
