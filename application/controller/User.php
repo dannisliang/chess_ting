@@ -169,7 +169,7 @@ class User
         $socket_h5  = '';
         $socket_url = '';
         if($user_room_info){
-            $room_id    = $user_room_info['room_num'];
+            $room_id    = $user_room_info['room_id'];
             $socket_h5  = $user_room_info['socket_h5'];
             $socket_url = $user_room_info['socket_url'];
             $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
@@ -201,52 +201,32 @@ class User
      * @param $user_id
      */
     private function checkPlayer($user_id){
-        $serviceGatewayModel = new ServiceGatewayNewModel();
+        //从逻辑服获取房间id
+        $room_id = getRoomIdFromService($user_id);
+        //不存在房间
+        if(!isset($room_id)){
+            return false;
+        }
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $room_id = $redisHandler -> get(RedisKey::$USER_ROOM_KEY . $user_id);
-        //不存在房间
-        if(!$room_id){
-            return false;
-        }
         $user_room_info = $redisHandler -> hGetAll(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
+
         if(!$user_room_info){
             return false;
         }
-//        $back_room_info = [
-//            'room_id' => $room_id,
-//            'socket_h5' => $user_room_info['socketH5'],
-//            'socket_url' => $user_room_info['socketUrl'],
-//            'room_num' => $user_room_info['clubId'] . '_' . $user_room_info['roomCode'],
-//            'match_id' => $user_room_info['roomOptionsId'],
-//        ];
-        $data = [
-            'playerId' => (int)$user_id,
-        ];
-        $back_room_info = [];
-        $service_id = $user_room_info['serviceId'];
-        $room_num   = $room_id;
+
         $socket_h5  = $user_room_info['socketH5'];
         $socket_url = $user_room_info['socketUrl'];
-        $serviceInfo = $serviceGatewayModel ->getService($service_id);
-        $url = $serviceInfo['service'];
-        $path_info = Definition::$GET_USER_ROOM;
-        //请求逻辑服
-        $lists = guzzleRequest( $url , $path_info , $data);
-        $serviceInfo = $lists['content'];
-        if(array_key_exists('roomId',$serviceInfo)){
-            //说明玩家在房间里，socket_url,和socket_h5,和服务器地址放到数组里
-            $back_room_info['room_id'] = $room_num;
-            $back_room_info['socket_h5'] = $socket_h5;
-            $back_room_info['socket_url'] = $socket_url;
-            $back_room_info['room_num'] = $user_room_info['clubId'] . '_' . $user_room_info['roomCode'];
-            $back_room_info['match_id'] = $user_room_info['roomOptionsId'];
-        }else{
-            //说明不在房间里，需要删除掉记录
-//            $redisHandler -> del(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
-            return false;
-        }
+
+        $back_room_info = [
+            'room_id'   => $room_id,
+            'socket_h5' => $socket_h5,
+            'socket_url'=> $socket_url,
+//            'room_num'  => $user_room_info['clubId'] . '_' . $user_room_info['roomCode'], //
+            'match_id'  => $user_room_info['roomOptionsId'],
+        ];
+
         return $back_room_info;
     }
 
