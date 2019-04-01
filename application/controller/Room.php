@@ -136,11 +136,10 @@ class Room extends Base
         # 根据俱乐部ID获取俱乐部socket通道
         $gameServiceNew = new GameServiceNewModel();
         $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
-        $len = count($gameServiceNewInfos);
-        if($len < 0){
+        if(!$gameServiceNewInfos) {
             return jsonRes(3517);
         }
-        $rand = mt_rand(0, $len-1);
+        $rand = mt_rand(0, count($gameServiceNewInfos)-1);
         $serviceId = $gameServiceNewInfos[$rand]['service_id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
