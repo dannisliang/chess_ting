@@ -9,6 +9,8 @@
 namespace app\controller;
 
 
+use think\Request;
+
 class ProceseImage
 {
     /**
@@ -16,6 +18,7 @@ class ProceseImage
      * @return string|\think\response\Json
      */
     public function getImage(){
+
         $request = Request::instance();
         $method = $request->method();//获取上传方式
         if ($method == 'GET') {
