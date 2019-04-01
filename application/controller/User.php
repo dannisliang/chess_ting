@@ -47,11 +47,10 @@ class User
 
         //获取上次登录的俱乐部id
         $lastClub = $lastClubModel -> getLastClubId($user_id);
-        $club_id = $lastClub['club_id'];
-        //获取俱乐部名称
-        $club_name = '';
-        if ($club_id){
-            $club_name = $this -> getClubName($club_id);
+        if(!$lastClub){
+            $club_name = '';
+        }else{
+            $club_name = $this -> getClubName($lastClub['club_id']);
         }
 
         //检测玩家是否存在于房间中
