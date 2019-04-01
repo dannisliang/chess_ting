@@ -24,16 +24,7 @@ class UserLastClubModel extends Model
      * @throws \think\exception\DbException
      */
     public function getLastClubId($player_id){
-        try{
-            $res = $this -> where('player_id',$player_id)->field('club_id')->find();
-            if(!$res){
-                return false;
-            }
-            return $res;
-        }catch (\Exception $exception){
-            return jsonRes(3401,$exception->getMessage());
-        }
-
+        return $this -> where('player_id',$player_id)->field('club_id')->find();
     }
 
     /**
