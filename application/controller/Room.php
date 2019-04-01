@@ -153,8 +153,8 @@ class Room extends Base
         if(config('app_debug')){ # 测试模式
             $serviceId = 4;
             $createRoomUrl = 'http://192.168.9.18:9938/';
-            $socketH5 = 'ws://192.168.9.18:5251';
-            $socketUrl = '192.168.9.18:5250';
+            $socketH5 = 'ws://mp.snplay.com:5251';
+            $socketUrl = 'mp.snplay.com:5250';
         }
 
         # 获取玩家vip
@@ -593,6 +593,10 @@ class Room extends Base
             $gameServiceNewArr[] = $v['service_id'];
         }
 
+        if(config('app_debug')){
+            $gameServiceNewArr[] = 4;
+        }
+
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
 
@@ -618,6 +622,10 @@ class Room extends Base
         $gameServiceNewArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
+        }
+
+        if(config('app_debug')){
+            $gameServiceNewArr[] = 4;
         }
 
         if($gameServiceNewArr){
