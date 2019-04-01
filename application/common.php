@@ -435,6 +435,7 @@ function getRoomIdFromService($user_id){
         $path_info = Definition::$GET_USER_ROOM;
         //请求逻辑服
         $serviceInfo = guzzleRequest( $service['service'] , $path_info , ['playerId' => (int)$user_id]);
+
         if(!isset($serviceInfo['content'])){
             continue;
         }
@@ -443,6 +444,7 @@ function getRoomIdFromService($user_id){
             break;
         }
     }
+
     //不存在房间
     if(!isset($room_id)){
         return false;

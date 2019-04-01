@@ -203,6 +203,7 @@ class User
     private function checkPlayer($user_id){
         //从逻辑服获取房间id
         $room_id = getRoomIdFromService($user_id);
+
         //不存在房间
         if(!isset($room_id)){
             return false;
@@ -211,7 +212,7 @@ class User
         $redis = new Redis();
         $redisHandler = $redis -> handler();
         $user_room_info = $redisHandler -> hGetAll(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
-        
+
         if(!$user_room_info){
             return false;
         }
