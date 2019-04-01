@@ -17,6 +17,7 @@ Route::rule('service/getUserInfo','user/getUserInfo'); //获取大厅玩家信�
 Route::rule('service/getToken','token/getToken');  //验证token
 Route::rule('service/getComment','user/getComment'); //获取玩家的好评差评数量（暂时废弃）
 Route::rule('service/checkUserInRoom','user/checkUserInRoom'); //检测玩家是否在游戏房间中（暂时废弃）
+Route::rule('service/getImages','proceseImage/getImage'); //处理图片
 
 /**
  * 与俱乐部相关
