@@ -24,14 +24,8 @@ class ServiceGatewayNewModel extends Model
      * @throws \think\exception\DbException
      */
     public function getService($id){
-        try{
-            $result = $this -> where('id',$id)->field('service')->find();
-            return $result;
-
-        }catch (\Exception $e){
-            return false;
-        }
-
+        $result = $this -> where('id',$id)->field('service')->find();
+        return $result;
     }
 
     /**
