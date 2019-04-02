@@ -14,6 +14,8 @@ use think\Model;
 
 class AreaModel extends Model
 {
+    protected $name = 'area';
+
     public function select($where)
     {
         try{
@@ -31,5 +33,15 @@ class AreaModel extends Model
         }catch(\Exception $exception){
             return false;
         }
+    }
+
+    /**
+     * 根据地域ID获取地域数据
+     * @param $areaId
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getInfoById($areaId)
+    {
+        return $this->where('aid', '=', $areaId)->find();
     }
 }
