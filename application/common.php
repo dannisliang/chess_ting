@@ -452,4 +452,28 @@ function getRoomIdFromService($user_id){
     return $room_id;
 }
 
+/**
+ * 获取报送大数据基础参数
+ * @param $uuid
+ * @return array|bool
+ */
+function getBeeBaseInfo($uuid = '-'){
+    $session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+    if(!$session_info){
+        return false;
+    }
+    //基础事件
+    $content = [
+        'ip '       => $session_info['ip'],  //事件发生端iP
+        'user_id'   => $session_info['player_id'],  //用户id
+        'role_id'   => '-' . '_' . $session_info['player_id'],  //角色id，若没有即为serverid_userid
+        'role_name' => $session_info['nickname'],  //昵称
+        'client_id' => $uuid,  //设备的UUID（可传-号）
+        'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
+        'system_type'=> $session_info['app_type'], //操作系统
+        'client_type'=> $session_info['client_type'], //设备端应用类型
+    ];
+    return $content;
+}
+
 

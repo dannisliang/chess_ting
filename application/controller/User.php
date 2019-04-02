@@ -12,7 +12,6 @@ namespace app\controller;
 use app\definition\Definition;
 use app\definition\RedisKey;
 use app\model\PlayModel;
-use app\model\ServiceGatewayNewModel;
 use app\model\ClubModel;
 use app\model\RoomOptionsModel;
 use app\model\UserEvaluateModel;
