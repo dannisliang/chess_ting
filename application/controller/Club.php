@@ -10,6 +10,9 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use app\definition\RedisKey;
+use app\model\AreaModel;
+use app\model\BeeSender;
 use app\model\ClubModel;
 use app\model\ClubSocketModel;
 use app\model\GameServiceNewModel;
@@ -22,7 +25,9 @@ use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 use app\model\UserVipModel;
 use think\Db;
+use think\Log;
 use think\Request;
+use think\Session;
 
 class Club extends Base
 {
@@ -44,8 +49,8 @@ class Club extends Base
         //获取俱乐部信息
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
 
-        //TODO 报送大数据
-        $this -> beeSender();
+        //发送大数据
+        $this->clubLoginBeeSender($clubMessage);
 
         $data = [
             //俱乐部信息
@@ -253,7 +258,7 @@ class Club extends Base
         $goAwayModel = new GoAwayModel();
         $userClubModel = new UserClubModel();
         $userLastClubModel = new UserLastClubModel();
-        $club = $clubModel ->getOneByWhere(['cid'=>$this->opt['club_id']],'cid,president_id');
+        $club = $clubModel ->getOneByWhere(['cid'=>$this->opt['club_id']]);
         //俱乐部存在
         if(!$club){
             return jsonRes(3500);
@@ -270,7 +275,7 @@ class Club extends Base
         //事务处理删除数据
         Db::startTrans();
         try{
-            $userClubModel-> delByWhere(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id]);
+            $userClubModel -> delByWhere(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id]);
             $userLastClubModel -> delByWhere(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id]);
             $goAwayModel -> insert(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id,'reason'=>'主动退出','out_time'=>date('Y-m-d H:i:s',time())]);
             Db::commit();
@@ -278,10 +283,99 @@ class Club extends Base
             Db::rollback();
             return json(['code' => 23004,'mess' => '退出失败']);
         }
-        //todo 报送大数据
+
+        //报送大数据
+        $this -> outClubBeeSend($club);
+
         return json(['code' => 0,'mess' => '退出成功']);
+    }
 
+    /**
+     * 登录发送大数据
+     * @param $clubMessage
+     */
+    private function clubLoginBeeSender($clubMessage){
+        //获取分成模式
+        $club_mode = $this->getClubType($clubMessage['club_type']);
 
+        $club_info = [
+            'club_id' => $this -> opt['club_id'],
+            'club_name' => $clubMessage['club_name'],
+            'club_region_id' => $clubMessage['area_id'] ,//俱乐部地域id
+            'club_region_name'=> $clubMessage['area_name'] ,//俱乐部地域名
+            'club_mode' => $club_mode //俱乐部模式 free免费/divide分成
+        ];
+        $this -> beeSender('club_login' , $club_info);
+    }
+
+    /**
+     * 退出俱乐部发送俱乐部
+     * @param $club
+     * @throws \think\Exception
+     */
+    private function outClubBeeSend($club){
+        $userClubModel = new UserClubModel();
+        //获取分成模式
+        $club_mode = $this->getClubType($club['club_type']);
+        $areaModle = new AreaModel();
+
+        //获取地区名称
+        if($club['area_id']){
+            $area = $areaModle -> getOneByWhere(['aid'=>$club['area_id']],'area_name');
+        }
+
+        //俱乐部人数
+        $clubNum = $userClubModel -> getCountByWhere(['club_id'=>$this->opt['club_id'],'status' => 1]);
+
+        $content = [
+            'reason'            => '主动',// 加入渠道/退出原因 主动/强制/……
+            'club_id'           => $this->opt['club_id'],// 俱乐部id
+            'user_num'          => $clubNum, // 本操作之后此俱乐部中的人数
+            'club_name'         => $club['club_name'], // 俱乐部名称
+            'club_mode'         => $club_mode,// 俱乐部模式 free免费/divide分成
+            'event_type'        => 'quit',// 加入或退出join/quit
+            'club_region_id'    => $club['area_id'] ,// 俱乐部地域id
+            'club_region_name'  => $area['area_name'],// 俱乐部地域名
+            'approve_user_id'   => '-',// 审批人id，没有时传减号
+            'approve_user_name' => '-',// 审批人昵称，没有时传减号
+        ];
+        $this -> beeSender('club_join_quit',$content);
+    }
+
+    /**
+     * 报送大数据
+     */
+    private function beeSender($event_name , $club_info){
+        $beeSender = new BeeSender(Definition::$CESHI_APPID,Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Definition::$IS_DEBUG);
+        //获取报送大数据的基础事件
+        $content  = getBeeBaseInfo();
+        $contents = array_merge($content,$club_info);
+        $res = $beeSender ->send($event_name , $contents);
+        if(!$res){
+            //报送不成功写日志
+            errorLog('clubBeeSenderError' , $res);
+        }
+    }
+
+    /**
+     * 获取俱乐部type
+     * @param $club_type
+     * @return string
+     */
+    private function getClubType($club_type){
+        //获取分成模式
+        switch ($club_type){
+            case 0:
+                $club_mode = 'divide'; //分成模式
+                break;
+            case 1:
+                $club_mode = 'free';  //免费模式
+                break;
+            default:
+                $club_mode = '';
+                break;
+        }
+        return $club_mode;
     }
 
     /**
@@ -321,41 +415,10 @@ class Club extends Base
     }
 
     /**
-     * todo 暂时先不写
-     */
-    private function beeSender(){
-        return;
-    }
-
-    /**
-     * 获取用户资产
-     * @param $user_id
-     * @return int
-     */
-    private function getUserProperty($user_id){
-        $url = Definition::$WEB_API_URL;
-        $pathInfo = Definition::$GET_PLAYER_PROPERTY;
-        $data = [
-            'uid' => $user_id,
-            'app_id' => Definition::$CESHI_APPID,
-            'property_type' => 10001
-        ];
-        $result = guzzleRequest($url , $pathInfo , $data);
-        if($result['code'] != 0){
-            return $gold=0;
-        }
-        $gold = $result['data'][0]['property_num'];
-        return $gold;
-    }
-
-    /**
      * 获取俱乐部信息
      * @param $user_id
      * @param $club_id
-     * @return false|\PDOStatement|string|\think\Collection
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
+     * @return false|string|\think\Collection
      */
     private function getClubMessage($user_id ,$club_id){
 
@@ -365,6 +428,7 @@ class Club extends Base
         $roomOptionModel= new RoomOptionsModel();
         $playModel      = new PlayModel();
         $club_socket    = new ClubSocketModel();
+        $areaModle      = new AreaModel();
         $where = [
             'player_id' => $user_id,
             'club_id'   => $club_id,
@@ -379,11 +443,17 @@ class Club extends Base
         $where = [
             'cid' => $club_id
         ];
-        $field = 'club_name,club_icon,content,club_type';
+        $field = 'club_name,club_icon,content,club_type,area_id';
         $clubInfo = $clubModel -> getOneByWhere( $where , $field );
         if(!$clubInfo){
             return jsonRes(3012);
         }
+
+        //获取地区名称
+        if($clubInfo['area_id']){
+            $area = $areaModle -> getOneByWhere(['aid'=>$clubInfo['area_id']],'area_name');
+        }
+
         //记录玩家最后加入的俱乐部信息
         $this -> getUserLastClub($user_id,$club_id);
 
@@ -403,6 +473,9 @@ class Club extends Base
                 'club_notice'=> $clubInfo['content'],
                 'club_type' => $clubInfo['club_type'], //0:A模式 1：B模式
                 'gameinfos' => [],
+                'area_id'   => $clubInfo['area_id'],
+                'area_name' => $area['area_name'],
+
             ];
 
             return $list;
@@ -482,6 +555,8 @@ class Club extends Base
             'club_notice'=> $clubInfo['content'],
             'club_name' => base64_decode($clubInfo['club_name']),
             'club_type' => $clubInfo['club_type'], //0:A模式 1：B模式
+            'area_id'   => $clubInfo['area_id'],  //俱乐部地区id
+            'area_name' => $area['area_name'],    //俱乐部地区名称
         ];
         return $list;
     }
@@ -550,6 +625,27 @@ class Club extends Base
             'room_url'  => $room_url,
             'service_id'=> $service_id
         ];
+    }
+
+    /**
+     * 获取用户资产
+     * @param $user_id
+     * @return int
+     */
+    private function getUserProperty($user_id){
+        $url = Definition::$WEB_API_URL;
+        $pathInfo = Definition::$GET_PLAYER_PROPERTY;
+        $data = [
+            'uid' => $user_id,
+            'app_id' => Definition::$CESHI_APPID,
+            'property_type' => 10001
+        ];
+        $result = guzzleRequest($url , $pathInfo , $data);
+        if($result['code'] != 0){
+            return $gold=0;
+        }
+        $gold = $result['data'][0]['property_num'];
+        return $gold;
     }
 
 }

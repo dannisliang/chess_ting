@@ -14,6 +14,8 @@ use think\Model;
 
 class AreaModel extends Model
 {
+    protected $name = 'area';
+
     public function select($where)
     {
         try{
@@ -32,4 +34,13 @@ class AreaModel extends Model
             return false;
         }
     }
+
+    /**
+     * 根据条件查找一条信息
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this ->where($where) ->field($field)->find();
+    }
+
 }

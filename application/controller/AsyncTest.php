@@ -28,7 +28,7 @@ class AsyncTest
             'timeout'  => 10.0,
         ]);
         $request = new Request('POST','http://192.168.9.18:5204/yangchonggou/service/demo.php');
-
+        Log::write(date('Y-m-d H:i:s',time()),'test_async_0');
         $promise1 = $client->postAsync('http://192.168.9.18:5204/yangchonggou/service/demo.php');
         $promise = $client->postAsync('http://192.168.9.18:5204/yangchonggou/service/demo1.php');
         $client ->sendAsync($request);
