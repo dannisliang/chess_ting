@@ -7,6 +7,10 @@
  */
 namespace app\controller;
 
+use app\definition\Definition;
+use app\model\AreaModel;
+use app\model\BeeSender;
+use app\model\ClubModel;
 use think\db;
 use think\Session;
 use app\model\VipCardModel;
@@ -51,14 +55,27 @@ class Vip extends Base{
             return jsonRes(3006);
         }
 
-        Session::set(RedisKey::$USER_SESSION_INFO, ['userid' => 997264]);
-
         $vipCard = new VipCardModel();
         $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($this->opt['vid']);
         if(!$vipCardInfo){
             return jsonRes(3512);
         }
+
+        $club = new ClubModel();
+        $clubInfo = $club->getClubInfoByClubId($this->opt['club_id']);
+        if(!$clubInfo){
+            return jsonRes(3500);
+        }
+
+        $area = new AreaModel();
+        $areaInfo = $area->getInfoById($clubInfo['area_id']);
+        if(!$areaInfo){
+            return jsonRes(3520);
+        }
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!$userSessionInfo){
+            return jsonRes(3006);
+        }
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
@@ -106,11 +123,39 @@ class Vip extends Base{
             $userVip->where('uid', '=', $userSessionInfo['userid'])->where('club_id', '=', $this->opt['club_id'])->where('vid', '=', $this->opt['vid'])->update(['vip_status' => 1, 'end_day' => $endDay, 'card_number' => $cardNumber]);
             Db::commit();
             $redisHandle->del($lockKey);
-            return jsonRes(3515);
         }catch(\Exception $e){
             Db::rollback();
             $redisHandle->del($lockKey);
             return jsonRes(3513);
         }
+
+        // Todo 报送大数据
+        $clubMode = 'divide'; # 免费房
+        if($clubInfo['club_type'] == 1){
+            $clubMode = 'free';
+        }
+        $bigData = [
+            'server_id' => '-',
+            'user_id' => $userSessionInfo['userid'],
+            'role_id' => '-'.'_'.$userSessionInfo['userid'],
+            'role_name' => $userSessionInfo['nickname'],
+            'client_id' => '-',
+            'client_type' => $userSessionInfo['client_type'],
+            'system_type' => $userSessionInfo['app_type'],
+            'ip' => $userSessionInfo['ip'],
+
+            'club_id' => $this->opt['club_id'],
+            'club_name' => $clubInfo['club_name'],
+            'club_region_id' => $clubInfo['clubRegionId'],
+            'club_region_name' => $areaInfo['area_name'],
+            'club_mode' => $clubMode,
+            'reason' => '-',
+            'props_id' => $this->opt['vid'],
+            'props_name' => '会员卡',
+            'props_num' => 1,
+        ];
+        $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender->send('room_join', $bigData);
+        return jsonRes(3515);
     }
 }

@@ -25,8 +25,8 @@ class Redis extends Driver
     protected $options = [
         'host'       => '127.0.0.1',
         'port'       => 6379,
-        'password'   => '',
-        'select'     => 0,
+        'password'   => 'samsung',
+        'select'     => 1,
         'timeout'    => 0,
         'expire'     => 0,
         'persistent' => false,
