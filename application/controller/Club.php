@@ -50,8 +50,7 @@ class Club extends Base
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
 
         //发送大数据
-        $res = $this->clubLoginBeeSender($clubMessage);
-        var_dump($res);die;
+        $this->clubLoginBeeSender($clubMessage);
         $data = [
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
@@ -515,7 +514,7 @@ class Club extends Base
             }
             $game_info['room_code'] = json_decode($val['play'],true)['checks']['code'];
             $game_info['game_socket_h5'] = $socket_h5;
-            $game_info['options']   = $val['options'];
+            $game_info['options']   = json_decode($val['options'],true);
             $game_info['match_id']  = $val['id'];
             $game_info['pay_type']  = $val['room_rate'];
             $game_info['room_name'] = $val['room_name'];
