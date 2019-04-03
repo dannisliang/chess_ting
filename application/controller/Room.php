@@ -905,7 +905,6 @@ class Room extends Base
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
         # 上传牌局记录到华为云
-        require APP_VENDOR_PATH.'/HWOBS/obs-autoloader.php';
         $obsClient = new ObsClient([
             'key' => Definition::$OBS_KEY,
             'secret' => Definition::$OBS_SECRET,
