@@ -157,7 +157,6 @@ class Club extends Base
                     $join_state = 0;
                     break;
             }
-            //todo 需改进
             $num = $userClubModel ->getCountByWhere(['club_id'=>$value['cid']]);
             $list = [
                 'notice'            => $value['content'],
