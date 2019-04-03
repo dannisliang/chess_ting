@@ -10,9 +10,11 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use app\model\BeeSender;
 use app\model\ClubModel;
 use app\model\ClubShopModel;
 use app\model\ClubVipModel;
+use app\model\CommerceModel;
 use app\model\OrderModel;
 use app\model\UserVipModel;
 use app\model\VipCardModel;
@@ -41,7 +43,7 @@ class PaySuccessCallBack
 
         //查出订单的详细信息
         $orderModel = new OrderModel();
-        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,product_id,player_id,club_id,system_type,client_type');
+        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
@@ -79,11 +81,11 @@ class PaySuccessCallBack
     private function buyDiamond($order,$pay_type){
         //玩家买钻回调
         $clubShopModel = new ClubShopModel();
+        $orderModel = new OrderModel();
         $clubShop = $clubShopModel -> getOneByWhere(['id'=>$order['product_id']]);
         if(!$clubShop){
             return -1;
         }
-
         $data = [
             [
                 'uid' => $order['player_id'],
@@ -130,20 +132,13 @@ class PaySuccessCallBack
                     break;
             }
         }
-        $notice_data = [
-            'appid' => Definition::$CESHI_APPID,
-            'content' => [
-                'diamond' => $buyDiamond + $freeDiamond,
-                'gold'    => $gold,
-            ],
-            'reciver' => [
-                $order['player_id'],
-            ],
-            'sender'  => 0,
-            'type'    => 1029
+        //给客户端发送一条数据
+        $content = [
+            'vip_card' => $buyDiamond + $freeDiamond,
+            'gold'    => $gold,
         ];
-        $sendResult = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $notice_data);
-        $orderModel = new OrderModel();
+        $reciver = [ $order['player_id']];
+        $sendResult = $this -> sendToClient($content , $reciver);
         Db::startTrans();
         try{
             if($sendResult['code'] == 0){
@@ -153,7 +148,6 @@ class PaySuccessCallBack
             }
             //修改订单状态
             $orderModel -> setFieldByWhere(['id' => $order['id']],['order_status' => 1]);
-            //todo 报送大数据（支付完成部分）
 
             //支付类型转换
             $type_num = $this -> getPayType($pay_type);
@@ -162,6 +156,8 @@ class PaySuccessCallBack
                 Db::rollback();
                 return -4;
             }
+            //报送大数据(修改成功)
+            $this ->buyDiamondSendBeeSend($order , $pay_type , $buyDiamond + $freeDiamond,'success');
             Db::commit();
         }catch (\Exception $e){
             Db::rollback();
@@ -172,6 +168,41 @@ class PaySuccessCallBack
     }
 
     /**
+     * 购买钻报送大数据
+     */
+    private function buyDiamondSendBeeSend($order,$pay_type,$diamondNum,$pay_result){
+        $content = [
+            'order_id'    => $order['id'],//订单号
+            'real_amount' => $order['fee'], //订单金额 (单位/分)
+            'pay_channel' => 'user', //购买渠道
+            'pay_result'  => $pay_result, //支付结果
+            'currency'    => 'cny', //币种
+            'pay_type'    => $pay_type, //支付类型
+            'props_id'    => $order['product_id'], //道具id（获取道具id）
+            'props_name'  => 'diamond', //道具名称
+            'props_num'   => $order['product_amount'], //道具数量
+            'current_num' => $diamondNum, //获取道具后所拥有的数量(变更后蓝钻总数（购买+赠送）)
+        ];
+        $clubInfo = getClubNameAndAreaName($order['club_id']);
+        $baseInfo = getBeeBaseInfo();
+        $contents = array_merge($content,$clubInfo,$baseInfo);
+        $this -> beeSend('recharge_finish' , $contents);
+    }
+
+    /**
+     * 发送大数据
+     * @param $event_name
+     * @param $content
+     */
+    private function beeSend($event_name , $content){
+        $beeSend = new BeeSender();
+        $result = $beeSend ->send($event_name , $content);
+        if(!$result){
+            errorLog('paySuccessCallBackBeeSenderError' , $result);
+        }
+    }
+
+    /**
      * 如果使用会员卡--记录
      * @param $order
      * @return bool
@@ -179,7 +210,10 @@ class PaySuccessCallBack
      */
     private function buyVipCard($order,$pay_type){
         //获取会员卡的库存和价格信息
-        $clubVip = new ClubVipModel();
+        $clubVipModel = new ClubVipModel();
+        $orderModel   = new OrderModel();
+        $clubVip      = new ClubVipModel();
+
         $club_vip_info = $clubVip -> getOneByWhere(['club_id' => $order['club_id']]);
         if(!$club_vip_info){
             return -1;
@@ -203,10 +237,10 @@ class PaySuccessCallBack
             'vid' => $order['vip_id'],
             'club_id' => $order['club_id']
         ];
-        $user_vip = $userVipModel -> getOneByWhere(['uid' => $order['player_id'] , 'vid' => $order['vip_id'] , 'club_id' => $order['club_id']]);
+        $user_vip = $userVipModel -> getOneByWhere($where);
         if($user_vip){
             $data = [
-                'card_number' => $user_vip['card_number'] +1,
+                'card_number' => $user_vip['card_number'] +1, //vip卡数量
                 'vip_level'   => $club_vip_info['type'],
             ];
             $res = $userVipModel ->updateByWhere($where,$data);
@@ -227,6 +261,66 @@ class PaySuccessCallBack
                 return -1; //插入数据失败
             }
         }
+        //会长和高级会长分成
+        $wageResult = $this ->clubSeniorWage($order,$club_vip_info,$price);
+        if($wageResult != 1){
+            return $wageResult;
+        }
+
+        $userVip = $userVipModel -> getOneByWhere($where); //查询会员卡数量(报送大数据专用)
+        //支付类型转换
+        $type_num = $this -> getPayType($pay_type);
+        Db::startTrans();
+        try{
+            //减少库存
+            $clubVipModel -> setDecByWhere(['vid'=>$order['vip_id'],'cid'=>$order['club_id']],'number');
+            //修改订单状态和支付类型
+            $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>1,'pay_type'=>$type_num]);
+            //报送大数据（修改成功）
+            $this -> buyVipCardSendBeeSend($order,$pay_type,$userVip['card_number'],$vip_card_info['name'],'success');
+            Db::commit();
+        }catch(\Exception $e){
+            Db::rollback();
+            $orderRes = $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>2,'pay_type'=>$type_num]);
+            if(!$orderRes){
+                Log::write('修改订单状态失败','update_order_status_error');
+            }
+            return -1;
+        }
+        //给客户端发送一条数据
+        $content = ['vip_card' => 1];
+        $reciver = [ $order['player_id']];
+        $this -> sendToClient($content , $reciver);
+        return 1; //操作成功
+    }
+
+    /**
+     * 发送一条数据给客户端
+     * @param $content
+     * @param $reciver
+     * @return mixed
+     */
+    private function sendToClient($content , $reciver){
+        //给客户端发送一条数据
+        $notice_data = [
+            'appid' => Definition::$CESHI_APPID,
+            'content' => $content,
+            'reciver' =>$reciver,
+            'sender'  => 0,
+            'type'    => 1029
+        ];
+        $res = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $notice_data);
+        return $res;
+    }
+
+    /**
+     * 俱乐部会长收益
+     * @param $order
+     * @param $club_vip_info
+     * @param $price
+     * @return int
+     */
+    private function clubSeniorWage($order,$club_vip_info,$price){
         //获取是否存在高级会长
         $clubModel = new ClubModel();
         $club = $clubModel -> getOneByWhere(['cid'=>$order['club_id']]);
@@ -247,7 +341,7 @@ class PaySuccessCallBack
                 return -2;
             }
         }else{
-            //给俱乐部会长返利
+            //给俱乐部会长和高级会长返利和商务会长返利
             $user_data = [
                 [
                     'player_id' => $club_vip_info['player_id'],
@@ -266,36 +360,105 @@ class PaySuccessCallBack
                     'property_name' => '玩家购买会员卡给高级会长返利'
                 ]
             ];
+
+            //查找商务会长，给商务会长返利
+            $commerceModel = new CommerceModel();
+            $commerce = $commerceModel -> getOneByWhere(['senior_president' => $club['senior_president']]);
+            if($commerce){
+                $data = [
+                    [
+                        'player_id' => $commerce['commerce_id'],
+                        'type' => 10009,
+                        'change_num' => round($price * $club['business_rebate'] * 0.01 * 0.6 , 2),
+                        'event_type' => '+',
+                        'reason_id' => 5,
+                        'property_name' => '玩家购买会员卡给商务会长返利'
+                    ]
+                ];
+                $user_data = array_merge($user_data,$data);
+            }
             $operateResult = operatePlayerProperty($user_data);
             if($operateResult['code'] != 0){
                 return -3;
             }
-        }
-        //TODO 报送会长收益大数据
-
-        $clubVipModel = new ClubVipModel();
-        $orderModel   = new OrderModel();
-        //支付类型转换
-        $type_num = $this -> getPayType($pay_type);
-        Db::startTrans();
-        try{
-            //减少库存
-            $clubVipModel ->setDecByWhere(['vid'=>$order['vip_id'],'cid'=>$order['club_id']],'number');
-            //修改订单状态和支付类型
-            $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>1,'pay_type'=>$type_num]);
-            Db::commit();
-        }catch(\Exception $e){
-            Db::rollback();
-            $orderRes = $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>2,'pay_type'=>$type_num]);
-            if(!$orderRes){
-                Log::write('修改订单状态失败','update_order_status_error');
+            //发送大数据(高级会长收益)
+            $this -> highLevelClubRebateBeeSend($club_vip_info['player_id'],round($price , 2),$order['club_id'],$club['senior_president']);
+            if($commerce){
+                //发送大数据（商务会长收益）
+                $this -> businessClubRebateBeeSend($club['senior_president'],round($price * $club['rebate'] * 0.01 * 0.6 , 2),$commerce['commerce_id']);
             }
-            return -1;
         }
-        //todo 报送大数据（支付完成部分）
+        return 1;
+    }
 
-        //todo 给客户端发送一条数据
-        return 1; //操作成功
+    /**
+     * 发送高级会长的收益大数据
+     * @param $user_id 高级会长id
+     * @param $token_num
+     */
+    private function highLevelClubRebateBeeSend($user_id,$token_num,$club_id,$senior_id){
+        $user_info = getUserBaseInfo($user_id);
+        $club_info = getClubNameAndAreaName($club_id);
+        $senior_info = getUserBaseInfo($senior_id);
+        if(!$user_info || !$club_info || !$senior_info){
+            return false;
+        }
+        $content = [
+            'do_rebate_user_id' => $user_id, //下会长id
+            'do_rebate_user_name' => $user_info['nickname'], //下级会长的昵称
+            'token_name' => 'money', //收益的代币名称
+            'token_num'  => $token_num, //收益数量
+        ];
+        $contents = array_merge($content,$senior_info,$club_info);
+
+        $this ->beeSend('highlevel_club_rebate',$contents);
+    }
+
+    /**
+     * 发送商务会长大数据
+     * @param $senior_id 商务会长id
+     * @param $token_num
+     * @param $club_id
+     * @param $senior_id
+     * @return bool
+     */
+    private function businessClubRebateBeeSend($senior_id,$token_num,$business_id){
+        $user_info = getUserBaseInfo($senior_id);
+        $business_info = getUserBaseInfo($business_id);
+        if(!$user_info || !$business_info){
+            return false;
+        }
+        $content = [
+            'do_rebate_user_id' => $senior_id, //高级会长id
+            'do_rebate_user_name' => $business_info['nickname'], //高级会长的昵称
+            'token_name' => 'money', //收益的代币名称
+            'token_num'  => $token_num, //收益数量
+        ];
+        $contents = array_merge($content,$business_info);
+
+        $this ->beeSend('business_club_rebate ',$contents);
+    }
+
+    /**
+     * 购买会员卡报送大数据
+     */
+    private function buyVipCardSendBeeSend($order,$pay_type,$cardNum,$vipcardName,$pay_result){
+        $content = [
+            'order_id'    => $order['id'],//订单号
+            'real_amount' => $order['fee'], //订单金额 (单位/分)
+            'pay_channel' => 'user', //购买渠道
+            'pay_result'  => $pay_result, //支付结果
+            'currency'    => 'cny', //币种
+            'pay_type'    => $pay_type, //支付类型
+            'props_id'    => $order['product_id'], //道具id（获取道具id）
+            'props_name'  => $vipcardName, //道具名称
+            'props_num'   => $order['product_amount'], //道具数量
+            'current_num' => $cardNum, //获取道具后所拥有的数量
+        ];
+        $clubInfo = getClubNameAndAreaName($order['club_id']);
+        $baseInfo = getBeeBaseInfo();
+        $contents = array_merge($content,$clubInfo,$baseInfo);
+        $this -> beeSend('recharge_finish' , $contents);
     }
 
     /**

@@ -411,7 +411,7 @@ function operaFile($path,$data,$type){
 }
 
 /**
- * 返回用户昵称
+ * 返回用户昵称(只用于登录的用户获取)
  * @param $player_id
  * @return mixed
  */
@@ -498,10 +498,28 @@ function getRoomIdFromService($user_id){
  * @param $uuid
  * @return array|bool
  */
-function getBeeBaseInfo($uuid = '-'){
+function getBeeBaseInfo($uuid = '-',$senior_id=null){
     $session_info = Session::get(RedisKey::$USER_SESSION_INFO);
     if(!$session_info){
         return false;
+    }
+    if(!$senior_id){
+        $user_info = getUserBaseInfo($senior_id);
+        if (!$user_info){
+            return false;
+        }
+        //基础事件
+        $content = [
+            'ip '       => $session_info['ip'],  //事件发生端iP
+            'user_id'   => $senior_id,  //用户id
+            'role_id'   => '-' . '_' . $senior_id,  //角色id，若没有即为serverid_userid
+            'role_name' => $user_info['nickname'],  //昵称
+            'client_id' => $uuid,  //设备的UUID（可传-号）
+            'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
+            'system_type'=> $session_info['app_type'], //操作系统
+            'client_type'=> $session_info['client_type'], //设备端应用类型
+        ];
+        return $content;
     }
     //基础事件
     $content = [
@@ -515,6 +533,36 @@ function getBeeBaseInfo($uuid = '-'){
         'client_type'=> $session_info['client_type'], //设备端应用类型
     ];
     return $content;
+}
+
+/**
+ * 报送大数据获取俱乐部信息
+ * @param $club_id
+ * @return array
+ */
+function getClubNameAndAreaName($club_id){
+    $clubModel = new \app\model\ClubModel();
+    $club = $clubModel -> getClubNameAndAreaName();
+    //获取分成模式
+    switch ($club['club_type']){
+        case 0:
+            $club_mode = 'divide'; //分成模式
+            break;
+        case 1:
+            $club_mode = 'free';  //免费模式
+            break;
+        default:
+            $club_mode = '';
+            break;
+    }
+    $result = [
+        'club_id' => $club['cid'],
+        'club_mode'=> $club_mode,
+        'club_name'=> $club['club_name'],
+        'club_region_id'=> $club['aid'],
+        'club_region_name'=> $club['area_name'],
+    ];
+    return $result;
 }
 
 

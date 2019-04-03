@@ -68,4 +68,21 @@ class ClubModel extends Model{
                     ->select();
     }
 
+
+    /**
+     * 根据club_id获取俱乐部的地域信息
+     * @param $club_id
+     * @return array|false|\PDOStatement|string|Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getClubNameAndAreaName($club_id){
+        return $this ->alias('a')
+            ->join('area b' , 'a.area_id = b.aid')
+            ->field('a.cid,a.club_name,a.club_type,a.area_id,b.area.name')
+            ->where('cid',$club_id)
+            ->find();
+    }
+
 }
