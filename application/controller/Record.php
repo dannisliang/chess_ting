@@ -7,6 +7,8 @@
  */
 namespace app\controller;
 
+use app\definition\Definition;
+use Obs\ObsClient;
 use think\Session;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
@@ -103,6 +105,11 @@ class Record extends Base{
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
-
+        $obsClient = new ObsClient([
+            'key' => Definition::$OBS_KEY,
+            'secret' => Definition::$OBS_SECRET,
+            'endpoint' => Definition::$OBS_ENDPOINT
+        ]);
+        var_dump($obsClient);die;
     }
 }
