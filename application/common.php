@@ -498,12 +498,13 @@ function getRoomIdFromService($user_id){
  * @param $uuid
  * @return array|bool
  */
-function getBeeBaseInfo($uuid = '-',$senior_id=null){
+function getBeeBaseInfo($uuid = '-',$senior_id = null){
     $session_info = Session::get(RedisKey::$USER_SESSION_INFO);
     if(!$session_info){
         return false;
     }
-    if(!$senior_id){
+    //判断是否是高级会长
+    if($senior_id){
         $user_info = getUserBaseInfo($senior_id);
         if (!$user_info){
             return false;
@@ -529,6 +530,7 @@ function getBeeBaseInfo($uuid = '-',$senior_id=null){
         'role_name' => $session_info['nickname'],  //昵称
         'client_id' => $uuid,  //设备的UUID（可传-号）
         'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
+
         'system_type'=> $session_info['app_type'], //操作系统
         'client_type'=> $session_info['client_type'], //设备端应用类型
     ];
@@ -542,7 +544,7 @@ function getBeeBaseInfo($uuid = '-',$senior_id=null){
  */
 function getClubNameAndAreaName($club_id){
     $clubModel = new \app\model\ClubModel();
-    $club = $clubModel -> getClubNameAndAreaName();
+    $club = $clubModel -> getClubNameAndAreaName($club_id);
     //获取分成模式
     switch ($club['club_type']){
         case 0:
@@ -559,7 +561,7 @@ function getClubNameAndAreaName($club_id){
         'club_id' => $club['cid'],
         'club_mode'=> $club_mode,
         'club_name'=> $club['club_name'],
-        'club_region_id'=> $club['aid'],
+        'club_region_id'=> $club['area_id'],
         'club_region_name'=> $club['area_name'],
     ];
     return $result;
