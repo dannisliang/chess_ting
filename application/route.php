@@ -75,11 +75,12 @@ Route::rule('service/room/getRecordList','Record/getRecordList'); # 牌局记录
 Route::rule('service/getMailList','Mail/lists');
 Route::rule('service/GetMailDetail','Mail/detail');
 Route::rule('service/deleteMail','Mail/delete');
+Route::rule('service/reciveGoods','Mail/receive');
 /*领取邮件里附加你接口地址service/reciveGoods*/
 /*跑马灯*/
 Route::rule('service/getBulletinList','HorseLamp/lists');
 /*公告*/
-Route::rule('service/getnotice','Notice/lists');
+Route::rule('service/receive','Notice/lists');
 
 /*代理招募部分*/
 Route::rule('service/agent/open_recruit','Agent/openRecruit');

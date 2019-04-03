@@ -143,6 +143,45 @@ function getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJson
 }
 
 /**
+ * 获取房间圈数
+ * @param $roomOptions
+ * @return mixed
+ */
+function getRoomSet($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    if(!isset($playInfoPlayJsonDecode['checks']['group'])){
+        return false;
+    }
+    $setNum = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'set');
+    return $setNum;
+}
+
+/**
+ * 获取房间局数
+ * @param $roomOptions
+ * @return mixed
+ */
+function getRoomRound($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    if(!isset($playInfoPlayJsonDecode['checks']['group'])){
+        return false;
+    }
+    $roundNum = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'round');
+    return $roundNum;
+}
+
+/**
+ * 获取房间低分
+ * @param $roomOptions
+ * @return mixed
+ */
+function getRoomBaseScore($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode){
+    if(!isset($playInfoPlayJsonDecode['checks']['group'])){
+        return false;
+    }
+    $baseScore = getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecode['checks']['group'], $roomOptionsInfoOptionsJsonDecode, 'baseScore');
+    return $baseScore;
+}
+
+/**
  * 获取玩法中的玩家人数值
  * @param $playInfoPlayJsonDecodeChecksGroup play表中的play字段的checks的group
  * @param $roomOptionsInfoOptionsJsonDecode roomOptions表中的options
@@ -182,9 +221,11 @@ function guzzleRequest( $url , $pathInfo , $data )
 {
     //实例化guzzle
     $client = new \guzzle\GuzzleHttp( $url );
-
+    \think\Log::write($url,'$url_opt_opt');
+    \think\Log::write($data,'$data_optopt');
+    \think\Log::write($pathInfo,'$pathInfo_opt_opt');
     $result = $client -> getBodyContent( $pathInfo , $data );
-
+    \think\Log::write($result,'$resultsdfsdfs');
     return $result;
 }
 

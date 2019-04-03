@@ -83,18 +83,18 @@ class BeeSender{
 	 * 批量提交
 	 * @return boolean
 	 */
-        public function batch_send(){
-            $s_time = $this->getMTime();
-            $response_json = $this->post($this->bee_server, json_encode($this->bee_list));
-            $t_time = $this->getMTime();
-            $this->log('batch_response:'.strlen(json_encode($this->bee_list)).'|'.($t_time - $s_time));
-            $response = json_decode($response_json);
-            if($response->status == 'success' && $response->code == 0){
-                return TRUE;
-            }
-            $this->log('response_error:'.$response_json);
-            return FALSE;
+    public function batch_send(){
+        $s_time = $this->getMTime();
+        $response_json = $this->post($this->bee_server, json_encode($this->bee_list));
+        $t_time = $this->getMTime();
+        $this->log('batch_response:'.strlen(json_encode($this->bee_list)).'|'.($t_time - $s_time));
+        $response = json_decode($response_json);
+        if($response->status == 'success' && $response->code == 0){
+            return TRUE;
         }
+        $this->log('response_error:'.$response_json);
+        return FALSE;
+    }
 
 	private function post($url,$data){
 		$curl = curl_init (); // 启动一个CURL会话

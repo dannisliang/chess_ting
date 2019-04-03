@@ -13,10 +13,10 @@ class Definition{
     /**
      * 请求服务器IP地址
      */
-    public static $WEB_USER_URL = 'http://192.168.9.18:5204/operator_center/'; //运营中心接口
-    public static $WEB_API_URL  = 'http://192.168.9.18:5204/user_center/'; # 宋福旺接口
-    public static $INFORM_URL   = 'http://192.168.9.18:5204/notice_center/'; //通知中心接口
-    public static $ROOM_URL     = 'http://192.168.9.18:9910/'; //王朝翠的接口
+    public static $WEB_USER_URL = 'http://192.168.9.18:80/operator_center/'; //运营中心接口
+    public static $WEB_API_URL  = 'http://192.168.9.18:80/user_center/'; # 宋福旺接口
+    public static $INFORM_URL   = 'http://192.168.9.18:80/notice_center/'; //通知中心接口
+    public static $ROOM_URL     = 'http://192.168.9.18:80/'; //王朝翠的接口
 
     public static $ZHENGSHI_APPID = ''; //正式服appid
     public static $CESHI_APPID  = '72110'; //测试服appid
@@ -30,9 +30,9 @@ class Definition{
     public static $SERVICE_IP       = '192.168.9.18';//项目的服务器IP地址
     public static $MY_APP_NAME      = 'tianjin_mahjong';//报送大数据是传送的项目名字
     public static $NEED_DIAMOND     = '10';//结束后扣除的钻石数
-    public static $MATCH_SERVICE    = 'http://mp.snplay.com:5417'; //匹配服地址 （河南专用）
-    public static $NOTIFICATION_H5  = 'http://mp.snplay.com:5202';//H5的通知地址
-    public static $NOTIFICATION_URL = 'http://mp.snplay.com:5202';//通知中心服务器地址,
+    public static $MATCH_SERVICE    = 'http://mp.snplay.com:80'; //匹配服地址 （河南专用）
+    public static $NOTIFICATION_H5  = 'http://mp.snplay.com:80';//H5的通知地址
+    public static $NOTIFICATION_URL = 'http://mp.snplay.com:80';//通知中心服务器地址,
 
 
     /**
@@ -52,6 +52,7 @@ class Definition{
     public static $CHECK_TOKEN_TIME     = 'api/v3/check_token_time.php'; # 用户中心检查用户token接口请求地址
     public static $GET_PLAYER_PROPERTY  = 'api/get_player_property.php'; # 用户中心获取用户资产接口
     public static $RAISE_PLAYER_PROPERTY= 'api/raise_player_property.php'; # 操作用户资产
+    public static $RAISE_PLAYER_PROPERTY2= 'api/raise_player_property2.php'; # 批量操作用户资产
     public static $PROPERTY_CHANGE      = 'api/property_change.php'; #修改用户资产（可增加减掉）
 
     /**
@@ -72,6 +73,7 @@ class Definition{
     public static $EMAIL_DELETE_MORE = '/api/email_del_list.php';//运营中心批量删除邮件
     public static $HORSE_LAMP = '/api/horse_list.php';//运营中心获取跑马灯列表
     public static $NOTICE_LIST = '/api/notice_list.php';//公告列表
+    public static $UPDATE_STATU = '/api/email_update.php';//修改邮件状态
 
     /**
      * 通知中心接口
