@@ -22,7 +22,7 @@ class HorseLamp
         $data['status'] = 1;
         $url = Definition::$WEB_USER_URL;//运营中心域名
         $url_area = Definition::$HORSE_LAMP;//跑马灯
-        $bulletinlist = guzzleRequest($url,$url_area,$data);
+        $bulletinlist = sendHttpRequest($url.$url_area, $data);
         if ($bulletinlist['code'] == 0) {
             $count = count($bulletinlist['data']);
             $result = array();

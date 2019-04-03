@@ -44,4 +44,13 @@ class AreaModel extends Model
     {
         return $this->where('aid', '=', $areaId)->find();
     }
+
+    /**
+     * 根据条件查找一条信息
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getOneByWhere($where , $field = '*'){
+        return $this ->where($where) ->field($field)->find();
+    }
+
 }
