@@ -847,7 +847,7 @@ class Room extends Base
         }
 
         # 报送大数据
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['serverId', 'clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNum', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'idClubRegionName', 'clubType']);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['serverId', 'clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'idClubName', 'clubRegionId', 'idClubRegionName', 'clubType']);
 
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
         if($playerInfos){
@@ -910,7 +910,6 @@ class Room extends Base
             'secret' => Definition::$OBS_SECRET,
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
-
         $obsClient -> putObject([
             'Bucket' => Definition::$CHESS_RECORD_TEST,
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
@@ -1010,7 +1009,7 @@ class Room extends Base
         $userIds = [];
         $userScore = [];
         foreach ($this->opt['statistics'] as $k => $v){
-            $userScore[$v['playerId']] = $v['score'];
+            $userScore[$v['playerId']] = $v['totalScore'];
             $userIds[] = $v['playerId'];
         }
 
