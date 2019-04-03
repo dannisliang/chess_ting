@@ -50,8 +50,8 @@ class Club extends Base
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
 
         //发送大数据
-        $this->clubLoginBeeSender($clubMessage);
-
+        $res = $this->clubLoginBeeSender($clubMessage);
+        var_dump($res);die;
         $data = [
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
@@ -284,7 +284,7 @@ class Club extends Base
         }
 
         //报送大数据
-        $this -> outClubBeeSend($club);
+        $this -> outClubBeeSend();
 
         return json(['code' => 0,'mess' => '退出成功']);
     }
@@ -312,32 +312,21 @@ class Club extends Base
      * @param $club
      * @throws \think\Exception
      */
-    private function outClubBeeSend($club){
+    private function outClubBeeSend(){
         $userClubModel = new UserClubModel();
-        //获取分成模式
-        $club_mode = $this->getClubType($club['club_type']);
-        $areaModle = new AreaModel();
-
-        //获取地区名称
-        if($club['area_id']){
-            $area = $areaModle -> getOneByWhere(['aid'=>$club['area_id']],'area_name');
-        }
 
         //俱乐部人数
         $clubNum = $userClubModel -> getCountByWhere(['club_id'=>$this->opt['club_id'],'status' => 1]);
 
         $content = [
             'reason'            => '主动',// 加入渠道/退出原因 主动/强制/……
-            'club_id'           => $this->opt['club_id'],// 俱乐部id
             'user_num'          => $clubNum, // 本操作之后此俱乐部中的人数
-            'club_name'         => $club['club_name'], // 俱乐部名称
-            'club_mode'         => $club_mode,// 俱乐部模式 free免费/divide分成
             'event_type'        => 'quit',// 加入或退出join/quit
-            'club_region_id'    => $club['area_id'] ,// 俱乐部地域id
-            'club_region_name'  => $area['area_name'],// 俱乐部地域名
             'approve_user_id'   => '-',// 审批人id，没有时传减号
             'approve_user_name' => '-',// 审批人昵称，没有时传减号
         ];
+        $club_info = getClubNameAndAreaName($this->opt['club_id']);
+        $content = array_merge($content,$club_info);
         $this -> beeSender('club_join_quit',$content);
     }
 

@@ -399,8 +399,8 @@ class PaySuccessCallBack
     private function highLevelClubRebateBeeSend($user_id,$token_num,$club_id,$senior_id){
         $user_info = getUserBaseInfo($user_id);
         $club_info = getClubNameAndAreaName($club_id);
-        $senior_info = getUserBaseInfo($senior_id);
-        if(!$user_info || !$club_info || !$senior_info){
+        $senior_base_info = getBeeBaseInfo('-',$senior_id);
+        if(!$user_info || !$club_info || !$senior_base_info){
             return false;
         }
         $content = [
@@ -409,7 +409,7 @@ class PaySuccessCallBack
             'token_name' => 'money', //收益的代币名称
             'token_num'  => $token_num, //收益数量
         ];
-        $contents = array_merge($content,$senior_info,$club_info);
+        $contents = array_merge($content,$senior_base_info,$club_info);
 
         $this ->beeSend('highlevel_club_rebate',$contents);
     }
@@ -424,7 +424,7 @@ class PaySuccessCallBack
      */
     private function businessClubRebateBeeSend($senior_id,$token_num,$business_id){
         $user_info = getUserBaseInfo($senior_id);
-        $business_info = getUserBaseInfo($business_id);
+        $business_info = getBeeBaseInfo('-',$business_id); //基础参数传商务会长
         if(!$user_info || !$business_info){
             return false;
         }

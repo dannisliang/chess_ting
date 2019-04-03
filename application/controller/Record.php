@@ -7,7 +7,9 @@
  */
 namespace app\controller;
 
-use think\session;
+use app\definition\Definition;
+use Obs\ObsClient;
+use think\Session;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
 use app\model\UserClubRoomRecordModel;
@@ -31,6 +33,7 @@ class Record extends Base{
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
+
         $returnData = [];
         foreach ($userClubRoomRecordInfo as $k => $v){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
@@ -47,7 +50,7 @@ class Record extends Base{
                 }
                 $return = [];
                 $return['player_infos'] = $roomUserInfo;
-                $return['time'] = $roomHashInfo['gameEndTime'];
+                $return['time'] = strtotime($roomHashInfo['gameEndTime']);
                 $return['room_id'] = $v['room_id'];
                 $return['Options'] = $roomHashInfo['roomOptions'];
                 $return['room_code'] = $roomHashInfo['roomCode'];
@@ -92,5 +95,21 @@ class Record extends Base{
             }
         }
         return jsonRes(0, $returnData);
+    }
+
+    /**
+     * 播放录像(playBack)返回的华为云的文件地址
+     */
+    public function getGamePlayBack(){
+        $opt = ['playBack'];
+        if(!has_keys($opt,$this->opt)){
+            return jsonRes(3006);
+        }
+        $obsClient = new ObsClient([
+            'key' => Definition::$OBS_KEY,
+            'secret' => Definition::$OBS_SECRET,
+            'endpoint' => Definition::$OBS_ENDPOINT
+        ]);
+        var_dump($obsClient);die;
     }
 }
