@@ -78,9 +78,9 @@ class ClubModel extends Model{
      * @throws \think\exception\DbException
      */
     public function getClubNameAndAreaName($club_id){
-        return $this ->alias('a')
+         return $this ->alias('a')
             ->join('area b' , 'a.area_id = b.aid')
-            ->field('a.cid,a.club_name,a.club_type,a.area_id,b.area.name')
+            ->field('a.cid,a.club_name,a.club_type,a.area_id,b.area_name')
             ->where('cid',$club_id)
             ->find();
     }
