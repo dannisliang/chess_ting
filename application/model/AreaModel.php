@@ -36,6 +36,16 @@ class AreaModel extends Model
     }
 
     /**
+     * 根据地域ID获取地域数据
+     * @param $areaId
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getInfoById($areaId)
+    {
+        return $this->where('aid', '=', $areaId)->find();
+    }
+
+    /**
      * 根据条件查找一条信息
      * @return array|false|\PDOStatement|string|Model
      */

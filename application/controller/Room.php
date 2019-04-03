@@ -10,6 +10,7 @@ namespace app\controller;
 
 use think\Session;
 use Obs\ObsClient;
+use app\model\AreaModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
 use app\model\VipCardModel;
@@ -286,6 +287,17 @@ class Room extends Base
             $userInfo['needDiamond'] = $diamondInfo;
         }
         $playerInfo[] = $userInfo;
+         # 报送大数据
+        $setNum = getRoomSet($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode);
+        $tableType = 1; # 按局玩
+        if($setNum){
+            $tableType = 0; # 按圈玩
+        }
+        $roundNum = getRoomRound($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 圈数
+        $baseScore = getRoomBaseScore($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 基础分
+        $area = new AreaModel();
+        $areaInfo = $area->getInfoById($clubInfo['area_id']);
+        # 报送大数据结束
 
         $roomHashInfo = [
             'createTime' => date('Y-m-d H:i:s'), # 房间创建时间
@@ -298,7 +310,6 @@ class Room extends Base
             'roomRate' => $roomOptionsInfo['room_rate'], # 房间结算类型 大赢家/房主/均摊
             'roomCheat' => $roomOptionsInfo['cheat'], # 是否检查GPS房间
             'roomType' => $roomOptionsInfo['room_type'], # 规则表中的类型 对应play表Id
-            'roomOptionsId' => $this->opt['match_id'], # roomOptionsID
             'socketH5' => $socketH5, # H5的socket连接地址
             'socketUrl' => $socketUrl, # socket的连接地址
             'socketSsl' => Definition::$SOCKET_SSL, # socket证书
@@ -317,6 +328,20 @@ class Room extends Base
             'gameEndTime' => '', # 房间结束时间
             'roundEndInfo' => '', # 对局结束相关数据
             'gameEndInfo' => '', # 房间结束相关数据
+
+            # 大数据报送
+            'roomOptionsId' => $this->opt['match_id'], # roomOptionsID
+            'roomTypeName' => $roomOptionsInfo['room_name'],
+            'roomChannel' => 1, # 房间渠道：朋友diy/俱乐部会长房间
+            'ruleDetail' => '',# 创建房间时勾选的详细玩法
+            'tableType' => $tableType, # 按圈玩还是按局玩
+            'setNum' => $setNum, # 圈数
+            'tableNum' => $roundNum, # 创建房间时所选择的要进行多少牌局
+            'betNums' => $baseScore, # 底分数量
+            'idClubName' => $clubInfo['club_name'], # 俱乐部名称
+            'clubRegionId' => $clubInfo['area_id'], # 俱乐部地域id
+            'idClubRegionName' => $areaInfo['area_name'], # 俱乐部地域名
+            ''
         ];
 
         # 写房间hash 写失败记录日志
@@ -651,6 +676,41 @@ class Room extends Base
      */
     # 玩家加入房间回调完成
     public function joinRoomCallBack(){
+        if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['playerId']) || !is_numeric($this->opt['playerId'])){
+            return jsonRes(0);
+        }
+
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+
+        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+            return jsonRes(0);
+        }
+
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['roomOptionsId', 'roomTypeName', 'roomChannel', 'ruleDetail', 'tableType', 'tableNum', 'betNums', 'clubId', 'idclubName', 'clubRegionId', 'idclubRegionName', 'clubType']);
+        # 报送大数据
+        $clubMode = '';
+        if($roomHashInfo['clubType'] == 1){
+            $clubMode = 'free';
+        }
+        if($roomHashInfo['clubType'] == 0){
+            $clubMode = 'divide';
+        }
+        $bigData = [
+            'room_id' => $this->opt['roomId'],
+            'room_type_id' => $roomHashInfo['roomOptionsId'],
+            'room_type_name' => $roomHashInfo['roomTypeName'],
+            'room_channel' => $roomHashInfo['roomChannel'],
+            'rule_detail' => $roomHashInfo['ruleDetail'],
+            'table_type' => $roomHashInfo['tableType'],
+            'table_num' => $roomHashInfo['tableNum'],
+            'bet_num' => $roomHashInfo['betNums'],
+            'club_id' => $roomHashInfo['clubId'],
+            'idclub_name' => $roomHashInfo['idclubName'],
+            'club_region_id' => $roomHashInfo['clubRegionId'],
+            'idclub_region_name' => $roomHashInfo['idclubRegionName'],
+            'club_mode' => $clubMode
+        ];
         return jsonRes(0);
     }
     # 玩家退出房间回调完成
@@ -709,13 +769,15 @@ class Room extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
-        if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-            $changeRoomInfo = [
-                'joinStatus' => 2, # 游戏中
-                'gameStartTime' => date('Y-m-d H:i', time())
-            ];
-            $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
+        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+            return jsonRes(0);
         }
+
+        $changeRoomInfo = [
+            'joinStatus' => 2, # 游戏中
+            'gameStartTime' => date('Y-m-d H:i', time())
+        ];
+        $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
         return jsonRes(0);
     }
     # 牌局游戏开始回调完成
@@ -723,6 +785,45 @@ class Room extends Base
         if(!isset($this->opt['set']) || !is_numeric($this->opt['set']) || !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId'])){
             return jsonRes(0);
         }
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+            return jsonRes(0);
+        }
+
+        # 报送大数据
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNum', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'idClubRegionName', 'clubType']);
+        $clubMode = '';
+        if($roomHashInfo['clubType'] == 1){
+            $clubMode = 'free';
+        }
+        if($roomHashInfo['clubType'] == 0){
+            $clubMode = 'divide';
+        }
+
+        $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
+
+        if($playerInfos){
+            foreach ($playerInfos as $k => $userInfo){
+                $bigData = [
+                    'room_id' => $this->opt['roomId'],
+                    'room_type_id' => $roomHashInfo['roomOptionsId'],
+                    'room_type_name' => $roomHashInfo['roomTypeName'],
+                    'room_channel' => $roomHashInfo['roomChannel'],
+                    'table_id' => $this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+                    'rule_detail' => '',
+                    'bet_num' => $roomHashInfo['betNums'],
+                    'user_num' => $roomHashInfo['needUserNum'],
+                    'club_id' => $roomHashInfo['clubId'],
+                    'club_name' => $roomHashInfo['idClubName'],
+                    'club_region_id' => $roomHashInfo['clubRegionId'],
+                    'club_region_name' => $roomHashInfo['idClubRegionName'],
+                    'club_mode' => $clubMode,
+                ];
+            }
+        }
+        # 报送大数据完成
+
         return jsonRes(0);
     }
     # 牌局游戏结束回调完成
@@ -748,7 +849,7 @@ class Room extends Base
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
         # 上传牌局记录到华为云
-        require APP_LOG_PATH.'../vendor/HWOBS/obs-autoloader.php';
+        require APP_VENDOR_PATH.'/HWOBS/obs-autoloader.php';
         $obsClient = new ObsClient([
             'key' => Definition::$OBS_KEY,
             'secret' => Definition::$OBS_SECRET,
@@ -760,6 +861,56 @@ class Room extends Base
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
             'Body' => json_encode($this->opt['playBack'])
         ]);
+
+        # 报送大数据
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'idClubName', 'clubRegionId', 'idClubRegionName', 'clubType']);
+        $clubMode = '';
+        if($roomHashInfo['clubType'] == 1){
+            $clubMode = 'free';
+        }
+        if($roomHashInfo['clubType'] == 0){
+            $clubMode = 'divide';
+        }
+
+        # 算用户积分和用户积分
+        $userIds = [];
+        $userScore = [];
+        foreach ($this->opt['score'] as $k => $v){
+            $userScore[$v['playerId']] = $v['score'];
+            $userIds[] = $v['playerId'];
+        }
+
+        foreach ($userIds as $k => $userId){
+            $isWin = 'lose';
+            $winType = '';
+            if(in_array($userId, $this->opt['winnerIds'])){
+                $isWin = 'win';
+                $winType = json_encode($this->opt['faanNames']);
+            }
+
+            $bigData = [
+                'room_id' => '',
+                'room_type_id' => $roomHashInfo['roomOptionsId'],
+                'room_type_name' => $roomHashInfo['roomTypeName'],
+                'room_channel' => $roomHashInfo['roomChannel'],
+                'table_id' => $this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+                'rule_detail' => '',
+                'bet_num' => $roomHashInfo['betNums'],
+                'user_num' => $roomHashInfo['needUserNum'],
+                'win_lose' => $isWin,
+                'win_type' => $winType,
+                'token_name' => 'score',
+                'token_num' => $userScore[$userId],
+                'current_token' => '',
+                'keep_time' => $this->opt['duration'],
+                'club_id' => $roomHashInfo['clubId'],
+                'club_name' => $roomHashInfo['clubName'],
+                'club_region_id' => $roomHashInfo['clubRegionId'],
+                'club_region_name' => $roomHashInfo['idClubRegionName'],
+                'club_mode' => $clubMode,
+            ];
+        }
+        # 报送大数据完成
         return jsonRes(0);
     }
     # 房间游戏结束回调完成
@@ -792,9 +943,35 @@ class Room extends Base
             return jsonRes(0);
         }
 
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate', 'seniorRebate', 'seniorPresidentId', 'presidentId']);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['clubMode', 'clubRegionName', 'clubRegionId', 'idClubName', 'gameStartTime', 'gameEndTime', 'tableNum', 'tableType', 'ruleDetail', 'roomChannel', 'roomTypeName', 'roomOptionsId', 'playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate', 'seniorRebate', 'seniorPresidentId', 'presidentId']);
         $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); # 俱乐部移除房间
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
+
+        # 报送大数据
+        $closeReason = 'disband';
+        if($this->opt['round'] >= $roomHashInfo['tableNum']){
+            $closeReason = 'finish';
+        }
+        foreach ($this->opt['statistics'] as $k => $v){ # 循环报送
+            $bigData = [
+                'room_id' => $this->opt['roomId'],
+                'room_type_id' => $roomHashInfo['roomOptionsId'],
+                'room_type_name' => $roomHashInfo['roomTypeName'],
+                'room_channel' => $roomHashInfo['roomChannel'],
+                'rule_detail' => $roomHashInfo['ruleDetail'],
+                'table_type' => $roomHashInfo['tableType'],
+                'table_num' => $roomHashInfo['tableNum'],
+                'table_true_num' => $this->opt['round'],
+                'close_reason' => $closeReason,
+                'keep_time' => bcsub(strtotime($roomHashInfo['gameEndTime']), strtotime($roomHashInfo['gameStartTime']), 0),
+                'club_id' => $roomHashInfo['clubId'],
+                'club_name' => $roomHashInfo['idClubName'],
+                'club_region_id' => $roomHashInfo['clubRegionId'],
+                'club_region_name' => $roomHashInfo['clubRegionName'],
+                'club_mode' => $roomHashInfo['clubMode'],
+            ];
+        }
+        # 报送大数据完成
 
         # 会长模式还钻
         if(($roomHashInfo['clubType'] == 1) && !$this->opt['set'] && !$this->opt['round']){
@@ -812,6 +989,36 @@ class Room extends Base
             }
         }
         # 会长模式还钻完成
+
+        # 会长免费模式已经扣钻报送大数据
+        if(($roomHashInfo['clubType'] == 1) && ($this->opt['set'] || $this->opt['round'])){
+            $userIds = [];
+            foreach ($this->opt['statistics'] as $k => $v){
+                $userIds[] = $v['playerId'];
+            }
+            $userIdsJsonEncode = json_encode($userIds);
+            # 多个用户报送多条
+            foreach ($userIds as $k => $v){
+                $bigData = [
+                    'club_id' => $roomHashInfo['clubId'],
+                    'club_name' => $roomHashInfo['idClubName'],
+                    'club_region_id' => $roomHashInfo['clubRegionId'],
+                    'club_region_name' => $roomHashInfo['clubRegionName'],
+                    'club_mode' => $roomHashInfo['clubMode'],
+                    'pay_mode' => 'free',
+                    'room_id' => $this->opt['roomId'],
+                    'room_type_id' => $roomHashInfo['roomOptionsId'],
+                    'room_type_name' => $roomHashInfo['roomTypeName'],
+                    'room_channel' => $roomHashInfo['roomChannel'],
+                    'rule_detail' => '',
+                    'token_name' => 'diamond',
+                    'token_num' => $roomHashInfo['diamond'],
+                    'token_type' => 'pay',
+                    'current_token' => '-',
+                    'player_list' => $userIdsJsonEncode,
+                ];
+            }
+        }
 
         # 玩家模式扣钻
         if(($roomHashInfo['clubType'] == 0) && $playerInfo && ($this->opt['set'] || $this->opt['round'])){
@@ -930,9 +1137,39 @@ class Room extends Base
                     }
                 }
             }
-        }
 
-        if($playerInfo){ # 用户牌局记录入库
+            # 玩家扣钻模式报送大数据
+            $userIds = [];
+            foreach ($this->opt['statistics'] as $k => $v){
+                $userIds[] = $v['playerId'];
+            }
+            $userIdsJsonEncode = json_encode($userIds);
+
+            if(isset($operateData)){
+                foreach ($operateData as $k => $v){
+                    $bigData = [
+                        'club_id' => $roomHashInfo['clubId'],
+                        'club_name' => $roomHashInfo['idClubName'],
+                        'club_region_id' => $roomHashInfo['clubRegionId'],
+                        'club_region_name' => $roomHashInfo['clubRegionName'],
+                        'club_mode' => $roomHashInfo['clubMode'],
+                        'pay_mode' => 'divide',
+                        'room_id' => $this->opt['roomId'],
+                        'room_type_id' => $roomHashInfo['roomOptionsId'],
+                        'room_type_name' => $roomHashInfo['roomTypeName'],
+                        'room_channel' => $roomHashInfo['roomChannel'],
+                        'rule_detail' => '',
+                        'token_name' => 'diamond',
+                        'token_num' => $v['change_num'],
+                        'token_type' => ($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING) ? 'free' : 'pay',
+                        'current_token' => '-',
+                        'player_list' => $userIdsJsonEncode,
+                    ];
+                }
+            }
+            # 玩家模式报送大数据完成
+
+            # 牌局记录入库
             $insertAll = [];
             foreach ($playerInfo as $k => $userInfo){
                 $insert = [

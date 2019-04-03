@@ -52,6 +52,7 @@ class Definition{
     public static $CHECK_TOKEN_TIME     = 'api/v3/check_token_time.php'; # 用户中心检查用户token接口请求地址
     public static $GET_PLAYER_PROPERTY  = 'api/get_player_property.php'; # 用户中心获取用户资产接口
     public static $RAISE_PLAYER_PROPERTY= 'api/raise_player_property.php'; # 操作用户资产
+    public static $RAISE_PLAYER_PROPERTY2= 'api/raise_player_property2.php'; # 批量操作用户资产
     public static $PROPERTY_CHANGE      = 'api/property_change.php'; #修改用户资产（可增加减掉）
 
     /**
@@ -72,6 +73,7 @@ class Definition{
     public static $EMAIL_DELETE_MORE = '/api/email_del_list.php';//运营中心批量删除邮件
     public static $HORSE_LAMP = '/api/horse_list.php';//运营中心获取跑马灯列表
     public static $NOTICE_LIST = '/api/notice_list.php';//公告列表
+    public static $UPDATE_STATU = '/api/email_update.php';//修改邮件状态
 
     /**
      * 通知中心接口

@@ -19,7 +19,7 @@ class Notice
         $url = Definition::$WEB_USER_URL;//运营中心的域名
         $url_area = Definition::$NOTICE_LIST;//公告列表
         $data['appid'] = Definition::$CESHI_APPID;//该地区的APPid
-        $list = guzzleRequest($url, $url_area, $data);//封装的curl函数
+        $list = sendHttpRequest($url.$url_area, $data);
         $notice_list= $list['data'];
         if($notice_list){
             $back_list = array();
