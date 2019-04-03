@@ -110,6 +110,7 @@ class Record extends Base{
             'secret' => Definition::$OBS_SECRET,
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
+
         var_dump($obsClient);die;
     }
 }

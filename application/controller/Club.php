@@ -50,6 +50,7 @@ class Club extends Base
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
 
         //发送大数据
+        $this->clubLoginBeeSender($clubMessage);
         $res = $this->clubLoginBeeSender($clubMessage);
         $data = [
             //俱乐部信息
