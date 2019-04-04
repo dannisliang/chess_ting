@@ -8,6 +8,7 @@
 namespace app\controller;
 
 use app\definition\Definition;
+use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
 use think\Log;
 use think\Session;
@@ -99,22 +100,24 @@ class Record extends Base{
     }
 
     /**
-     * 播放录像(playBack)返回的华为云的文件地址
+     * 获取播放录像信息
+     * @return \think\response\Json\
      */
-    public function getGamePlayBack(){
+    public function getGamePlayBack()
+    {
         $opt = ['record_id'];
-        if(!has_keys($opt,$this->opt)){
+        if (!has_keys($opt, $this->opt)) {
             return jsonRes(3006);
         }
 
         $recordArr = explode('|', $this->opt['record_id']);
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$recordArr[0])){
+        if (!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0])) {
             return jsonRes(3006);
         }
 
-        $playChecks = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$recordArr[0], 'playChecks');
+        $playChecks = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0], 'playChecks');
 
         $obsClient = new ObsClient([
             'key' => Definition::$OBS_KEY,

@@ -51,7 +51,6 @@ class Club extends Base
 
         //发送大数据
         $this->clubLoginBeeSender($clubMessage);
-        $res = $this->clubLoginBeeSender($clubMessage);
         $data = [
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
