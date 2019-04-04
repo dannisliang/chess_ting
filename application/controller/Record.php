@@ -8,6 +8,7 @@
 namespace app\controller;
 
 use app\definition\Definition;
+use app\model\UserEvaluateModel;
 use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
 use think\Log;
@@ -135,5 +136,61 @@ class Record extends Base{
             'data' => json_decode($playBackInfo['Body'], true)
         ];
         return json($returnData);
+    }
+
+    /**
+     * 观看录像给玩家评价
+     */
+    public function addEvaluate(){
+        $opt = ['type'];
+        if(!has_keys($opt,$this->opt)){
+            return jsonRes(3006);
+        }
+        $user_id = getUserIdFromSession();
+        switch ($this->opt['type']){
+            case 0: //差评
+                $res = $this -> saveEvaluateData($user_id , 'bad_num');
+                if(!$res){
+                    return jsonRes(3004);
+                }
+                break;
+            case 1://好评
+                $res = $this -> saveEvaluateData($user_id , 'good_num');
+                if(!$res){
+                    return jsonRes(3004);
+                }
+                break;
+            default:
+                break;
+        }
+        return jsonRes(0);
+    }
+
+    /**
+     * 保存修改评价
+     * @return \think\response\Json\
+     */
+    private function saveEvaluateData($user_id , $evalType){
+        $evaluateModle = new UserEvaluateModel();
+        $evaluate = $evaluateModle ->getOneByWhere(['player_id'=>$user_id]);
+        if(!$evaluate){
+            $result = $evaluateModle ->saveData([
+                'player_id' => $user_id,
+                $evalType   => 1,
+            ]);
+            if(!$result){
+                return false;
+            }
+        }else{
+            $result = $evaluateModle ->saveData([
+                'bad_num'   => $evaluate[$evalType]+1,
+            ],[
+                'player_id' => $user_id,
+            ]);
+            if(!$result){
+                return false;
+            }
+        }
+        return true;
     }
 }

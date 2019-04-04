@@ -19,11 +19,28 @@ class UserEvaluateModel extends Model
      * 获取评论的信息数量
      * @param $id
      * @return array|false|\PDOStatement|string|Model
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
      */
     public function getInfoById($id){
         return $this -> where('player_id',$id)->find();
+    }
+
+    /**
+     * 获取条件选择一条数据
+     * @param $where
+     * @param string $fielld
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getOneByWhere($where , $fielld = '*'){
+        return $this -> Where($where) -> field($fielld) -> find();
+    }
+
+    /**
+     * 添加修改数据
+     */
+    public function saveData($data , $where = null){
+        if($where){
+            return $this -> where($where) -> update($data);
+        }
+        return $this -> insert($data);
     }
 }
