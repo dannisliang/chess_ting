@@ -66,6 +66,7 @@ class Record extends Base{
         }
         return jsonRes(0, $returnData);
     }
+
     # 获取房间的牌局记录
     public function getRecordList(){
         if(!isset($this->opt['room_id']) || !is_numeric($this->opt['room_id'])){
@@ -99,10 +100,7 @@ class Record extends Base{
         return jsonRes(0, $returnData);
     }
 
-    /**
-     * 获取播放录像信息
-     * @return \think\response\Json\
-     */
+     # 获取播放录像信息
     public function getGamePlayBack()
     {
         $opt = ['record_id'];
@@ -131,9 +129,11 @@ class Record extends Base{
         ]);
 
         $returnData = [
+            'code' => 0,
+            'mess' => '获取数据成功',
             'room_check' => json_decode($playChecks, true),
             'data' => json_decode($playBackInfo['Body'], true)
         ];
-        return jsonRes(0, $returnData);
+        return json($returnData);
     }
 }
