@@ -27,6 +27,7 @@ class GamingRoomInfo extends Base
         }
 
         if(isset($this->opt['room_id']) && $this->opt['room_id']){
+            //观看录像的时候传的参数
             $room_id = $this->opt['room_id'];
         }else{
             //从逻辑服获取房间id

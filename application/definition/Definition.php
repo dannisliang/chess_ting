@@ -102,6 +102,12 @@ class Definition{
     public static $OBS_SECRET = 'hodhHpjMIIDhl6KXbpDB35bzjLFG5KisKATnigcE';
     public static $OBS_ENDPOINT = 'obs.cn-north-1.myhuaweicloud.com';
 
+    /**
+     * 支付调用
+     * @var string
+     */
+    public static $TJMAHJONG_CHESSVANS = 'https://tjmahjong.chessvans.com/h5/index.php'; //H5生成订单用（支付返回页面）
+    public static $ASYNC_CALLBACK_URL = 'https://tjmahjong.chessvans.com/tianjin_mahjong/service/shop/reciveOrder.php'; //异步回调地址
 
 
 }
