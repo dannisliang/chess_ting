@@ -363,6 +363,7 @@ class Room extends Base
             'gameEndTime' => '', # 房间结束时间
             'roundEndInfo' => '', # 对局结束相关数据
             'gameEndInfo' => '', # 房间结束相关数据
+            'roomName' => $playInfoPlayJsonDecode['name'], # 房间记录列表需要
 
             # 大数据报送
             'roomOptionsId' => $this->opt['match_id'], # roomOptionsID
@@ -913,7 +914,7 @@ class Room extends Base
         $obsClient -> putObject([
             'Bucket' => Definition::$CHESS_RECORD_TEST,
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
-            'Body' => json_encode($this->opt['playBack'])
+            'Body' => $this->opt['playBack']
         ]);
 
         # 报送大数据
@@ -958,7 +959,7 @@ class Room extends Base
                 'current_token' => '',
                 'keep_time' => $this->opt['duration'],
                 'club_id' => $roomHashInfo['clubId'],
-                'club_name' => $roomHashInfo['clubName'],
+                'club_name' => $roomHashInfo['idClubName'],
                 'club_region_id' => $roomHashInfo['clubRegionId'],
                 'club_region_name' => $roomHashInfo['idClubRegionName'],
                 'club_mode' => $clubMode,
