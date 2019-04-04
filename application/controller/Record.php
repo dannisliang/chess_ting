@@ -8,6 +8,7 @@
 namespace app\controller;
 
 use app\definition\Definition;
+use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
 use think\Session;
 use app\definition\RedisKey;
@@ -98,7 +99,8 @@ class Record extends Base{
     }
 
     /**
-     * 播放录像(playBack)返回的华为云的文件地址
+     * 获取播放录像信息
+     * @return \think\response\Json\
      */
     public function getGamePlayBack(){
         $opt = ['playBack'];
@@ -110,7 +112,12 @@ class Record extends Base{
             'secret' => Definition::$OBS_SECRET,
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
+        // 使用访问OBS
+        $resp = $obsClient->getObject([
+            'Bucket' => Definition::$CHESS_RECORD_TEST,//桶名称对 固定
+            'Key' => $this->opt['playBack'],//储存文件名
+        ]);
 
-        var_dump($obsClient);die;
+        return jsonRes(0,json_decode($resp['Body'],true));
     }
 }
