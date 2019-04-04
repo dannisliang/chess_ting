@@ -26,7 +26,7 @@ class GamingRoomInfo extends Base
             return jsonRes(3006);
         }
 
-        if(isset($this->opt['room_id']) && $this->opt['room_id'] != 0){
+        if(isset($this->opt['room_id']) && $this->opt['room_id']){
             //观看录像的时候传的参数
             $room_id = $this->opt['room_id'];
         }else{
@@ -41,8 +41,8 @@ class GamingRoomInfo extends Base
             return jsonRes(3518);
         }
         $play_infos = json_decode($player_infos,true);
+        $player = [];
         foreach ($play_infos as $play_info){
-            $player = [];
             if($play_info['userId'] == $this ->opt['player_id']){
                 $evalInfo = $this ->getEvaluate($play_info['userId']);
                 $player = [
