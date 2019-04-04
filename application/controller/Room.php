@@ -101,13 +101,6 @@ class Room extends Base
             return jsonRes(3500);
         }
 
-        # 获取俱乐部所属地区
-        $area = new AreaModel();
-        $areaInfo = $area->getInfoById($clubInfo['area_id']);
-        if(!$areaInfo){
-            return jsonRes(3520);
-        }
-
         # 获取会长昵称
         if($clubInfo['president_id']){
             $presidentInfo = getUserBaseInfo($clubInfo['president_id']);
@@ -175,13 +168,6 @@ class Room extends Base
         $createRoomUrl = $serviceGatewayNewInfo['service'];
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
-
-        if(config('app_debug')){ # 测试模式
-            $serviceId = 4;
-            $createRoomUrl = 'http://192.168.9.18:9938/';
-            $socketH5 = 'ws://mp.snplay.com:5251';
-            $socketUrl = 'mp.snplay.com:5250';
-        }
 
         # 获取玩家vip
         $userVip = new UserVipModel();
@@ -294,7 +280,7 @@ class Room extends Base
                 ];
                 $operaRes = operatePlayerProperty($operateData);
                 if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
-                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
+                    Log::write($operateData, 'operateError');
                 }
             }
 
@@ -332,6 +318,13 @@ class Room extends Base
         }
         $roundNum = getRoomRound($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 圈数
         $baseScore = getRoomBaseScore($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 基础分
+        # 获取俱乐部所属地区
+        $areaName = '-';
+        $area = new AreaModel();
+        $areaInfo = $area->getInfoById($clubInfo['area_id']);
+        if($areaInfo){
+            $areaName = $areaInfo['area_name'];
+        }
         # 报送大数据结束
 
         $roomHashInfo = [
@@ -376,7 +369,7 @@ class Room extends Base
             'betNums' => $baseScore, # 底分数量
             'idClubName' => $clubInfo['club_name'], # 俱乐部名称
             'clubRegionId' => $clubInfo['area_id'], # 俱乐部地域id
-            'idClubRegionName' => $areaInfo['area_name'], # 俱乐部地域名
+            'idClubRegionName' => $areaName, # 俱乐部地域名
             'clubMode' => $clubMode, # 房间模式
             'payMode' => isset($payMode) ? $payMode : '-', # 支付方式
             'presidentNickName' => isset($presidentNickName) ? $presidentNickName : '-', # 会长昵称
@@ -689,10 +682,6 @@ class Room extends Base
         $gameServiceNewArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
-        }
-
-        if(config('app_debug')){
-            $gameServiceNewArr[] = 4;
         }
 
         if($gameServiceNewArr){
@@ -1058,7 +1047,7 @@ class Room extends Base
             ];
             $res = operatePlayerProperty($operateData);
             if(!isset($res['code']) || ($res['code'] != 0)){ # 还钻失败 记录日志
-                errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
+                Log::write($operateData, 'operateError');
             }
         }
         # 会长模式还钻完成
@@ -1176,7 +1165,7 @@ class Room extends Base
             if(isset($operateData)){
                 $res = operatePlayerProperty($operateData);
                 if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
-                    errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $operateData);
+                    Log::write($operateData, 'operateError');
                 }
             }
 
@@ -1194,7 +1183,7 @@ class Room extends Base
                         ];
                         $res = operatePlayerProperty($generalRebateData);
                         if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $generalRebateData);
+                            Log::write($generalRebateData, 'operateError');
                         }
                     }
                 }
@@ -1212,7 +1201,7 @@ class Room extends Base
                         ];
                         $res = operatePlayerProperty($seniorRebateData);
                         if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            errorLog(Definition::$FAILED_TO_OPERATE_PROPERTY, $seniorRebateData);
+                            Log::write($seniorRebateData, 'operateError');
                         }
                     }
                 }
@@ -1331,10 +1320,7 @@ class Room extends Base
             }
             if($insertAll){
                 $userClubRoomRecord = new UserClubRoomRecordModel();
-                $res = $userClubRoomRecord->insertAllUserRecord($insertAll);
-                if(!$res){
-
-                }
+                $userClubRoomRecord->insertAllUserRecord($insertAll);
             }
         }
         # 玩家扣钻模式完成
