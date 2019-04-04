@@ -115,7 +115,24 @@ class Record extends Base{
             return jsonRes(3006);
         }
 
-        $playChecks = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0], 'playChecks');
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$recordArr[0], ['playChecks', 'playerInfos']);
+
+        $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
+        if(!$playerInfos){
+            return jsonRes(3006);
+        }
+        # 用户数数据
+        $userInfos = [];
+        foreach ($playerInfos as $k => $userInfo){
+            $userInfos[$k]['playerId'] = $userInfo['userId'];
+            $userInfos[$k]['nickname'] = $userInfo['nickName'];
+            $userInfos[$k]['headImgUrl'] = $userInfo['headImgUrl'];
+            $userInfos[$k]['sex'] = $userInfo['sex'];
+            $userInfos[$k]['vip'] = $userInfo['vipId'];
+            $userInfos[$k]['ip'] = $userInfo['ipAddr'];
+            $userInfos[$k]['good_num'] = 0;
+            $userInfos[$k]['bad_num'] = 0;
+        }
 
         $obsClient = new ObsClient([
             'key' => Definition::$OBS_KEY,
@@ -129,11 +146,10 @@ class Record extends Base{
         ]);
 
         $returnData = [
-            'code' => 0,
-            'mess' => '获取数据成功',
-            'room_check' => json_decode($playChecks, true),
-            'data' => json_decode($playBackInfo['Body'], true)
+            'room_check' => json_decode($roomHashInfo['playChecks'], true),
+            'data' => json_decode($playBackInfo['Body'], true),
+            'user_info' => $userInfos
         ];
-        return json($returnData);
+        return jsonRes(0, $returnData);
     }
 }

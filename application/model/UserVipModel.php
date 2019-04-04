@@ -96,4 +96,15 @@ class UserVipModel extends Model{
     public function insertData($data){
         return $this -> insert($data);
     }
+
+    /**
+     * 获取用户在使用得相同级别得vip卡
+     * @param $userId
+     * @param $clubId
+     * @param $vipLevel
+     * @return array|false|\PDOStatement|string|Model
+     */
+    public function getUserNowVipCardInfo($userId, $clubId, $vipLevel){
+        return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vip_level', '=', $vipLevel)->where('vip_status', '=', 1)->find();
+    }
 }

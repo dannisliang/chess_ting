@@ -25,8 +25,13 @@ class GamingRoomInfo extends Base
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
-        //从逻辑服获取房间id
-        $room_id = getRoomIdFromService($this->opt['player_id']);
+
+        if(isset($this->opt['room_id']) && $this->opt['room_id']){
+            $room_id = $this->opt['room_id'];
+        }else{
+            //从逻辑服获取房间id
+            $room_id = getRoomIdFromService($this->opt['player_id']);
+        }
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();
@@ -35,8 +40,8 @@ class GamingRoomInfo extends Base
             return jsonRes(3518);
         }
         $play_infos = json_decode($player_infos,true);
+        $player = [];
         foreach ($play_infos as $play_info){
-            $player = [];
             if($play_info['userId'] == $this ->opt['player_id']){
                 $evalInfo = $this ->getEvaluate($play_info['userId']);
                 $player = [
