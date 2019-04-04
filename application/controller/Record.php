@@ -11,6 +11,7 @@ use app\definition\Definition;
 use app\model\UserEvaluateModel;
 use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
+use think\Log;
 use think\Session;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
@@ -39,7 +40,7 @@ class Record extends Base{
         $returnData = [];
         foreach ($userClubRoomRecordInfo as $k => $v){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode']);
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode', 'roomName']);
                 $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
                 $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
                 # 处理数据
@@ -48,18 +49,22 @@ class Record extends Base{
                     $userScore[$scoreInfo['playerId']] = $scoreInfo['totalScore'];
                 }
                 foreach ($roomUserInfo as $kkk => $userInfo){
+                    $roomUserInfo[$kkk]['head_img'] = $roomUserInfo[$kkk]['headImgUrl'];
+                    $roomUserInfo[$kkk]['nickname'] = $roomUserInfo[$kkk]['nickName'];
+                    $roomUserInfo[$kkk]['player_id'] = $roomUserInfo[$kkk]['userId'];
                     $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
                 }
+
                 $return = [];
+                $return['name'] = $roomHashInfo['roomName'];
                 $return['player_infos'] = $roomUserInfo;
                 $return['time'] = strtotime($roomHashInfo['gameEndTime']);
                 $return['room_id'] = $v['room_id'];
-                $return['Options'] = $roomHashInfo['roomOptions'];
+                $return['options'] = json_decode($roomHashInfo['roomOptions'], true);
                 $return['room_code'] = $roomHashInfo['roomCode'];
                 $returnData[] = $return;
             }
         }
-
         return jsonRes(0, $returnData);
     }
     # 获取房间的牌局记录
@@ -74,27 +79,23 @@ class Record extends Base{
             return jsonRes(3006);
         }
 
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['gameEndInfo', 'playerInfos']);
-        $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['roundEndInfo', 'playerInfos']);
+        $roundEndInfo = json_decode($roomHashInfo['roundEndInfo'], true);
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
 
-        if(!is_array($playerInfos) || !is_array($gameEndInfo)){
+        if(!is_array($playerInfos) || !is_array($roundEndInfo)){
             return jsonRes(0, []);
         }
 
         $returnData = [];
-        foreach ($gameEndInfo as $k => $v){
-            $returnData[$k]['playBack'] = $v[1];
-            $returnData[$k]['time'] = $v[2];
-            $returnData[$k]['record_id'] = $k;
-            $returnData[$k]['info'] = $playerInfos;
-            $userScore = [];
+        foreach ($roundEndInfo as $k => $v){
             foreach ($v[0] as $kk => $vv){
-                $userScore[$vv['playerId']] = $vv['score'];
+                $v[0][$kk]['player_id'] = $vv['playerId'];
             }
-            foreach ($returnData[$k]['info'] as $kkk => $vvv){
-                $returnData[$k]['info'][$kkk]['score'] = $userScore[$vvv['userId']];
-            }
+
+            $returnData[$k]['time'] = strtotime($v[2]);
+            $returnData[$k]['record_id'] = $this->opt['room_id'].'|'.$v[1];
+            $returnData[$k]['infos'] = $v[0];
         }
         return jsonRes(0, $returnData);
     }
@@ -103,23 +104,38 @@ class Record extends Base{
      * 获取播放录像信息
      * @return \think\response\Json\
      */
-    public function getGamePlayBack(){
-        $opt = ['playBack'];
-        if(!has_keys($opt,$this->opt)){
+    public function getGamePlayBack()
+    {
+        $opt = ['record_id'];
+        if (!has_keys($opt, $this->opt)) {
             return jsonRes(3006);
         }
+
+        $recordArr = explode('|', $this->opt['record_id']);
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        if (!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0])) {
+            return jsonRes(3006);
+        }
+
+        $playChecks = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0], 'playChecks');
+
         $obsClient = new ObsClient([
             'key' => Definition::$OBS_KEY,
             'secret' => Definition::$OBS_SECRET,
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
-        // 使用访问OBS
-        $resp = $obsClient->getObject([
-            'Bucket' => Definition::$CHESS_RECORD_TEST,//桶名称对 固定
-            'Key' => $this->opt['playBack'],//储存文件名
+
+        $playBackInfo = $obsClient->getObject([
+            'Bucket' => Definition::$CHESS_RECORD_TEST,
+            'Key' => $recordArr[1],
         ]);
 
-        return jsonRes(0,json_decode($resp['Body'],true));
+        $returnData = [
+            'room_check' => json_decode($playChecks, true),
+            'data' => json_decode($playBackInfo['Body'], true)
+        ];
+        return jsonRes(0, $returnData);
     }
 
     /**
