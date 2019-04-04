@@ -32,4 +32,12 @@ class VipCardModel extends Model{
     public function getOneByWhere($where , $field = '*'){
         return $this -> where($where) -> field($field) -> find();
     }
+
+    /**
+     * 获取所有vip卡类型
+     * @return false|\PDOStatement|string|\think\Collection
+     */
+    public function getAllVipCardInfo(){
+        return $this->select();
+    }
 }
