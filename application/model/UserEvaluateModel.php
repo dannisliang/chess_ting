@@ -39,7 +39,7 @@ class UserEvaluateModel extends Model
      */
     public function saveData($data , $where = null){
         if($where){
-            return $this -> where($where) -> save($data);
+            return $this -> where($where) -> update($data);
         }
         return $this -> insert($data);
     }

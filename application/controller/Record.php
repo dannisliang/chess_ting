@@ -146,20 +146,51 @@ class Record extends Base{
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
-        $evaluateModle = new UserEvaluateModel();
         $user_id = getUserIdFromSession();
         switch ($this->opt['type']){
             case 0: //差评
-                $evaluate = $evaluateModle ->getOneByWhere(['play_id'=>$user_id]);
-                if(!$evaluate){
-                    $evaluateModle ->save();
+                $res = $this -> saveEvaluateData($user_id , 'bad_num');
+                if(!$res){
+                    return jsonRes(3004);
                 }
                 break;
             case 1://好评
+                $res = $this -> saveEvaluateData($user_id , 'good_num');
+                if(!$res){
+                    return jsonRes(3004);
+                }
                 break;
             default:
                 break;
         }
         return jsonRes(0);
+    }
+
+    /**
+     * 保存修改评价
+     * @return \think\response\Json\
+     */
+    private function saveEvaluateData($user_id , $evalType){
+        $evaluateModle = new UserEvaluateModel();
+        $evaluate = $evaluateModle ->getOneByWhere(['player_id'=>$user_id]);
+        if(!$evaluate){
+            $result = $evaluateModle ->saveData([
+                'player_id' => $user_id,
+                $evalType   => 1,
+            ]);
+            if(!$result){
+                return false;
+            }
+        }else{
+            $result = $evaluateModle ->saveData([
+                'bad_num'   => $evaluate[$evalType]+1,
+            ],[
+                'player_id' => $user_id,
+            ]);
+            if(!$result){
+                return false;
+            }
+        }
+        return true;
     }
 }

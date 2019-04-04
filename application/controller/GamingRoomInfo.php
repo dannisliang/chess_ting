@@ -25,8 +25,14 @@ class GamingRoomInfo extends Base
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
-        //从逻辑服获取房间id
-        $room_id = getRoomIdFromService($this->opt['player_id']);
+
+        if(isset($this->opt['room_id']) && $this->opt['room_id'] != 0){
+            //观看录像的时候传的参数
+            $room_id = $this->opt['room_id'];
+        }else{
+            //从逻辑服获取房间id
+            $room_id = getRoomIdFromService($this->opt['player_id']);
+        }
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();

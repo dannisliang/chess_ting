@@ -69,6 +69,7 @@ Route::rule('service/shop/use_vipcard','Vip/getUserVipCard'); # 使用vip卡
 Route::rule('service/room/getRecordRoomList','Record/getRecordRoomList'); # 牌局记录列表
 Route::rule('service/room/getRecordList','Record/getRecordList'); # 牌局记录列表
 Route::rule('service/room/getGamePlayBack','Record/getGamePlayBack'); # 播放录像
+Route::rule('service/room/addEvaluate','Record/addEvaluate'); # 添加对玩家评价
 
 
 /**

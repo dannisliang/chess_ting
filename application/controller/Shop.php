@@ -10,16 +10,16 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use think\cache\driver\Redis;
 use app\definition\RedisKey;
 use app\model\ClubShopModel;
 use app\model\ClubVipModel;
-use app\model\OrderModel;
 use app\model\UserVipModel;
 use app\model\VipCardModel;
-use think\Db;
+use app\model\OrderModel;
 use think\Session;
-use think\cache\driver\Redis;
 use think\Log;
+use think\Db;
 
 class Shop extends Base
 {
@@ -286,11 +286,10 @@ class Shop extends Base
         $clubVipModel  = new ClubVipModel();
         $vipCardModel  = new VipCardModel();
 
-        $ret_url = 'https://tjmahjong.chessvans.com/h5/index.php';
+        $ret_url = Definition::$TJMAHJONG_CHESSVANS; //支付返回页面
         if($this->opt['url_id']){
-            $ret_url = 'https://tjmahjong.chessvans.com/h5/index.php' . $this -> opt['url_id'];
+            $ret_url = Definition::$TJMAHJONG_CHESSVANS . $this -> opt['url_id'];
         }
-        $user_info = Session::get(RedisKey::$USER_SESSION_INFO); //这里可以获取client_type 和 app_type
         $user_name = backNickname($user_id);
 
         //根据传输的shop_id和vip_id查找商品数据
@@ -326,9 +325,9 @@ class Shop extends Base
         $time = date('Y-m-d H:i:s');
         $ret_url = urlencode($ret_url);
 
-        //异步回调地址
-        $notify_url = 'https://tjmahjong.chessvans.com/tianjin_mahjong/service/shop/reciveOrder.php';
+        $notify_url = Definition::$ASYNC_CALLBACK_URL;//异步回调地址
         $notify_url = urlencode($notify_url);
+
         switch ($type){
             case 10001:
                 $goods_info = '钻石';
