@@ -60,8 +60,8 @@ Route::rule('service/shop/reciveOrder','paySuccessCallBack/receiveOrder'); //支
 /**
  * vip卡相关
  */
-Route::rule('service/shop/userVip','Vip/useVipCard'); # 使用vip卡
-Route::rule('service/shop/use_vipcard','Vip/getUserVipCard'); # 使用vip卡
+Route::rule('service/shop/userVip','Vip/getUserVipCard'); # vip卡
+Route::rule('service/shop/use_vipcard','Vip/useVipCard'); # 使用vip卡
 
 /**
  * 牌局记录相关
