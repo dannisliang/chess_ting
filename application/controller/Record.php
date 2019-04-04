@@ -9,6 +9,7 @@ namespace app\controller;
 
 use app\definition\Definition;
 use Obs\ObsClient;
+use think\Log;
 use think\Session;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
@@ -37,7 +38,7 @@ class Record extends Base{
         $returnData = [];
         foreach ($userClubRoomRecordInfo as $k => $v){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode']);
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode', 'roomName']);
                 $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
                 $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
                 # 处理数据
@@ -49,15 +50,15 @@ class Record extends Base{
                     $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
                 }
                 $return = [];
+                $return['name'] = $roomHashInfo['roomName'];
                 $return['player_infos'] = $roomUserInfo;
                 $return['time'] = strtotime($roomHashInfo['gameEndTime']);
                 $return['room_id'] = $v['room_id'];
-                $return['Options'] = $roomHashInfo['roomOptions'];
+                $return['Options'] = json_decode($roomHashInfo['roomOptions'], true);
                 $return['room_code'] = $roomHashInfo['roomCode'];
                 $returnData[] = $return;
             }
         }
-
         return jsonRes(0, $returnData);
     }
     # 获取房间的牌局记录
@@ -111,6 +112,11 @@ class Record extends Base{
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
 
-        var_dump($obsClient);die;
+        $playBackInfo = $obsClient->getObject([
+            'Bucket' => Definition::$CHESS_RECORD_TEST,
+            'Key' => $this->opt['playBack'],
+        ]);
+        $playBack = json_decode($playBackInfo['Body'], true);
+        return jsonRes(0, $playBack);
     }
 }
