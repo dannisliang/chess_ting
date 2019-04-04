@@ -155,7 +155,7 @@ class Record extends Base{
     }
 
     /**
-     * 观看录像给玩家评价
+     * 观看录像给玩家评价（此方法暂时没有用）
      */
     public function addEvaluate(){
         $opt = ['type'];
@@ -167,13 +167,14 @@ class Record extends Base{
             case 0: //差评
                 $res = $this -> saveEvaluateData($user_id , 'bad_num');
                 if(!$res){
-                    return jsonRes(3004);
+                    return jsonRes(3005);
                 }
                 break;
             case 1://好评
                 $res = $this -> saveEvaluateData($user_id , 'good_num');
+                var_dump($res);die;
                 if(!$res){
-                    return jsonRes(3004);
+                    return jsonRes(3005);
                 }
                 break;
             default:
@@ -189,6 +190,7 @@ class Record extends Base{
     private function saveEvaluateData($user_id , $evalType){
         $evaluateModle = new UserEvaluateModel();
         $evaluate = $evaluateModle ->getOneByWhere(['player_id'=>$user_id]);
+
         if(!$evaluate){
             $result = $evaluateModle ->saveData([
                 'player_id' => $user_id,
@@ -199,7 +201,7 @@ class Record extends Base{
             }
         }else{
             $result = $evaluateModle ->saveData([
-                'bad_num'   => $evaluate[$evalType]+1,
+                $evalType   => $evaluate[$evalType] + 1,
             ],[
                 'player_id' => $user_id,
             ]);
