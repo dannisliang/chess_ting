@@ -33,17 +33,13 @@ class UserVipModel extends Model{
      */
     public function getOneByJoinWhere($where){
 
-        try{
-            return $this -> where($where)
-                -> alias('a')
-                ->join('vip_card b','a.vid = b.vip_id','LEFT')
-                ->field('a.vid,a.end_day,a.card_number,b.name,b.type')
-                ->join('vip_type c','c.v_type = b.type','LEFT')
-                ->field('c.v_name')
-                ->find();
-        }catch(\Exception $e){
-            return false;
-        }
+         return $this -> where($where)
+            -> alias('a')
+            ->join('vip_card b','a.vid = b.vip_id','LEFT')
+            ->field('a.vid,a.end_day,a.card_number,b.name,b.type')
+            ->join('vip_type c','c.v_type = b.type','LEFT')
+            ->field('c.v_name')
+            ->find();
     }
 
     /**
