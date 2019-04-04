@@ -8,6 +8,7 @@
 namespace app\controller;
 
 use app\definition\Definition;
+use app\model\UserEvaluateModel;
 use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
 use think\Session;
@@ -119,5 +120,30 @@ class Record extends Base{
         ]);
 
         return jsonRes(0,json_decode($resp['Body'],true));
+    }
+
+    /**
+     * 观看录像给玩家评价
+     */
+    public function addEvaluate(){
+        $opt = ['type'];
+        if(!has_keys($opt,$this->opt)){
+            return jsonRes(3006);
+        }
+        $evaluateModle = new UserEvaluateModel();
+        $user_id = getUserIdFromSession();
+        switch ($this->opt['type']){
+            case 0: //差评
+                $evaluate = $evaluateModle ->getOneByWhere(['play_id'=>$user_id]);
+                if(!$evaluate){
+                    $evaluateModle ->save();
+                }
+                break;
+            case 1://好评
+                break;
+            default:
+                break;
+        }
+        return jsonRes(0);
     }
 }
