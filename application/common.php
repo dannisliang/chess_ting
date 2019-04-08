@@ -55,7 +55,7 @@ function getUserProperty($userIds, $propertyType){
     $requestUrl = Definition::$WEB_API_URL.Definition::$GET_PLAYER_PROPERTY;
     $data['app_id'] = Definition::$CESHI_APPID;
     $data['property_type'] = $propertyType;
-    $data['uid'] =$userIds;
+    $data['uid'] = $userIds;
     $response = sendHttpRequest($requestUrl, $data);
     return $response;
 }
@@ -471,7 +471,7 @@ function getRoomIdFromService($user_id){
         if(!isset($serviceInfo['content'])){
             continue;
         }
-        if(array_key_exists('roomId',$serviceInfo['content'])){
+        if(isset($serviceInfo['content']['roomId']) && array_key_exists('roomId',$serviceInfo['content'])){
             $room_id = $serviceInfo['content']['roomId'];
             break;
         }

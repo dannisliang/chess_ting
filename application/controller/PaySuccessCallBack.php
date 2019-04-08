@@ -198,7 +198,7 @@ class PaySuccessCallBack
         $beeSend = new BeeSender();
         $result = $beeSend ->send($event_name , $content);
         if(!$result){
-            errorLog('paySuccessCallBackBeeSenderError' , $result);
+            Log::write($result , 'paySuccessCallBackBeeSenderError');
         }
     }
 

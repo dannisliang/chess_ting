@@ -10,16 +10,13 @@ namespace app\controller;
 
 
 use app\definition\Definition;
-use think\cache\driver\Redis;
 use app\definition\RedisKey;
 use app\model\ClubShopModel;
 use app\model\ClubVipModel;
-use app\model\UserVipModel;
 use app\model\VipCardModel;
 use app\model\OrderModel;
 use think\Session;
 use think\Log;
-use think\Db;
 
 class Shop extends Base
 {
@@ -265,7 +262,7 @@ class Shop extends Base
         $pathInfo   = Definition::$SEND;
         $res = guzzleRequest($url , $pathInfo , $data);
         if($res['code'] != 0){
-            Log::write(date('Y-m-d H:i:s'));
+            Log::write($res,'buyGold_error');
         }
 
         return jsonRes(0);
@@ -359,9 +356,9 @@ class Shop extends Base
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
 
         $result = sendHttpRequest( $url );
-        if($result['ErrCode'] != 0){
-            return jsonRes(3004);
-        }
+//        if($result['ErrCode'] != 0){
+//            return jsonRes(3004);
+//        }
         //获取机型 和 类型
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         $client_type= $user_session_info['client_type'];

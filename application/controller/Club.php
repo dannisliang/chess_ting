@@ -10,7 +10,6 @@ namespace app\controller;
 
 
 use app\definition\Definition;
-use app\definition\RedisKey;
 use app\model\AreaModel;
 use app\model\BeeSender;
 use app\model\ClubModel;
@@ -26,8 +25,6 @@ use app\model\UserRoomModel;
 use app\model\UserVipModel;
 use think\Db;
 use think\Log;
-use think\Request;
-use think\Session;
 
 class Club extends Base
 {
@@ -340,7 +337,7 @@ class Club extends Base
         $res = $beeSender ->send($event_name , $contents);
         if(!$res){
             //报送不成功写日志
-            errorLog('clubBeeSenderError' , $res);
+            Log::write($res , 'club_beeSender_error');
         }
     }
 
@@ -525,6 +522,7 @@ class Club extends Base
             //人数
             $playSize = getRoomNeedUserNum(json_decode($val['play'],true),json_decode($val['options'],true));
             //如果反回false则说明配置规则有问题
+            $diamond = 0;
             if (!$playSize){
                 $diamond = $val['diamond'];
             }
