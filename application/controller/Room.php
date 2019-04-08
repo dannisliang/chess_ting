@@ -155,7 +155,7 @@ class Room extends Base
 
         //查找商务会长，给商务会长返利
         $commerceModel = new CommerceModel();
-        $commerce = $commerceModel -> getOneByWhere(['senior_president' => $club['senior_president']]);
+        $commerce = $commerceModel -> getOneByWhere(['senior_president' => $clubInfo['senior_president']]);
 
         # 根据俱乐部ID获取俱乐部socket通道
         $gameServiceNew = new GameServiceNewModel();
@@ -829,7 +829,7 @@ class Room extends Base
 
         $changeRoomInfo = [
             'joinStatus' => 2, # 游戏中
-            'gameStartTime' => date('Y-m-d H:i', time())
+            'gameStartTime' => date('Y-m-d H:i:s', time())
         ];
         $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
         return jsonRes(0);
@@ -902,7 +902,7 @@ class Room extends Base
         $roundEndInfo[] = [
             $this->opt['score'],
             date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
-            date("Y-m-d H:i", time())
+            date("Y-m-d H:i:s", time())
         ];
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
@@ -976,18 +976,86 @@ class Room extends Base
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['statistics']) || !is_array($this->opt['statistics'])){
             return jsonRes(0);
         }
+        Log::write($this->opt, 'error');
 
         # 修改房间的结束时间
         $redis = new Redis();
         $redisHandle = $redis->handler();
         if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
             $setData = [
-                'gameEndTime' => date('Y-m-d H:i', time()),
+                'gameEndTime' => date('Y-m-d H:i:s', time()),
                 'gameEndInfo' => json_encode($this->opt['statistics'])
             ];
             $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $setData);
         }
-        return jsonRes(0);
+
+        # 牌局正常结束 返回逻辑服扣钻相关数据
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'clubType', 'roomRate']);
+        $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
+
+        if($this->opt['round'] && ($roomHashInfo['clubType'] != 1) && $playerInfo){
+            $returnData = [];
+            if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
+                $userScore = [];
+                foreach ($this->opt['statistics'] as $k => $v){
+                    $userScore[$v['playerId']] = $v['totalScore'];
+                }
+                $userIds = [];
+                $maxScore = max($userScore);
+                foreach ($userScore as $playerId => $score){
+                    if($score == $maxScore){
+                        $userIds[] = $playerId;
+                    }
+                }
+                $userNum = count($userIds);
+
+                foreach ($this->opt['statistics'] as $k => $v){
+                    if(in_array($v['playerId'], $userIds)){ # 需要扣钻
+                        foreach ($playerInfo as $kk => $userInfo){
+                            if($userInfo['userId'] == $v['playerId']){
+                                $bind = isset($userInfo['needDiamond']['bind']) ? $userInfo['needDiamond']['bind'] : 0;
+                                $noBind = isset($userInfo['needDiamond']['noBind']) ? $userInfo['needDiamond']['noBind'] : 0;
+                                $total = bcdiv(bcadd($bind, $noBind, 0), $userNum, 0);
+                                $returnData[] = [
+                                    'player_id' => $v['playerId'],
+                                    'room_cost' => $total,
+                                ];
+                            }
+                        }
+                    }else{
+                        $returnData[] = [
+                            'player_id' => $v['playerId'],
+                            'room_cost' => 0,
+                        ];
+                    }
+                }
+            }
+
+            if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
+                foreach ($this->opt['statistics'] as $k => $v){
+                    foreach ($playerInfo as $kk => $userInfo){
+                        if($v['playerId'] == $userInfo['userId']){
+                            $bind = isset($userInfo['needDiamond']['bind']) ? $userInfo['needDiamond']['bind'] : 0;
+                            $noBind = isset($userInfo['needDiamond']['noBind']) ? $userInfo['needDiamond']['noBind'] : 0;
+                            $total = bcadd($bind, $noBind, 0);
+                            $returnData[] = [
+                                'player_id' => $v['playerId'],
+                                'room_cost' => $total,
+                            ];
+                        }
+                    }
+                }
+            }
+        }else{
+            $returnData = [];
+            foreach ($this->opt['statistics'] as $k => $v){
+                $returnData[] = [
+                    'player_id' => $v['playerId'],
+                    'room_cost' => 0,
+                ];
+            }
+        }
+        return jsonRes(0, $returnData);
     }
     # 房间解散回调完成
     public function disBandRoomCallBack(){
@@ -1030,7 +1098,7 @@ class Room extends Base
         # 会长模式还钻完成
 
         # 玩家模式扣钻
-        if(($roomHashInfo['clubType'] == 0) && $playerInfo && ($this->opt['set'] || $this->opt['round'])){
+        if(($roomHashInfo['clubType'] == 0) && $playerInfo && $this->opt['round']){
             $rebate = 0; # 返利基数
             if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
                 $userScore = [];
@@ -1181,46 +1249,7 @@ class Room extends Base
                 $userClubRoomRecord->insertAllUserRecord($insertAll);
             }
         }
-
-        # 牌局正常结束 返回逻辑服扣钻相关数据
-        if(($this->opt['set'] || $this->opt['round']) && ($roomHashInfo['clubType'] != 1)){
-            # 玩家扣钻模式
-            $returnData = [];
-            if($roomHashInfo['clubType'] == 0){
-                $roomCost = [];
-                if (isset($operateData)){
-                    foreach ($operateData as $k => $v){
-                        if(!isset($roomCost[$v['uid']])){
-                            $roomCost[$v['uid']] = 0;
-                        }
-                        $roomCost[$v['uid']] = bcadd($roomCost[$v['uid']], $v['change_num'], 0);
-                    }
-                }
-
-                foreach ($this->opt['statistics'] as $k => $v){
-                    if(!isset($roomCost[$v['playerId']])){
-                        $returnData[] = [
-                            'player_id' => $v['playerId'],
-                            'room_cost' => 0,
-                        ];
-                    }else{
-                        $returnData[] = [
-                            'player_id' => $v['playerId'],
-                            'room_cost' => $roomCost[$v['playerId']],
-                        ];
-                    }
-                }
-            }
-        }else{
-            $returnData = [];
-            foreach ($this->opt['statistics'] as $k => $v){
-                $returnData[] = [
-                    'player_id' => $v['playerId'],
-                    'room_cost' => 0,
-                ];
-            }
-        }
         # 玩家扣钻模式完成
-        return jsonRes(0, $returnData);
+        return jsonRes(0);
     }
 }
