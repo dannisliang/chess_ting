@@ -10,9 +10,6 @@ namespace app\controller;
 use app\definition\Definition;
 use app\model\ClubModel;
 use app\model\UserVipModel;
-use guzzle\GuzzleHttp;
-use think\Session;
-use app\definition\RedisKey;
 use app\model\VipCardModel;
 use think\Db;
 class Mail extends Base
@@ -20,7 +17,7 @@ class Mail extends Base
 
 
     /**
-     *获取邮件列表
+     * 获取邮件列表
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function lists(){
@@ -71,8 +68,9 @@ class Mail extends Base
         return jsonRes( 3004,$result );
 
     }
+
     /**
-     *邮件详情
+     * 邮件详情
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function detail()
@@ -169,8 +167,9 @@ class Mail extends Base
         }
 
     }
+
     /**
-     *删除邮件
+     * 删除邮件
      * @param
      */
     public function delete(){
@@ -202,13 +201,11 @@ class Mail extends Base
             return jsonRes(3004);
         }
     }
+
     /*
      * 领取邮件里的物品
-     *
-     * */
+     */
     public function receive(){
-        /*$sess = ['player_id' => 552610, 'headimgurl' => 'www.a.com', 'nickname' => 'xie', 'ip' => '192.168.1.1', 'token' => 'aaa', 'sex' => '1'];
-        Session::set(RedisKey::$USER_SESSION_INFO, $sess);*/
         $mail_id = $this->opt['mail_id'];
         $player_id = getUserIdFromSession();
         if(!$player_id){
