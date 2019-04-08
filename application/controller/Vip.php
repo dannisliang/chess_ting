@@ -141,33 +141,33 @@ class Vip extends Base{
             return jsonRes(3513);
         }
 
-//        // Todo 报送大数据
-//        $clubMode = 'divide'; # 免费房
-//        if($clubInfo['club_type'] == 1){
-//            $clubMode = 'free';
-//        }
-//        $bigData = [
-//            'server_id' => '-',
-//            'user_id' => $userSessionInfo['userid'],
-//            'role_id' => '-'.'_'.$userSessionInfo['userid'],
-//            'role_name' => $userSessionInfo['nickname'],
-//            'client_id' => '-',
-//            'client_type' => $userSessionInfo['client_type'],
-//            'system_type' => $userSessionInfo['app_type'],
-//            'ip' => $userSessionInfo['ip'],
-//
-//            'club_id' => $this->opt['club_id'],
-//            'club_name' => $clubInfo['club_name'],
-//            'club_region_id' => $clubInfo['clubRegionId'],
-//            'club_region_name' => $areaInfo['area_name'],
-//            'club_mode' => $clubMode,
-//            'reason' => '-',
-//            'props_id' => $this->opt['vid'],
-//            'props_name' => '会员卡',
-//            'props_num' => 1,
-//        ];
-//        $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
-//        $beeSender->send('room_join', $bigData);
+        // Todo 报送大数据
+        $clubMode = 'divide'; # 免费房
+        if($clubInfo['club_type'] == 1){
+            $clubMode = 'free';
+        }
+        $bigData = [
+            'server_id' => '-',
+            'user_id' => $userSessionInfo['userid'],
+            'role_id' => '-'.'_'.$userSessionInfo['userid'],
+            'role_name' => $userSessionInfo['nickname'],
+            'client_id' => '-',
+            'client_type' => $userSessionInfo['client_type'],
+            'system_type' => $userSessionInfo['app_type'],
+            'ip' => $userSessionInfo['ip'],
+
+            'club_id' => $this->opt['club_id'],
+            'club_name' => $clubInfo['club_name'],
+            'club_region_id' => $clubInfo['area_id'],
+            'club_region_name' => $areaInfo['area_name'],
+            'club_mode' => $clubMode,
+            'reason' => '-',
+            'props_id' => $this->opt['vid'],
+            'props_name' => '会员卡',
+            'props_num' => 1,
+        ];
+        $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender->send('room_join', $bigData);
         return jsonRes(3515);
     }
 }

@@ -1,10 +1,10 @@
 <?php
 
+use think\Log;
 use think\Session;
 use app\definition\CodeMes;
 use app\definition\RedisKey;
 use app\definition\Definition;
-
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
@@ -109,14 +109,14 @@ function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $confi
                 $requestKeepTime,
                 $url
             ];
-            errorLog('slowRequest', $errorData);
+            Log::write($errorData, 'slowRequest');
         }
 
         if($response->getStatusCode() != 200){ # 服务器错误
             $errorData = [
                 $url
             ];
-            errorLog('errorRequest', $errorData);
+            Log::write($errorData, 'errorRequest');
             return [];
         }
         return json_decode($response->getBody()->getContents(), true);
@@ -124,7 +124,7 @@ function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $confi
         $errorData = [
             $url
         ];
-        errorLog('otherRequest', $errorData);
+        Log::write($errorData, 'errorRequest');
         return [];
     }
 }
@@ -330,15 +330,6 @@ function operatePlayerProperty($data){
     ];
     $res = guzzleRequest($url , $pathInfo , $info);
     return $res;
-}
-
-/**
- * 写redis错误日志
- * @param $key
- */
-function errorLog($errorType, $data){
-    $errorStr = date('Y-m-d H:i:s', time()).'|'.json_encode($data).PHP_EOL;
-    file_put_contents(APP_LOG_PATH.$errorType.'.log', $errorStr, FILE_APPEND);
 }
 
 /**
