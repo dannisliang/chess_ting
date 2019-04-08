@@ -167,7 +167,7 @@ class Vip extends Base{
             'props_num' => 1,
         ];
         $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
-        $beeSender->send('room_join', $bigData);
+        $beeSender->send('props_use', $bigData);
         return jsonRes(3515);
     }
 }
