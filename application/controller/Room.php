@@ -10,6 +10,7 @@ namespace app\controller;
 
 use think\Session;
 use Obs\ObsClient;
+use app\model\BeeSender;
 use app\model\AreaModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
@@ -24,7 +25,6 @@ use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserClubRoomRecordModel;
 use think\Log;
-use app\model\BeeSender;
 
 
 class Room extends Base
