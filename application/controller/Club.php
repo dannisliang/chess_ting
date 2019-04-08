@@ -516,13 +516,13 @@ class Club extends Base
             $game_info['pay_type']  = $val['room_rate'];
             $game_info['room_name'] = $val['room_name'];
             //计算房费
+            $diamond = 0;
             if($val['room_rate'] == 0){
                 $diamond = $val['diamond'];
             }
             //人数
             $playSize = getRoomNeedUserNum(json_decode($val['play'],true),json_decode($val['options'],true));
             //如果反回false则说明配置规则有问题
-            $diamond = 0;
             if (!$playSize){
                 $diamond = $val['diamond'];
             }

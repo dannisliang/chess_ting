@@ -976,7 +976,6 @@ class Room extends Base
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['statistics']) || !is_array($this->opt['statistics'])){
             return jsonRes(0);
         }
-        Log::write($this->opt, 'error');
 
         # 修改房间的结束时间
         $redis = new Redis();
