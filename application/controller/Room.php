@@ -290,7 +290,7 @@ class Room extends Base
             }
 
             if($createRoomInfo['content']['result'] == 10002){
-                return jsonRes(3519);
+                return jsonRes(9999);
             }
             return jsonRes(3517);
         }
@@ -496,7 +496,7 @@ class Room extends Base
 //        p($joinRoomInfo);
         if(!isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
             if($joinRoomInfo['content']['result'] == 10002){
-                return jsonRes(3519);
+                return jsonRes(9999);
             }
             return jsonRes(3506);
         }
