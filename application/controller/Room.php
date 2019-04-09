@@ -921,7 +921,7 @@ class Room extends Base
 
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode']);
+            ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos']);
 
         # 算用户积分和用户积分
         $userIds = [];
@@ -1080,7 +1080,8 @@ class Room extends Base
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
             ['commerceId', 'businessRebate', 'serverId', 'payMode', 'ruleTetail', 'clubMode', 'clubRegionName', 'clubRegionId',
                 'clubName', 'gameStartTime', 'gameEndTime', 'tableNum', 'tableType', 'ruleDetail', 'roomChannel', 'roomTypeName',
-                'roomOptionsId', 'playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate', 'seniorRebate', 'seniorPresidentId', 'presidentId']);
+                'roomOptionsId', 'playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate',
+                'seniorRebate', 'seniorPresidentId', 'presidentId', 'presidentNickName', 'seniorPresidentNickName']);
         $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); # 俱乐部移除房间
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
@@ -1196,6 +1197,38 @@ class Room extends Base
                 $userNum = count($userIds);
                 foreach ($playerInfo as $k => $userInfo){
                     if(in_array($userInfo['userId'], $userIds)){
+                        if(isset($userInfo['needDiamond'])){
+                            foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
+                                if($diamondType == 'bind'){
+                                    $operateData[] = [
+                                        'uid' => $userInfo['userId'],
+                                        'event_type' => '-',
+                                        'reason_id' => 7,
+                                        'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
+                                        'property_name' => '赠送蓝钻',
+                                        'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                    ];
+                                }
+                                if($diamondType == 'noBind'){
+                                    $operateData[] = [
+                                        'uid' => $userInfo['userId'],
+                                        'event_type' => '-',
+                                        'reason_id' => 7,
+                                        'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
+                                        'property_name' => '赠送蓝钻',
+                                        'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                    ];
+                                    $rebate = bcadd(bcdiv($diamondValue, $userNum, 0), $rebate, 0);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
+                foreach ($playerInfo as $k => $userInfo){
+                    if(isset($userInfo['needDiamond'])){
                         foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
                             if($diamondType == 'bind'){
                                 $operateData[] = [
@@ -1204,7 +1237,7 @@ class Room extends Base
                                     'reason_id' => 7,
                                     'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
                                     'property_name' => '赠送蓝钻',
-                                    'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                    'change_num' => $diamondValue,
                                 ];
                             }
                             if($diamondType == 'noBind'){
@@ -1214,38 +1247,10 @@ class Room extends Base
                                     'reason_id' => 7,
                                     'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
                                     'property_name' => '赠送蓝钻',
-                                    'change_num' => bcdiv($diamondValue, $userNum, 0),
+                                    'change_num' => $diamondValue,
                                 ];
-                                $rebate = bcadd(bcdiv($diamondValue, $userNum, 0), $rebate, 0);
+                                $rebate = bcadd($rebate, $diamondValue, 0);
                             }
-                        }
-                    }
-                }
-            }
-
-            if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
-                foreach ($playerInfo as $k => $userInfo){
-                    foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
-                        if($diamondType == 'bind'){
-                            $operateData[] = [
-                                'uid' => $userInfo['userId'],
-                                'event_type' => '-',
-                                'reason_id' => 7,
-                                'property_type' => Definition::$USER_PROPERTY_TYPE_BINDING,
-                                'property_name' => '赠送蓝钻',
-                                'change_num' => $diamondValue,
-                            ];
-                        }
-                        if($diamondType == 'noBind'){
-                            $operateData[] = [
-                                'uid' => $userInfo['userId'],
-                                'event_type' => '-',
-                                'reason_id' => 7,
-                                'property_type' => Definition::$USER_PROPERTY_TYPE_NOT_BINDING,
-                                'property_name' => '赠送蓝钻',
-                                'change_num' => $diamondValue,
-                            ];
-                            $rebate = bcadd($rebate, $diamondValue, 0);
                         }
                     }
                 }
