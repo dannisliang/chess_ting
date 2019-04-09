@@ -979,7 +979,7 @@ class Room extends Base
         # 报送大数据完成
         return jsonRes(0);
     }
-    # 房间游戏结束回调完成 ok
+    # 房间游戏结束回调完成
     public function roomEndGameCallBack(){
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['statistics']) || !is_array($this->opt['statistics'])){
             return jsonRes(0);
@@ -1078,8 +1078,8 @@ class Room extends Base
         }
 
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['commerceId', 'businessRebate', 'serverId', 'payMode', 'ruleTetail', 'clubMode', 'clubRegionName', 'clubRegionId',
-                'clubName', 'gameStartTime', 'gameEndTime', 'tableNum', 'tableType', 'ruleDetail', 'roomChannel', 'roomTypeName',
+            ['commerceId', 'businessRebate', 'payMode', 'clubMode', 'clubRegionName', 'clubRegionId',
+                'clubName', 'gameStartTime', 'gameEndTime', 'tableNum', 'tableType', 'roomChannel', 'roomTypeName',
                 'roomOptionsId', 'playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate',
                 'seniorRebate', 'seniorPresidentId', 'presidentId', 'presidentNickName', 'seniorPresidentNickName']);
         $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); # 俱乐部移除房间
@@ -1177,6 +1177,24 @@ class Room extends Base
             $beeSender->add_batch('room_token_reduce', $bigData);
         }
         # 会长模式报送完成
+
+        # 牌局记录入库
+        if($playerInfo && $this->opt['round']){
+            $insertAll = [];
+            foreach ($playerInfo as $k => $userInfo){
+                $insert = [
+                    'room_id' => $this->opt['roomId'],
+                    'user_id' => $userInfo['userId'],
+                    'club_id' => $roomHashInfo['clubId'],
+                    'add_time' => date("Y-m-d H:i:s", time()),
+                ];
+                $insertAll[] = $insert;
+            }
+            if($insertAll){
+                $userClubRoomRecord = new UserClubRoomRecordModel();
+                $userClubRoomRecord->insertAllUserRecord($insertAll);
+            }
+        }
 
         # 玩家模式扣钻
         if(($roomHashInfo['clubType'] == 0) && $playerInfo && $this->opt['round']){
@@ -1415,22 +1433,6 @@ class Room extends Base
                         }
                     }
                 }
-            }
-
-            # 牌局记录入库
-            $insertAll = [];
-            foreach ($playerInfo as $k => $userInfo){
-                $insert = [
-                    'room_id' => $this->opt['roomId'],
-                    'user_id' => $userInfo['userId'],
-                    'club_id' => $roomHashInfo['clubId'],
-                    'add_time' => date("Y-m-d H:i:s", time()),
-                ];
-                $insertAll[] = $insert;
-            }
-            if($insertAll){
-                $userClubRoomRecord = new UserClubRoomRecordModel();
-                $userClubRoomRecord->insertAllUserRecord($insertAll);
             }
         }
         $beeSender->batch_send();
