@@ -10,7 +10,7 @@ namespace app\controller;
 
 use app\model\AreaModel;
 
-class Area extends Base
+class Area
 {
     public function lists()
     {
