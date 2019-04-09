@@ -85,4 +85,9 @@ class ClubModel extends Model{
             ->find();
     }
 
+
+    public function getAllClubIds(){
+        return $this->where('club_status', '=', 1)->column('cid');
+    }
+
 }
