@@ -16,7 +16,7 @@ class AreaModel extends Model
 {
     protected $name = 'area';
 
-    public function select()
+    public function selectArea()
     {
         try{
             //查表

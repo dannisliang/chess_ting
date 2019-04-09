@@ -15,7 +15,7 @@ class Area
     public function lists()
     {
         $area_opt = new AreaModel();
-        $result = $area_opt->select();
+        $result = $area_opt->selectArea();
         return jsonRes(0,$result);
     }
 }
