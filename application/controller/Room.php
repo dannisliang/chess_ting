@@ -582,11 +582,17 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
+                $diamond = $roomHashValue['diamond'];
+                if(($roomHashValue['roomRate'] == 0) && ($roomHashValue['clubType'] == 0)){
+                    if($roomHashValue['needUserNum']){
+                        $diamond = bcdiv($diamond, $roomHashValue['needUserNum'], 0);
+                    }
+                }
                 $clubRoomReturn[$i]['room_id'] = $roomNum;
-                $clubRoomReturn[$i]['diamond'] = $roomHashValue['diamond'];
+                $clubRoomReturn[$i]['diamond'] = $diamond;
                 $clubRoomReturn[$i]['match_id'] = $roomHashValue['roomOptionsId'];
                 $clubRoomReturn[$i]['player_size'] = $roomHashValue['needUserNum'];
                 $clubRoomReturn[$i]['room_code'] = $roomHashValue['roomCode'];
