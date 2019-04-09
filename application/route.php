@@ -80,8 +80,11 @@ Route::rule('service/GetMailDetail','Mail/detail');
 Route::rule('service/deleteMail','Mail/delete');
 Route::rule('service/reciveGoods','Mail/receive');
 /*领取邮件里附加你接口地址service/reciveGoods*/
+
 /*跑马灯*/
 Route::rule('service/getBulletinList','HorseLamp/lists');
+Route::rule('service/getScrollScreen','HorseLamp/getScrollScreen'); //获取俱乐部跑马灯
+
 /*公告*/
 Route::rule('service/receive','Notice/lists');
 

@@ -15,7 +15,6 @@ use think\Db;
 class Mail extends Base
 {
 
-
     /**
      * 获取邮件列表
      * @param mail_type:邮件类型,limit:查看的邮件最大数量

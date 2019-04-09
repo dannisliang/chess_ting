@@ -413,22 +413,18 @@ class Club extends Base
         $playModel      = new PlayModel();
         $club_socket    = new ClubSocketModel();
         $areaModle      = new AreaModel();
-        $where = [
+
+        $user_club = $userClubModel ->getSomeByWhere([
             'player_id' => $user_id,
             'club_id'   => $club_id,
             'status'    => 1
-        ];
-        $field = 'club_id';
+        ],'club_id');
 
-        $user_club = $userClubModel ->getSomeByWhere($where,$field);
         if(!$user_club){
             return jsonRes(23004);
         }
-        $where = [
-            'cid' => $club_id
-        ];
-        $field = 'club_name,club_icon,content,club_type,area_id';
-        $clubInfo = $clubModel -> getOneByWhere( $where , $field );
+        $clubInfo = $clubModel -> getOneByWhere( ['cid' => $club_id] , 'club_name,club_icon,content,club_type,area_id' );
+
         if(!$clubInfo){
             return jsonRes(3012);
         }
@@ -441,11 +437,7 @@ class Club extends Base
         //记录玩家最后加入的俱乐部信息
         $this -> getUserLastClub($user_id,$club_id);
 
-        $where = [
-            'club_id' => $club_id,
-        ];
-        $field = 'room_type,room_rate,room_name,diamond,options,id';
-        $room_options = $roomOptionModel ->getSomeByWhere($where , $field);
+        $room_options = $roomOptionModel ->getSomeByWhere(['club_id' => $club_id] , 'room_type,room_rate,room_name,diamond,options,id');
         //不存在房间玩法
         if(!$room_options){
             $list = [
@@ -465,18 +457,16 @@ class Club extends Base
             return $list;
         }
         //存在房间玩法
-        $where = [
-            'id' => $room_options[0]['room_type'],
-        ];
-        $field = 'play';
-        $play = $playModel -> getOneByWhere($where , $field);
+        $play = $playModel -> getOneByWhere(['id' => $room_options[0]['room_type']] , 'play');
         if(!$play){
             return jsonRes(3998);
         }
+
         $room_type = [];
         foreach ($room_options as $room_option){
             $room_type[] = $room_option['room_type'];
         }
+
         $where = [
             'id' => [
                 'in',$room_type
@@ -484,18 +474,20 @@ class Club extends Base
         ];
         $field = 'play';
         $plays = $playModel -> getSomeById($where,$field);
-        $rule_code = [];$check_array = [];
 
         //获取checks , code
+        $rule_code = [];$check_array = [];
         foreach ($plays as $play){
             $rule_code[] = json_decode($play['play'],true)['checks']['code'];
             $check_array[] = json_decode($play['play'],true)['checks'];
         }
+
         //获取play 和 option
         $playOptions = $roomOptionModel ->getPlayAndOptions(['club_id' => $club_id]);
         if(!$playOptions){
             $list['gameinfos'] = [];
         }
+
         $game_info = [];$game_infos = [];
         //获取游戏的游戏信息
         foreach ($playOptions as $val){
@@ -515,19 +507,9 @@ class Club extends Base
             $game_info['match_id']  = $val['id'];
             $game_info['pay_type']  = $val['room_rate'];
             $game_info['room_name'] = $val['room_name'];
-            //计算房费
-            $diamond = 0;
-            if($val['room_rate'] == 0){
-                $diamond = $val['diamond'];
-            }
-            //人数
-            $playSize = getRoomNeedUserNum(json_decode($val['play'],true),json_decode($val['options'],true));
-            //如果反回false则说明配置规则有问题
-            if (!$playSize){
-                $diamond = $val['diamond'];
-            }
-            $diamond = $diamond/$playSize;
-            $game_info['room_cost'] = $diamond;
+
+            $room_cost = $this->getRoomCost($clubInfo , $val);
+            $game_info['room_cost'] = $room_cost;
             $game_infos[] = $game_info;
         }
 
@@ -543,7 +525,38 @@ class Club extends Base
             'area_id'   => $clubInfo['area_id'],  //俱乐部地区id
             'area_name' => $area['area_name'],    //俱乐部地区名称
         ];
+
         return $list;
+    }
+
+    /**
+     * 计算房费
+     * @param $clubInfo
+     * @param $val
+     */
+    private function getRoomCost($clubInfo , $val){
+        //免费房
+        if($clubInfo['club_type'] == 1){
+            $room_cost = 0;
+        }else{
+            //计算房费
+            $diamond = 0;
+            if($val['room_rate'] == 0){
+                $diamond = $val['diamond'];
+            }
+            //人数
+            $playSize = getRoomNeedUserNum(json_decode($val['play'],true),json_decode($val['options'],true));
+            //如果反回false则说明配置规则有问题
+            if (!$playSize){
+                $diamond = $val['diamond'];
+            }
+            $diamond = $diamond/$playSize;
+            $game_info['room_cost'] = $diamond;
+            if($val['room_rate'] == 1){
+                $room_cost = $val['diamond'];
+            }
+        }
+        return $room_cost;
     }
 
     /**
