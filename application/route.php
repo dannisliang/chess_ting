@@ -98,6 +98,11 @@ Route::rule('service/agent/recive_recruit','Agent/recive');
  */
 Route::rule('service/inform/inform','Inform/inform');
 
+/**
+ * 地区相关
+ */
+Route::rule('service/area/get_area','Area/lists');
+
 //测试
 Route::rule('service/test','AsyncTest/test');
 Route::rule('service/demo','AsyncTest/demo');
