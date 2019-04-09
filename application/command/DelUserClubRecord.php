@@ -11,7 +11,6 @@ use think\console\Input;
 use think\console\Output;
 use think\console\Command;
 use app\model\UserClubRoomRecordModel;
-use think\Log;
 
 class DelUserClubRecord extends Command{
 
