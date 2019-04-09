@@ -553,6 +553,7 @@ class Club extends Base
             }
             $diamond = $diamond/$playSize;
             $room_cost = $diamond;
+            //大赢家模式
             if($val['room_rate'] == 1){
                 $room_cost = $val['diamond'];
             }
