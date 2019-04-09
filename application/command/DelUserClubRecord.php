@@ -16,7 +16,7 @@ class DelUserClubRecord extends Command{
 
     protected function configure()
     {
-        $this->setName('DelUserClubRecord')->setDescription('用于删除三天前的玩家牌局记录');
+        $this->setName('DelUserClubRecord')->setDescription('用于删除三天前的玩家牌局记录，每5分钟执行');
     }
 
     protected function execute(Input $input, Output $output)
