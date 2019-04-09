@@ -51,17 +51,17 @@ class HorseLamp extends Base
             'status' => 1,
             'areaid' => $this->opt['area_id'],
         ];
-        $bulletinlists = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$HORSE_LAMP, $data);
-        if ($bulletinlists['code'] == 0) {
+        $bulletinLists = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$HORSE_LAMP, $data);
+        if ($bulletinLists['code'] == 0) {
             $data = [];
-            foreach ($bulletinlists['data'] as $bulletinlist){
+            foreach ($bulletinLists['data'] as $bulletinlist){
                 $result['content']  = $bulletinlist['content'];
                 $result['speed']    = (float)$bulletinlist['speed'];
                 $result['interval'] = (int)$bulletinlist['interval_time'];
                 $data[] = $result;
             }
             return jsonRes(0,$data);
-        } elseif ($bulletinlists['code'] == 2001) {
+        } elseif ($bulletinLists['code'] == 2001) {
             return jsonRes(3004);
         }
     }

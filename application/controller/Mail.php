@@ -207,7 +207,6 @@ class Mail extends Base
     public function receive(){
         $player_id = getUserIdFromSession();
         $mail_id   = $this->opt['mail_id'];
-        $player_id = 330289;
         if(!$player_id){
             return jsonRes( 9999 );
         }
@@ -219,11 +218,8 @@ class Mail extends Base
         $email_detail = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DETAIL, $data);
         $goods_array = json_decode($email_detail['data']['goods'],true);
 
-        $goods_name = array();$goods_counts = array();
-        foreach ($goods_array as $k=>$v){
-            array_push($goods_name,$k);
-            array_push($goods_counts,$v);
-        }
+        $goods_name = array_keys($goods_array);
+        $goods_counts = array_values($goods_array);
         $upinfo = array();
         $user_vip = new UserVipModel();//实例化
         $i = 0;
@@ -235,7 +231,7 @@ class Mail extends Base
             $goods_type = $item;
             $goods_num = $goods_counts[$key];
             //判断物品的类型
-            if(strpos("$goods_type",'_') !== false ){
+            if(strpos($goods_type,'_') !== false ){
                 //包含'_';
                 $opt = explode('_',"$goods_type");
                 $num = count($opt);
@@ -295,9 +291,8 @@ class Mail extends Base
                 'appid' => $mail_id,
                 'id' => $mail_id,
             ];
-            $a = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DELETE, $datadel);
+            sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DELETE, $datadel);
 
-            //发送通知
             $property = $this -> getUserPro($player_id);
             $send_data = [
                 'content' => [
@@ -309,7 +304,7 @@ class Mail extends Base
                 'reciver' => [$player_id],
                 'appid' => (int)Definition::$CESHI_APPID
             ];
-
+            //发送数据
             $list = sendHttpRequest(Definition::$ROOM_URL . Definition::$SEND,$send_data);
 
             return jsonRes(0);
