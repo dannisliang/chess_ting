@@ -11,6 +11,7 @@ use think\console\Input;
 use think\console\Output;
 use think\console\Command;
 use app\model\UserClubRoomRecordModel;
+use think\Log;
 
 class DelUserClubRecord extends Command{
 
@@ -21,7 +22,7 @@ class DelUserClubRecord extends Command{
 
     protected function execute(Input $input, Output $output)
     {
-        $dateTime = date("Y-m-d H:i:s", time()-3600*24*3);
+        $dateTime = date("Y-m-d H:i:s", (time()-3600*24*3));
         $userClubRoomRecord = new UserClubRoomRecordModel();
         $userClubRoomRecord->delUserClubRecord($dateTime);
     }
