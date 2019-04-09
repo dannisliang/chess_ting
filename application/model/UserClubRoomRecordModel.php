@@ -27,4 +27,8 @@ class UserClubRoomRecordModel extends Model
     public function insertAllUserRecord($data){
         return $this->insertAll($data);
     }
+
+    public function delUserClubRecord($dateTime){
+        return $this->where('add_time', '<', $dateTime)->delete();
+    }
 }

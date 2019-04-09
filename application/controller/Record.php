@@ -40,7 +40,7 @@ class Record extends Base{
         $returnData = [];
         foreach ($userClubRoomRecordInfo as $k => $v){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['roomChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode', 'roomName']);
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['playChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode', 'roomName']);
                 $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
                 $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
                 # 处理数据
@@ -56,6 +56,7 @@ class Record extends Base{
                 }
 
                 $return = [];
+                $return['check'] = json_decode($roomHashInfo['playChecks'], true);
                 $return['name'] = $roomHashInfo['roomName'];
                 $return['player_infos'] = $roomUserInfo;
                 $return['time'] = strtotime($roomHashInfo['gameEndTime']);
