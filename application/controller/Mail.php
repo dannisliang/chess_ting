@@ -15,7 +15,6 @@ use think\Db;
 class Mail extends Base
 {
 
-
     /**
      * 获取邮件列表
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
@@ -206,36 +205,35 @@ class Mail extends Base
      * 领取邮件里的物品
      */
     public function receive(){
-        $mail_id = $this->opt['mail_id'];
         $player_id = getUserIdFromSession();
+        $mail_id   = $this->opt['mail_id'];
+        $player_id = 330289;
         if(!$player_id){
             return jsonRes( 9999 );
         }
-        $appid = (int)Definition::$CESHI_APPID;//省份的appid;
-        $data['appid'] = $appid;
-        $data['id'] = $mail_id;
-        $data['playerId'] = $player_id;
-        $url = Definition::$WEB_USER_URL;//运营中心域名
-        $url_area = Definition::$EMAIL_DETAIL;//邮件详情
-        $email_detail = sendHttpRequest($url.$url_area, $data);
+        $data = [
+            'appid' => (int)Definition::$CESHI_APPID,//省份的appid;
+            'id'    => $mail_id,
+            'playerId' => $player_id
+        ];
+        $email_detail = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DETAIL, $data);
+        $goods_array = json_decode($email_detail['data']['goods'],true);
 
-        $goods_array = $email_detail['data']['goods'];
-        $goods_array = json_decode($goods_array,true);
-        $goods_name = array();
-        $goods_counts = array();
+        $goods_name = array();$goods_counts = array();
         foreach ($goods_array as $k=>$v){
             array_push($goods_name,$k);
             array_push($goods_counts,$v);
         }
         $upinfo = array();
         $user_vip = new UserVipModel();//实例化
-        for ($i=0;$i<count($goods_name);$i++){
-            $upinfo[$i]['uid'] = $player_id;
-            $goods_type = $goods_name[$i];
-            $upinfo[$i]['property_type'] = $goods_name[$i];
-            $goods_num = $goods_counts[$i];
-            $upinfo[$i]['property_num'] = $goods_counts[$i];
-            $upinfo[$i]['app_id'] = $appid;
+        $i = 0;
+        foreach ($goods_name as $key => $item){
+            $upinfo['uid'] = $player_id;
+            $upinfo['property_type'] = $item;
+            $upinfo['property_num'] = $goods_counts[$key];
+            $upinfo['app_id'] = (int)Definition::$CESHI_APPID;
+            $goods_type = $item;
+            $goods_num = $goods_counts[$key];
             //判断物品的类型
             if(strpos("$goods_type",'_') !== false ){
                 //包含'_';
@@ -245,99 +243,110 @@ class Mail extends Base
                 $vip_id = $opt[1];
                 if($num == 2){
                     //$num=2,说明是VIP卡
+                    array_splice($upinfo, $i, 1);
                     $vip_card_opt = new VipCardModel();
                     $tb_vip_card = $vip_card_opt->getVipCardInfoByVipCardId($vip_id);
                     if($tb_vip_card){
                         $tb_vip_card = json_decode($tb_vip_card,true);
-
                         $vip_level = $tb_vip_card['type'];
                     }else{
                         return json(['code'=>3004,'mess'=>'查询不到数据']);
                     }
                     //判断玩家在该俱乐部是否有vip的信息记录
-                    $where['uid'] = $player_id;
-                    $where['vid'] = $vip_id;
-                    $where['club_id'] = $club_id;
-                    $field = 'vid,card_number';
-                    $result = $user_vip->getOneByWhere($where,$field);
+                    $result = $user_vip->getOneByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id],'vid,card_number');
                     if($result){
                         $result = json_decode($result,true);
                         $vip_number = $result['card_number']+$goods_num;
                         //更新数据
                         $update_data['card_number'] = $vip_number;
-                        $user_vip->updateByWhere($where,$update_data);
+                        $user_vip->updateByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id],$update_data);
                     }else{
-                            $add_data['vid'] = $vip_id;
-                            $add_data['uid'] = $player_id;
-                            $add_data['club_id'] = $club_id;
-                            $add_data['vip_status'] = 0;
-                            $add_data['card_number'] = $goods_num;
-                            $add_data['vip_level'] = $vip_level;
-                            $a = $user_vip->insertData($add_data);
+                        $add_data = [
+                            'vid' => $vip_id,
+                            'uid' => $player_id,
+                            'club_id' => $club_id,
+                            'vip_status' => 0,
+                            'card_number' => $goods_num,
+                            'vip_level' => $vip_level,
+                            'end_day' => '0000-00-00 00:00:00',
+                        ];
+                        $result = $user_vip->insertData($add_data);
+                        if (!$result){
+                            return jsonRes(3003);
+                        }
                     }
                 }
             }
+            $i++;
         }
         //调用宋哥的接口,批量修改用户资产(因为一个邮件里面可以有多种游戏币类型)
-        $url = Definition::$WEB_API_URL;
-        $url_area = Definition::$RAISE_PLAYER_PROPERTY2;
-        $all_data['upinfo'] = $upinfo;//批量去查
-        $all_list = sendHttpRequest($url.$url_area,$all_data);
-
-
+//        $all_data['upinfo'] = $upinfo;
+//        $all_list = sendHttpRequest(Definition::$WEB_API_URL . Definition::$RAISE_PLAYER_PROPERTY2,$all_data);
         //修改邮件的状态
-        $update_url = Definition::$WEB_USER_URL;
-        $update_url_area = Definition::$UPDATE_STATU;
-        $datas['appid'] = $appid;
-        $datas['id'] = $mail_id;
-        $datas['receive_status'] = 1;
-        $result = sendHttpRequest($update_url.$update_url_area, $datas);
-        if ($all_list['code'] ==0 && $result['code'] == 0) {
+        $datas = [
+            'appid' => (int)Definition::$CESHI_APPID,
+            'id' => $mail_id,
+            'receive_status' => 1,
+        ];
+        $result = sendHttpRequest(Definition::$WEB_USER_URL .  Definition::$UPDATE_STATU, $datas);
+        if ($result['code'] == 0) {
             //删除邮件
-            $deleurl = Definition::$WEB_USER_URL;
-            $deleurl_area = Definition::$EMAIL_DELETE;
-            $datadel['appid'] = $mail_id;
-            $datadel['id'] = $mail_id;
-            $a = sendHttpRequest($deleurl.$deleurl_area, $datadel);
+            $datadel = [
+                'appid' => $mail_id,
+                'id' => $mail_id,
+            ];
+            $a = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DELETE, $datadel);
 
             //发送通知
-            $user_opt = getUserProperty($player_id,10000);
-            if($user_opt){
-                $gold_nums = $user_opt[0]['property_num'];
-            }else{
-                $gold_nums = 0;
-            }
-            $user_opt1 = getUserProperty($player_id,10001);
-            if($user_opt1){
-                $diamond = $user_opt1[0]['property_num'];
-            }else{
-                $diamond = 0;
-            }
-            $user_opt2 = getUserProperty($player_id,10002);
-            if($user_opt2){
-                $diamond1 = $user_opt2[0]['property_num'];
-            }else{
-                $diamond1 = 0;
-            }
-            $recive_user[0] = $player_id;
-            $user_diamond = $diamond1+$diamond;
-            $send_data['content']['gold'] = (int)$gold_nums;
-            $send_data['content']['diamond'] = (int)$user_diamond;
-            $send_data['type'] = 1029;
-            $send_data['sender'] = 0;
-            $send_data['reciver'] = $recive_user;
-            $send_data['appid'] = (int)$appid;
-            //$send_url = INFORM_URL.'api/send.php';
-            $send_url = Definition::$ROOM_URL;
-            $send_url_area = Definition::$SEND;
-            $list = sendHttpRequest($send_url.$send_url_area,$send_data);
+            $property = $this -> getUserPro($player_id);
+            $send_data = [
+                'content' => [
+                    'gold' => (int)$property['gold'],
+                    'diamond' => (int)$property['diamond'],
+                ],
+                'type' => 1029,
+                'sender' => 0,
+                'reciver' => [$player_id],
+                'appid' => (int)Definition::$CESHI_APPID
+            ];
+
+            $list = sendHttpRequest(Definition::$ROOM_URL . Definition::$SEND,$send_data);
 
             return jsonRes(0);
 
-        } else if ($result['code'] == 2003) {
-            return jsonRes(3004);
         } else {
             return jsonRes(3004);
         }
+    }
+
+    /**
+     * 获取用户的资产信息
+     * @param $player_id
+     */
+    private function getUserPro($player_id){
+        $user_propertys = getUserProperty($player_id,[10000,10001,10002]);
+        $gold_nums = 0; $diamond = 0; $diamond1 = 0;
+        foreach ($user_propertys as $user_property){
+            $property = $user_property['data'];
+            switch ($property['property_type']){
+                case 10000:
+                    $gold_nums += $property['property_num'];
+                    break;
+                case 10001:
+                    $diamond += $property['property_num'];
+                    break;
+                case 10002:
+                    $diamond1 += $property['property_num'];
+                    break;
+                default:
+                    break;
+            }
+        }
+        $user_diamond = $diamond1+$diamond;
+
+        return [
+            'gold' => $gold_nums,
+            'diamond' => $user_diamond
+        ];
     }
 }
