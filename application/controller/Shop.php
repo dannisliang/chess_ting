@@ -298,10 +298,10 @@ class Shop extends Base
             $price  = $club_shop['price'];
             $type   = $club_shop['goods_type'];
             $goods_number = $club_shop['goods_number'];
-            $give_counts = $club_shop['give'];
-            $goods_type  = 10001;
+            $give_counts  = $club_shop['give'];
+            $goods_type   = 10001;
         }elseif (!empty($this->opt['vip_id'])){
-            $club_vip  = $clubVipModel -> getOneByWhere(['vip_id'=>$this->opt['vip_id'],'club_id'=>$this->opt['club_id']]);
+            $club_vip  = $clubVipModel -> getOneByWhere(['vid'=>$this->opt['vip_id'],'club_id'=>$this->opt['club_id']]);
             if(!$club_vip){
                 return jsonRes(23407);
             }
@@ -309,10 +309,13 @@ class Shop extends Base
             if(empty($club_vip['pricing'])){
                 $vip_card = $vipCardModel -> getOneByWhere(['vip_id'=>$this -> opt['vip_id']]);
                 $price = $vip_card['price'];
+            }else{
+                $price = $club_vip['pricing'];
             }
             $type = $this->opt['club_id'] . '_' . $this->opt['vip_id'];
             $goods_number = 1;
             $give_counts = 0;
+            $goods_type  = 10004;
         }else{
             return jsonRes(23407);
         }
@@ -356,9 +359,9 @@ class Shop extends Base
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
 
         $result = sendHttpRequest( $url );
-//        if($result['ErrCode'] != 0){
-//            return jsonRes(3004);
-//        }
+        if($result['ErrCode'] != 0){
+            return jsonRes(3004);
+        }
         //获取机型 和 类型
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         $client_type= $user_session_info['client_type'];

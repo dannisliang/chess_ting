@@ -209,13 +209,9 @@ return [
         // SESSION 前缀
         'prefix'         => 'think',
         // 驱动方式 支持redis memcache memcached
-        'type'           => 'redis',
+        'type'           => '',
         // 是否自动开启 SESSION
         'auto_start'     => true,
-        'host' => '192.168.9.18',
-        'port' => '6379',
-        'password' => 'samsung',
-        'select' => 1,
     ],
 
     // +----------------------------------------------------------------------
