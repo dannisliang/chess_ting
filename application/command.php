@@ -11,5 +11,6 @@
 
 return [
     'app\command\RoomNumPush',
+    'app\command\DelUserClubRecord',
     'app\command\Test',
 ];
