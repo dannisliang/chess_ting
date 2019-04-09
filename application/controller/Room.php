@@ -979,7 +979,7 @@ class Room extends Base
         # 报送大数据完成
         return jsonRes(0);
     }
-    # 房间游戏结束回调完成
+    # 房间游戏结束回调完成 ok
     public function roomEndGameCallBack(){
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['statistics']) || !is_array($this->opt['statistics'])){
             return jsonRes(0);
