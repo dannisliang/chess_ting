@@ -206,6 +206,7 @@ class Mail extends Base
      */
     public function receive(){
         $player_id = getUserIdFromSession();
+        $player_id = 330289;
         $mail_id   = $this->opt['mail_id'];
         if(!$player_id){
             return jsonRes( 9999 );
@@ -276,8 +277,9 @@ class Mail extends Base
             $i++;
         }
         //调用宋哥的接口,批量修改用户资产(因为一个邮件里面可以有多种游戏币类型)
-//        $all_data['upinfo'] = $upinfo;
-//        $all_list = sendHttpRequest(Definition::$WEB_API_URL . Definition::$RAISE_PLAYER_PROPERTY2,$all_data);
+        $all_data['upinfo'] = $upinfo;
+        $all_list = sendHttpRequest(Definition::$WEB_API_URL . Definition::$RAISE_PLAYER_PROPERTY2,$all_data);
+
         //修改邮件的状态
         $datas = [
             'appid' => (int)Definition::$CESHI_APPID,
