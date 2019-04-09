@@ -528,6 +528,9 @@ class Club extends Base
             }
             $diamond = $diamond/$playSize;
             $game_info['room_cost'] = $diamond;
+            if($val['room_rate'] == 1){
+                $game_info['room_cost'] = $val['diamond'];
+            }
             $game_infos[] = $game_info;
         }
 

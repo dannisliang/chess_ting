@@ -1141,7 +1141,7 @@ class Room extends Base
             ];
             $res = operatePlayerProperty($operateData);
             if(!isset($res['code']) || ($res['code'] != 0)){ # 还钻失败 记录日志
-                Log::write($operateData, 'operateError');
+                Log::write(json_encode($operateData), 'operateError');
             }
         }
         # 会长模式还钻完成
@@ -1276,7 +1276,7 @@ class Room extends Base
             if(isset($operateData)){
                 $res = operatePlayerProperty($operateData);
                 if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
-                    Log::write($operateData, 'operateError');
+                    Log::write(json_encode($operateData), 'operateError');
                 }else{ # 报送大数据
                     $users = [];
                     foreach ($playerInfo as $k => $userInfo){
@@ -1330,7 +1330,7 @@ class Room extends Base
                         ];
                         $res = operatePlayerProperty($generalRebateData);
                         if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write($generalRebateData, 'operateError');
+                            Log::write(json_encode($generalRebateData), 'operateError');
                         }else{
                             $bigData = [
                                 'server_id' => '-',
@@ -1372,7 +1372,7 @@ class Room extends Base
                         ];
                         $res = operatePlayerProperty($seniorRebateData);
                         if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write($seniorRebateData, 'operateError');
+                            Log::write(json_encode($seniorRebateData), 'operateError');
                         }else{
                             $bigData = [
                                 'server_id' => '-',
@@ -1412,7 +1412,7 @@ class Room extends Base
                         ];
                         $res = operatePlayerProperty($businessRebateData);
                         if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write($businessRebateData, 'operateError');
+                            Log::write(json_encode($businessRebateData), 'operateError');
                         }else{
                             $bigData = [
                                 'server_id' => '-',
