@@ -11,9 +11,11 @@ namespace app\controller;
 
 use app\definition\Definition;
 use app\definition\RedisKey;
+use app\model\GameServiceNewModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
 use app\model\RoomOptionsModel;
+use app\model\ServiceGatewayNewModel;
 use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
@@ -91,6 +93,40 @@ class User
             'gold_num' => $assets['gold_num']
         ];
         return jsonRes( 0 , $result);
+    }
+
+    /**
+     * 解散房间
+     * @param $user_id
+     * @return bool|\think\response\Json\
+     */
+    private function disBandRoom($user_id){
+
+        # 去逻辑服获取玩家所在房间
+        $gameServiceNew = new GameServiceNewModel();
+        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        $gameServiceNewArr = [];
+        foreach ($gameServiceNewInfos as $k => $v){
+            $gameServiceNewArr[] = $v['service_id'];
+        }
+
+        if($gameServiceNewArr){
+            $serviceGatewayNew = new ServiceGatewayNewModel();
+            $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
+            foreach ($serviceGatewayNewInfos as $k => $v){
+                if(in_array($v['id'], $gameServiceNewArr)){
+                    $userRoom = sendHttpRequest($v['service'].Definition::$GET_USER_ROOM, ['playerId' => $user_id]);
+                    if(isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
+                        $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $user_id]);
+                        if(isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+//
+        return jsonRes(3508);
     }
 
     /**
@@ -213,6 +249,8 @@ class User
         $user_room_info = $redisHandler -> hGetAll(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
 
         if(!$user_room_info){
+            //逻辑服存在，redis里面没有房间解散房间
+            $this -> disBandRoom($user_id);
             return false;
         }
 
