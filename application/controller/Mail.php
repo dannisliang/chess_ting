@@ -247,7 +247,6 @@ class Mail extends Base
                 }
             }
         }
-
         //修改邮件的状态
         $datas = [
             'appid' => (int)Definition::$CESHI_APPID,

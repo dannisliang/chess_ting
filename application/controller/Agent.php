@@ -9,15 +9,16 @@
 namespace app\controller;
 
 
-use think\Exception;
 use think\Db;
 class Agent extends Base
 {
-    private $path = 'application/open_recruit.php';
+    private $path = '';
     private $data = array();
     public static $player_id = '';
-    public function __construct(Request $request)
+    public function __construct()
     {
+        $this -> path = __DIR__ . "/../../application/open_recruit.php";
+        parent::_initialize();
         $player_id = self::$player_id = getUserIdFromSession();
         if(!$player_id){
             return jsonRes(9999);
@@ -31,7 +32,7 @@ class Agent extends Base
         $file_path = $this->path;
         $opt = $this->opt;
         $is_open = $opt['is_open'];//0关闭,1打开
-        if ($is_open == true) {
+        if ($is_open == 1) {
             $data['is_open'] = 1;
         } else {
             $data['is_open'] = 0;
@@ -42,10 +43,12 @@ class Agent extends Base
             $data['content'] = '';
         }
         try {
-            $arr = operaFile($file_path, $data, 'write');
-            $is_open = $arr['is_open'];
-            return json(['code'=>0,'recruit_state'=>$is_open]);
-        } catch (Exception $e) {
+            $result = operaFile($file_path, $data, 'write');
+            if(!$result){
+                return jsonRes(3016);
+            }
+            return jsonRes(0);
+        } catch (\Exception $e) {
             echo $e->getMessage();
         }
 
@@ -59,14 +62,14 @@ class Agent extends Base
         try{
             $content = operaFile($file_path, $data, 'read');
             return jsonRes(0,$content);
-        }catch(Exception $e){
+        }catch(\Exception $e){
             echo $e->getMessage();
         }
 
     }
     /*接收客户端表单的提交*/
     public function recive(){
-        $opt = $this->opt;//1236
+        $opt = $this->opt;
         $player_obj = getUserSessionInfo();
         $data['player_id'] = $player_obj['uid'];
         //$player_name = $player_obj['nickname'];
