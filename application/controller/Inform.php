@@ -31,7 +31,7 @@ class Inform extends Base
                     'sender'  => $this -> opt['sender'],
                     'type'    => $this -> opt['type'],
                     'content' => $this -> opt['content'],
-                    'receiver'=> [
+                    'reciver'=> [
                         $this -> opt['receiver'],
                     ],
                 ];
@@ -43,7 +43,7 @@ class Inform extends Base
                     'sender'  => $user_id,
                     'type'    => $this -> opt['type'],
                     'content' => json_decode($this -> opt['content']),
-                    'receiver'=> $player_ids,
+                    'reciver'=> $player_ids,
                 ];
                 break;
             case 1028://未知
@@ -54,7 +54,7 @@ class Inform extends Base
                         'status' => $this->opt[''],
                         'club_id'=> $this->opt['club_id'],
                     ],
-                    'receiver'=> $this -> opt['sender'],
+                    'reciver'=> $this -> opt['sender'],
                 ];
                 break;
             default:
@@ -66,7 +66,6 @@ class Inform extends Base
         }
         $data['appid'] = Definition::$CESHI_APPID;
         $list = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $data);
-
         if($list['code'] == 0){
             return json(['code' => 0,'mess' => '发送成功']);
         }else if($list['code'] == '4002'){
