@@ -622,32 +622,85 @@ class Room extends Base
                 $i++;
             }
         }
-        $len = count($clubRoomReturn)-1;
-        while(true){
+
+        $newArr = [];
+        $kArr = [];
+        foreach ($clubRoomReturn as $k => $v){
+            if(!in_array($v['nowNeedUserNum'], $kArr)){
+                $kArr[] = $v['nowNeedUserNum'];
+            }
+            $newArr[$v['nowNeedUserNum']][] = $v;
+        }
+
+        $KArrLen = count($kArr) - 1;
+        while (true){
             $flag = true;
-            for($i = 0; $i < $len; $i++){
-                if($clubRoomReturn[$i]['nowNeedUserNum'] > $clubRoomReturn[$i+1]['nowNeedUserNum']){
-                    $tmp = $clubRoomReturn[$i];
-                    $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-                    $clubRoomReturn[$i+1] = $tmp;
+            for($i = 0; $i < $KArrLen; $i++){
+                if($kArr[$i] > $kArr[$i+1]){
+                    $tmp = $kArr[$i];
+                    $kArr[$i] = $kArr[$i+1];
+                    $kArr[$i+1] = $tmp;
                     $flag = false;
                 }
-                if($clubRoomReturn[$i]['nowNeedUserNum'] == $clubRoomReturn[$i+1]['nowNeedUserNum']){
-                    if($clubRoomReturn[$i]['createTime'] > $clubRoomReturn[$i+1]['createTime']){
-                        $tmp = $clubRoomReturn[$i];
-                        $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-                        $clubRoomReturn[$i+1] = $tmp;
-                        $flag = false;
-                    }
-                }
             }
-            $len--;
             if($flag == true){
                 break;
             }
+            $KArrLen--;
         }
 
-        $return['roominfo'] = $clubRoomReturn;
+        foreach ($kArr as $k => $v){
+            $vArrLen = count($newArr[$v]) - 1;
+            while (true){
+                $flag = true;
+                for ($i = 0; $i < $vArrLen; $i++){
+                    if($newArr[$v][$i]['createTime'] > $newArr[$v][$i+1]['createTime']){
+                        $tmp = $newArr[$v][$i];
+                        $newArr[$v][$i] = $newArr[$v][$i+1];
+                        $newArr[$v][$i+1] = $tmp;
+                        $flag = false;
+                    }
+                }
+                if($flag == true){
+                    break;
+                }
+                $vArrLen--;
+            }
+        }
+
+        $returnData = [];
+        foreach ($newArr as $k => $v){
+            foreach ($v as $kk => $vv){
+                $returnData[] = $vv;
+            }
+        }
+
+//        $len = count($clubRoomReturn)-1;
+//        while(true){
+//            $flag = true;
+//            for($i = 0; $i < $len; $i++){
+//                if($clubRoomReturn[$i]['nowNeedUserNum'] > $clubRoomReturn[$i+1]['nowNeedUserNum']){
+//                    $tmp = $clubRoomReturn[$i];
+//                    $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
+//                    $clubRoomReturn[$i+1] = $tmp;
+//                    $flag = false;
+//                }
+//                if($clubRoomReturn[$i]['nowNeedUserNum'] == $clubRoomReturn[$i+1]['nowNeedUserNum']){
+//                    if($clubRoomReturn[$i]['createTime'] > $clubRoomReturn[$i+1]['createTime']){
+//                        $tmp = $clubRoomReturn[$i];
+//                        $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
+//                        $clubRoomReturn[$i+1] = $tmp;
+//                        $flag = false;
+//                    }
+//                }
+//            }
+//            $len--;
+//            if($flag == true){
+//                break;
+//            }
+//        }
+
+        $return['roominfo'] = $returnData;
         return jsonRes(0, $return);
     }
 
