@@ -43,22 +43,32 @@ class SynchronizedClubRoom extends Command{
                 foreach ($allRoomNumber as $roomNumber){
                     if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber)){
                         $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, 'roomUrl');
-                        $requestData[$roomUrl][] = $roomNumber;
+                        $requestData[$roomUrl][] = [
+                            'roomId' => $roomNumber,
+                            'clubId' => $clubId,
+                        ];
                     }
                 }
             }
         }
-        $client = new Client();
-        if(isset($requestData) && $requestData){
-            foreach ($requestData as $roomUrl => $roomNums){
-                foreach ($roomNums as $roomNumber)
-                $promises[$roomNumber] = $client->postAsync($roomUrl.Definition::$CHECK_ROOM, ['roomId' => $roomNumber]);
-            }
-        }
 
-        if(isset($promises) && $promises){
-            $results = Promise\unwrap($promises);
-            p($results);
+        if(isset($requestData) && $requestData){
+            foreach ($requestData as $roomUrl => $urlRoomInfo){
+                $client = new Client(['base_uri' => $roomUrl.Definition::$CHECK_ROOM]);
+                foreach ($urlRoomInfo as $roomInfo){
+                    $promises[$roomInfo['clubId'].'-'.$roomInfo['roomId']] = $client->postAsync('', ['json' => ['roomId' => $roomInfo['roomId']]]);
+                }
+                if(isset($promises) && $promises){
+                    $results = Promise\unwrap($promises);
+                    foreach ($results as $roomId => $roomRes){
+                        $roomInfo = json_decode($results[$roomId]->getBody()->getContents(), true);
+                        if(!isset($roomInfo['content']['exist']) || !$roomInfo['content']['exist']){
+                            $roomArr = explode('-', $roomId);
+                            $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomArr[0], $roomArr[1]);
+                        }
+                    }
+                }
+            }
         }
     }
 }
