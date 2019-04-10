@@ -217,26 +217,31 @@ class Mail extends Base
         ];
         $email_detail = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DETAIL, $data);
         $goods_array = json_decode($email_detail['data']['goods'],true);//"{"10002":"1000"}"
+//        var_dump($goods_array);die;
         foreach ($goods_array as $key=>$value){
-            $keys = explode($key,'_');
+            $keys = explode('_',$key);
+
             if(count($keys) == 1){
                 //增加钻石或者金币的数量
                 $propertyData = [
-                    'uid' => $player_id,
-                    'property_type' => (int)$key,
-                    'change_num'  => (int)$value,
-                    'event_type' => '+',
-                    'reason_id' => 3,
-                    'property_name' => '用户邮件领取数量'
+                    [
+                        'uid'           => $player_id,
+                        'reason_id'     => 3,
+                        'change_num'    => (int)$value,
+                        'event_type'    => '+',
+                        'property_type' => (int)$key,
+                        'property_name' => '用户邮件领取数量'
+                    ]
                 ];
                 //添加用户资产(改成获取数据批量修改)
                 $addOperateResult = operatePlayerProperty($propertyData);
-                if(!$addOperateResult){
-                    return jsonRes(3010);
+                if($addOperateResult['code'] != 0){
+                    return jsonRes(3011);
                 }
             }elseif(count($keys) == 2){
                 //添加会员卡
-                $addCardResult = $this->addCard($player_id , $keys[0] , $keys[1] , $value);
+
+                $addCardResult = $this->addCard($player_id , (int)$keys[0] , (int)$keys[1] , $value);
                 if(!$addCardResult){
                     return jsonRes(3010);
                 }
@@ -246,7 +251,7 @@ class Mail extends Base
         //修改邮件的状态
         $datas = [
             'appid' => (int)Definition::$CESHI_APPID,
-            'id' => $mail_id,
+            'id' => (int)$mail_id,
             'receive_status' => 1,
         ];
         $result = sendHttpRequest(Definition::$WEB_USER_URL .  Definition::$UPDATE_STATU, $datas);
@@ -275,6 +280,7 @@ class Mail extends Base
             return jsonRes(0);
 
         } else {
+
             return jsonRes(3004);
         }
     }
@@ -300,7 +306,7 @@ class Mail extends Base
 
         //查看是否有会员卡
         $userVipModel = new UserVipModel();
-        $userVips = $userVipModel -> getOneByWhere([['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id]]);
+        $userVips = $userVipModel -> getOneByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id]);
         if($userVips){
             //更新数据
             $vip_number = $userVips['card_number'] + $goods_num;
@@ -325,6 +331,7 @@ class Mail extends Base
                 return false;
             }
         }
+        return true;
     }
 
     /**
@@ -333,9 +340,14 @@ class Mail extends Base
      */
     private function getUserPro($player_id){
         $user_propertys = getUserProperty($player_id,[10000,10001,10002]);
+        if($user_propertys['code'] != 0){
+            return [
+                'gold' => 0,
+                'diamond' => 0
+            ];
+        }
         $gold_nums = 0; $diamond = 0; $diamond1 = 0;
-        foreach ($user_propertys as $user_property){
-            $property = $user_property['data'];
+        foreach ($user_propertys['data'] as $property){
             switch ($property['property_type']){
                 case 10000:
                     $gold_nums += $property['property_num'];
