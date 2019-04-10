@@ -34,8 +34,6 @@ class SynchronizedClubRoom extends Command{
             return false;
         }
 
-        $client = new Client(['base_uri' => '']);
-//        $clubId->
         $requestData = [];
         $redis = new Redis();
         $redisHandle = $redis->handler();
@@ -50,10 +48,17 @@ class SynchronizedClubRoom extends Command{
                 }
             }
         }
+        $client = new Client();
         if(isset($requestData) && $requestData){
             foreach ($requestData as $roomUrl => $roomNums){
-//                $client.$roomUrl = new Client(['']);
+                foreach ($roomNums as $roomNumber)
+                $promises[$roomNumber] = $client->postAsync($roomUrl.Definition::$CHECK_ROOM, ['roomId' => $roomNumber]);
             }
+        }
+
+        if(isset($promises) && $promises){
+            $results = Promise\unwrap($promises);
+            p($results);
         }
     }
 }
