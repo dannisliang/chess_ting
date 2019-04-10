@@ -7,13 +7,16 @@
  */
 namespace app\command;
 
-use app\definition\Definition;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
+
 use app\model\ClubModel;
-use think\console\Command;
 use think\console\Input;
 use think\console\Output;
+use think\console\Command;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use app\definition\Definition;
 
 class SynchronizedClubRoom extends Command{
 
@@ -31,14 +34,25 @@ class SynchronizedClubRoom extends Command{
             return false;
         }
 
+        $client = new Client(['base_uri' => '']);
+//        $clubId->
+        $requestData = [];
         $redis = new Redis();
         $redisHandle = $redis->handler();
         foreach ($clubInfo as $clubId){
             $allRoomNumber = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$clubId);
             if($allRoomNumber){
                 foreach ($allRoomNumber as $roomNumber){
-
+                    if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber)){
+                        $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, 'roomUrl');
+                        $requestData[$roomUrl][] = $roomNumber;
+                    }
                 }
+            }
+        }
+        if(isset($requestData) && $requestData){
+            foreach ($requestData as $roomUrl => $roomNums){
+//                $client.$roomUrl = new Client(['']);
             }
         }
     }
