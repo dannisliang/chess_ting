@@ -206,7 +206,6 @@ class Mail extends Base
      */
     public function receive(){
         $player_id = getUserIdFromSession();
-        $player_id = 330289;
         $mail_id   = $this->opt['mail_id'];
         if(!$player_id){
             return jsonRes( 9999 );
@@ -217,68 +216,32 @@ class Mail extends Base
             'playerId' => $player_id
         ];
         $email_detail = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DETAIL, $data);
-        $goods_array = json_decode($email_detail['data']['goods'],true);
-
-        $goods_name = array_keys($goods_array);
-        $goods_counts = array_values($goods_array);
-        $upinfo = array();
-        $user_vip = new UserVipModel();//实例化
-        $i = 0;
-        foreach ($goods_name as $key => $item){
-            $upinfo['uid'] = $player_id;
-            $upinfo['property_type'] = $item;
-            $upinfo['property_num'] = $goods_counts[$key];
-            $upinfo['app_id'] = (int)Definition::$CESHI_APPID;
-            $goods_type = $item;
-            $goods_num = $goods_counts[$key];
-            //判断物品的类型
-            if(strpos($goods_type,'_') !== false ){
-                //包含'_';
-                $opt = explode('_',"$goods_type");
-                $num = count($opt);
-                $club_id = $opt[0];
-                $vip_id = $opt[1];
-                if($num == 2){
-                    //$num=2,说明是VIP卡
-                    array_splice($upinfo, $i, 1);
-                    $vip_card_opt = new VipCardModel();
-                    $tb_vip_card = $vip_card_opt->getVipCardInfoByVipCardId($vip_id);
-                    if($tb_vip_card){
-                        $tb_vip_card = json_decode($tb_vip_card,true);
-                        $vip_level = $tb_vip_card['type'];
-                    }else{
-                        return json(['code'=>3004,'mess'=>'查询不到数据']);
-                    }
-                    //判断玩家在该俱乐部是否有vip的信息记录
-                    $result = $user_vip->getOneByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id],'vid,card_number');
-                    if($result){
-                        $result = json_decode($result,true);
-                        $vip_number = $result['card_number']+$goods_num;
-                        //更新数据
-                        $update_data['card_number'] = $vip_number;
-                        $user_vip->updateByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id],$update_data);
-                    }else{
-                        $add_data = [
-                            'vid' => $vip_id,
-                            'uid' => $player_id,
-                            'club_id' => $club_id,
-                            'vip_status' => 0,
-                            'card_number' => $goods_num,
-                            'vip_level' => $vip_level,
-                            'end_day' => '0000-00-00 00:00:00',
-                        ];
-                        $result = $user_vip->insertData($add_data);
-                        if (!$result){
-                            return jsonRes(3003);
-                        }
-                    }
+        $goods_array = json_decode($email_detail['data']['goods'],true);//"{"10002":"1000"}"
+        foreach ($goods_array as $key=>$value){
+            $keys = explode($key,'_');
+            if(count($keys) == 1){
+                //增加钻石或者金币的数量
+                $propertyData = [
+                    'uid' => $player_id,
+                    'property_type' => (int)$key,
+                    'change_num'  => (int)$value,
+                    'event_type' => '+',
+                    'reason_id' => 3,
+                    'property_name' => '用户邮件领取数量'
+                ];
+                //添加用户资产(改成获取数据批量修改)
+                $addOperateResult = operatePlayerProperty($propertyData);
+                if(!$addOperateResult){
+                    return jsonRes(3010);
+                }
+            }elseif(count($keys) == 2){
+                //添加会员卡
+                $addCardResult = $this->addCard($player_id , $keys[0] , $keys[1] , $value);
+                if(!$addCardResult){
+                    return jsonRes(3010);
                 }
             }
-            $i++;
         }
-        //调用宋哥的接口,批量修改用户资产(因为一个邮件里面可以有多种游戏币类型)
-        $all_data['upinfo'] = $upinfo;
-        $all_list = sendHttpRequest(Definition::$WEB_API_URL . Definition::$RAISE_PLAYER_PROPERTY2,$all_data);
 
         //修改邮件的状态
         $datas = [
@@ -313,6 +276,54 @@ class Mail extends Base
 
         } else {
             return jsonRes(3004);
+        }
+    }
+
+    /**
+     * 领取会原卡添加会员卡的数量
+     * @param $player_id
+     * @param $club_id
+     * @param $vip_id
+     * @param $goods_num
+     * @return bool|\think\response\Json\
+     * @throws \think\exception\DbException
+     */
+    private function addCard($player_id , $club_id , $vip_id , $goods_num){
+        //查询vip卡信息
+        $vipCardModel = new VipCardModel();
+        $vipCard = $vipCardModel->getVipCardInfoByVipCardId($vip_id);
+        if($vipCard){
+            $vip_level = $vipCard['type'];
+        }else{
+            return false;
+        }
+
+        //查看是否有会员卡
+        $userVipModel = new UserVipModel();
+        $userVips = $userVipModel -> getOneByWhere([['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id]]);
+        if($userVips){
+            //更新数据
+            $vip_number = $userVips['card_number'] + $goods_num;
+            $update_data['card_number'] = $vip_number;
+            $result =$userVipModel->updateByWhere(['uid'=>$player_id , 'vid'=>$vip_id , 'club_id' => $club_id],$update_data);
+            if(!$result){
+                return false;
+            }
+        }else{
+            //添加数据
+            $add_data = [
+                'vid' => $vip_id,
+                'uid' => $player_id,
+                'club_id' => $club_id,
+                'vip_status' => 0,
+                'card_number' => $goods_num,
+                'vip_level' => $vip_level,
+                'end_day' => '0000-00-00 00:00:00',
+            ];
+            $result = $userVipModel->insertData($add_data);
+            if (!$result){
+                return false;
+            }
         }
     }
 
