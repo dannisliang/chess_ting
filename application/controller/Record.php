@@ -173,7 +173,6 @@ class Record extends Base{
                 break;
             case 1://好评
                 $res = $this -> saveEvaluateData($user_id , 'good_num');
-                var_dump($res);die;
                 if(!$res){
                     return jsonRes(3005);
                 }
@@ -186,7 +185,7 @@ class Record extends Base{
 
     /**
      * 保存修改评价
-     * @return \think\response\Json\
+     * @return bool|\think\response\Json\
      */
     private function saveEvaluateData($user_id , $evalType){
         $evaluateModle = new UserEvaluateModel();

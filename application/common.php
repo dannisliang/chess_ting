@@ -381,7 +381,7 @@ function checkToken($data){
 function operaFile($path,$data,$type){
     switch ($type){
         case  'write':
-            $myfile = fopen("$path", "w") or die("Unable to open file!");
+            $myfile = fopen($path, "w") or die("Unable to open file!");
             $txt = json_encode($data, JSON_UNESCAPED_UNICODE);//设置为中文不unicode
             fwrite($myfile, $txt);
             fclose($myfile);

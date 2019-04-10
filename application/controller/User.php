@@ -125,7 +125,6 @@ class User
                 }
             }
         }
-//
         return jsonRes(3508);
     }
 
@@ -246,11 +245,12 @@ class User
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $user_room_info = $redisHandler -> hGetAll(RedisKey::$USER_ROOM_KEY_HASH . $room_id);
+        $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','roomOptionsId']);
 
         if(!$user_room_info){
             //逻辑服存在，redis里面没有房间解散房间
             $this -> disBandRoom($user_id);
+
             return false;
         }
 
