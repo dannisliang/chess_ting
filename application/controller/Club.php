@@ -125,6 +125,7 @@ class Club extends Base
 
         if(!isset($this->opt['club_id'])){
             $clubInfo = $clubModel ->getUserJoinClub($user_id);
+            var_dump($clubInfo);die;
         }else{
             //根据club_id搜索club
             $clubInfo[] = $this -> getClubByCid($user_id , $this ->opt['club_id']);

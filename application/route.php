@@ -108,6 +108,12 @@ Route::rule('service/test','AsyncTest/test');
 Route::rule('service/demo','AsyncTest/demo');
 Route::rule('service/demo1','AsyncTest/demo1');
 
+/**
+ * miss路由设置
+ */
+Route::miss('Miss/index');
+Route::rule('route/miss','Miss/index');
+
 
 
 
