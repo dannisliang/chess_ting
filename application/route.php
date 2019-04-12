@@ -86,7 +86,7 @@ Route::rule('service/getBulletinList','HorseLamp/lists');
 Route::rule('service/getScrollScreen','HorseLamp/getScrollScreen'); //获取俱乐部跑马灯
 
 /*公告*/
-Route::rule('service/receive','Notice/lists');
+Route::rule('service/getnotice','Notice/lists');
 
 /*代理招募部分*/
 Route::rule('service/agent/open_recruit','Agent/openRecruit');
