@@ -212,7 +212,7 @@ class User
                 $roomOption['room_type'] = $roomOption['play_type'];
             }
             $options = [];
-            if($roomOption){
+            if($roomOption['options']){
                 $options = json_decode($roomOption['options']);
             }
             //获取play中的玩法
