@@ -26,6 +26,9 @@ use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserClubRoomRecordModel;
 use think\Log;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
+
 
 
 class Room extends Base
@@ -576,9 +579,45 @@ class Room extends Base
             return jsonRes(0, []);
         }
 
+        # 和逻辑服同步
+        $gameServiceNew = new GameServiceNewModel();
+        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        if(!$gameServiceNewInfos){
+            return jsonRes(0, []);
+        }
+
+        $serviceIds = [];
+        foreach ($gameServiceNewInfos as $k => $v){
+            $serviceIds[] = $v['service_id'];
+        }
+
+        $client = new Client();
+        $promises = [];
+        foreach ($sMembers as $k => $roomNumber){
+            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
+            if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
+                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+            }else{
+                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber]]);
+            }
+        }
+
+        // 忽略某些请求的异常，保证所有请求都发送出去
+        $results = Promise\unwrap($promises);
+        $newNumbers = [];
+        foreach ($results as $roomNumber => $v){
+            $roomCheckInfo = json_decode($results[$roomNumber]->getBody()->getContents(), true);
+            if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
+                $newNumbers[] = $roomNumber;
+            }else{
+                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+            }
+        }
+        # 和逻辑服同步
+
         $i = 0;
         $clubRoomReturn = [];
-        foreach ($sMembers as $k => $roomNum){
+        foreach ($newNumbers as $k => $roomNum){
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
