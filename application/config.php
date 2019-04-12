@@ -214,7 +214,7 @@ return [
         'auto_start'     => true,
         'host' => '192.168.9.18',
         'port' => '6379',
-        'password' => 'samsung',
+        'password' => 'Grabs6DAD6Cjdhc1',
         'select' => 1,
     ],
 
