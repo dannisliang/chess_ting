@@ -17,9 +17,9 @@ return [
     // 数据库名
     'database'        => 'db_tianjin_mahjong_test_refactor',
     // 用户名
-    'username'        => 'root',
+    'username'        => 'rebuilder',
     // 密码
-    'password'        => 'root',
+    'password'        => 'WASGAHasdasd1978',
     // 端口
     'hostport'        => '3306',
     // 连接dsn
