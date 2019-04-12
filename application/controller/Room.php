@@ -714,31 +714,6 @@ class Room extends Base
             }
         }
 
-//        $len = count($clubRoomReturn)-1;
-//        while(true){
-//            $flag = true;
-//            for($i = 0; $i < $len; $i++){
-//                if($clubRoomReturn[$i]['nowNeedUserNum'] > $clubRoomReturn[$i+1]['nowNeedUserNum']){
-//                    $tmp = $clubRoomReturn[$i];
-//                    $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-//                    $clubRoomReturn[$i+1] = $tmp;
-//                    $flag = false;
-//                }
-//                if($clubRoomReturn[$i]['nowNeedUserNum'] == $clubRoomReturn[$i+1]['nowNeedUserNum']){
-//                    if($clubRoomReturn[$i]['createTime'] > $clubRoomReturn[$i+1]['createTime']){
-//                        $tmp = $clubRoomReturn[$i];
-//                        $clubRoomReturn[$i] = $clubRoomReturn[$i+1];
-//                        $clubRoomReturn[$i+1] = $tmp;
-//                        $flag = false;
-//                    }
-//                }
-//            }
-//            $len--;
-//            if($flag == true){
-//                break;
-//            }
-//        }
-
         $return['roominfo'] = $returnData;
         return jsonRes(0, $return);
     }
