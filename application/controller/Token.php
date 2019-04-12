@@ -19,7 +19,7 @@ class Token extends Base
      * @return \think\response\Json\
      */
     public function getToken(){
-        //验证必须传的参数
+        //验证必须传的参数1
         $opt = ['player_id','token','client_type','app_type'];// uid token 机型 app还是h5
         if(!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
