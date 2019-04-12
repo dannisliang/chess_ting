@@ -125,14 +125,15 @@ class Club extends Base
 
         if(!isset($this->opt['club_id'])){
             $clubInfo = $clubModel ->getUserJoinClub($user_id);
-            var_dump($clubInfo);die;
         }else{
             //根据club_id搜索club
-            $clubInfo[] = $this -> getClubByCid($user_id , $this ->opt['club_id']);
+            $club_info = $this -> getClubByCid($user_id , $this ->opt['club_id']);
+            if(!$club_info){
+                return jsonRes(23005);
+            }
+            $clubInfo[] = $club_info;
         }
-        if(!$clubInfo){
-            return jsonRes(23005);
-        }
+
         $lists = [];
         foreach ($clubInfo as $value){
             //返回给客户端的状态
@@ -382,6 +383,9 @@ class Club extends Base
             $tempo = 1;
         }
         $club = $clubModel -> getOneByWhere(['cid' => $club_id]);
+        if(!$club){
+            return false;
+        }
         $clubInfo = [
             'cid'       =>  $club['cid'],
             'status'    =>  $status,
