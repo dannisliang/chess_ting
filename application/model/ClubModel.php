@@ -59,13 +59,14 @@ class ClubModel extends Model{
      * 获取玩家加入的俱乐部
      */
     public function getUserJoinClub($user_id){
-         return $this -> alias('a')
+          $this -> alias('a')
                     ->join('user_club b','a.cid = b.club_id')
                     ->where(['b.status'=> ['in',[0,1]]])
                     ->where('a.club_status',1)
                     ->where('b.player_id',$user_id)
                     ->field('b.status,b.player_id,a.cid,a.club_icon,a.club_name,a.max_club_members_count,a.president_name,a.limitation,a.content,a.room_card,a.creat_player')
                     ->select();
+          return $this -> getLastSql();
     }
 
 
