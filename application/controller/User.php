@@ -247,10 +247,9 @@ class User
         $redisHandler = $redis -> handler();
         $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','roomOptionsId']);
 
-        if(!$user_room_info){
+        if(!$user_room_info || !$user_room_info['socketH5'] || !$user_room_info['socketUrl'] || !$user_room_info['socketUrl']){
             //逻辑服存在，redis里面没有房间解散房间
             $this -> disBandRoom($user_id);
-
             return false;
         }
 

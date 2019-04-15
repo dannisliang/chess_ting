@@ -164,7 +164,7 @@ class Room extends Base
         $gameServiceNew = new GameServiceNewModel();
         $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
         if(!$gameServiceNewInfos) {
-            return jsonRes(3517);
+            return jsonRes(3521);
         }
         $serviceArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
@@ -463,43 +463,45 @@ class Room extends Base
                 }
             }
 
-            # 获取钻石数 判断是否能够开房
-            $userDiamondInfo = getUserProperty($userSessionInfo['userid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING]);
-            if(!isset($userDiamondInfo['code']) || ($userDiamondInfo['code'] != 0)){
-                $returnData = [
-                    'need_diamond' => $needDiamond
-                ];
-                return jsonRes(3516, $returnData);
-            }
-
-            $noBindDiamond = 0;
-            $bindDiamond = 0;
-            foreach ($userDiamondInfo['data'] as $k => $v){
-                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
-                    $noBindDiamond = $v['property_num'];
-                }
-                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
-                    $bindDiamond = $v['property_num'];
-                }
-            }
-
-            if($noBindDiamond >= $needDiamond){
-                $diamondInfo['noBind'] = $needDiamond;
-            }else{
-                if($noBindDiamond > 0){
-                    $diamondInfo['noBind'] = $noBindDiamond;
-                }
-                if(bcadd($bindDiamond, $noBindDiamond, 0) >= $needDiamond){
-                    if(isset($diamondInfo['noBind'])){
-                        $diamondInfo['bind'] = bcsub($needDiamond, $diamondInfo['noBind'], 0);
-                    }else{
-                        $diamondInfo['bind'] = $needDiamond;
-                    }
-                }else{
+            if($needDiamond > 0){ # 需要扣钻
+                # 获取钻石数 判断是否能够开房
+                $userDiamondInfo = getUserProperty($userSessionInfo['userid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING]);
+                if(!isset($userDiamondInfo['code']) || ($userDiamondInfo['code'] != 0)){
                     $returnData = [
                         'need_diamond' => $needDiamond
                     ];
                     return jsonRes(3516, $returnData);
+                }
+
+                $noBindDiamond = 0;
+                $bindDiamond = 0;
+                foreach ($userDiamondInfo['data'] as $k => $v){
+                    if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
+                        $noBindDiamond = $v['property_num'];
+                    }
+                    if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
+                        $bindDiamond = $v['property_num'];
+                    }
+                }
+
+                if($noBindDiamond >= $needDiamond){
+                    $diamondInfo['noBind'] = $needDiamond;
+                }else{
+                    if($noBindDiamond > 0){
+                        $diamondInfo['noBind'] = $noBindDiamond;
+                    }
+                    if(bcadd($bindDiamond, $noBindDiamond, 0) >= $needDiamond){
+                        if(isset($diamondInfo['noBind'])){
+                            $diamondInfo['bind'] = bcsub($needDiamond, $diamondInfo['noBind'], 0);
+                        }else{
+                            $diamondInfo['bind'] = $needDiamond;
+                        }
+                    }else{
+                        $returnData = [
+                            'need_diamond' => $needDiamond
+                        ];
+                        return jsonRes(3516, $returnData);
+                    }
                 }
             }
         }
@@ -1153,7 +1155,6 @@ class Room extends Base
     }
     # 房间解散回调完成
     public function disBandRoomCallBack(){
-        Log::write('1', 'rror');
         if(!isset($this->opt['statistics']) || !is_array($this->opt['statistics']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) ||
             !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['set']) || !is_numeric($this->opt['set'])){
             return jsonRes(0);
