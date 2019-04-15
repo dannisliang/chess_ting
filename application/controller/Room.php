@@ -166,8 +166,17 @@ class Room extends Base
         if(!$gameServiceNewInfos) {
             return jsonRes(3517);
         }
-        $rand = mt_rand(0, count($gameServiceNewInfos)-1);
-        $serviceId = $gameServiceNewInfos[$rand]['service_id'];
+        $serviceArr = [];
+        foreach ($gameServiceNewInfos as $k => $v){
+            if($v['is_goto'] == 1){ # 判断导流
+                $serviceArr[] = $v;
+            }
+        }
+        if(!$serviceArr){
+            return jsonRes(3521);
+        }
+        $rand = mt_rand(0, count($serviceArr)-1);
+        $serviceId = $serviceArr[$rand]['service_id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
         if(!$serviceGatewayNewInfo){
@@ -293,10 +302,11 @@ class Room extends Base
                 }
             }
 
-            if($createRoomInfo['content']['result'] == 10002){
-                return jsonRes(9999);
-            }
             return jsonRes(3517);
+        }
+
+        if(isset($createRoomInfo['content']['result']) && ($createRoomInfo['content']['result'] == 10002)){
+            return jsonRes(9999);
         }
 
         # Redis数据
@@ -498,10 +508,11 @@ class Room extends Base
         $joinRoomInfo = sendHttpRequest($roomHashInfo['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
 //        p($joinRoomInfo);
         if(!isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
-            if($joinRoomInfo['content']['result'] == 10002){
-                return jsonRes(9999);
-            }
             return jsonRes(3506);
+        }
+
+        if(isset($joinRoomInfo['content']['result']) && ($joinRoomInfo['content']['result'] == 10002)){
+            return jsonRes(9999);
         }
 
         # 使用redis锁写房间数据 失败写日志
@@ -1142,6 +1153,7 @@ class Room extends Base
     }
     # 房间解散回调完成
     public function disBandRoomCallBack(){
+        Log::write('1', 'rror');
         if(!isset($this->opt['statistics']) || !is_array($this->opt['statistics']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) ||
             !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['set']) || !is_numeric($this->opt['set'])){
             return jsonRes(0);
