@@ -601,13 +601,16 @@ class Club extends Base
         $field = 'service_id';
         //根据room_type(纸牌或麻将)选择对应开着的服务器
         $game_services_opts = $gameServiceModel -> getSomeByWhere($where , $field);
-        //声明一个空数组,以服务器的ID为键,数量为值存进去
-        $services = [];
-        foreach ($game_services_opts as $game_services_opt){
-            $num = $userRoomModel -> getServiceCount(['service'=>$game_services_opt['service_id']]);
-            $services[$game_services_opt['service_id']] = $num;
+        if(!$game_services_opts){
+            return false;
         }
-        $service_id = array_search(min($services), $services);//数量最小的服务器
+        //随机取一个服务器地址(todo 后期是否可选)
+        $service_ids = [];
+        foreach ($game_services_opts as $game_services_opt){
+            $service_ids[] = $game_services_opt['service_id'];
+        }
+        $service_id_key = array_rand($service_ids,1);
+        $service_id = $service_ids[$service_id_key];
         //根据服务器的ID查出服务器,h5和app的socket的地址
         $where = [
             'id'=> $service_id
