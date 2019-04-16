@@ -988,13 +988,6 @@ class Room extends Base
         if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
             return jsonRes(0);
         }
-        $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
-        $roundEndInfo[] = [
-            $this->opt['score'],
-            date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
-            date("Y-m-d H:i:s", time())
-        ];
-        $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
         # 上传牌局记录到华为云
         $obsClient = new ObsClient([
@@ -1007,6 +1000,14 @@ class Room extends Base
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
             'Body' => $this->opt['playBack']
         ]);
+
+        $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
+        $roundEndInfo[] = [
+            $this->opt['score'],
+            date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+            date("Y-m-d H:i:s", time())
+        ];
+        $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
