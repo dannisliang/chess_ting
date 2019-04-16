@@ -9,7 +9,7 @@
 namespace app\controller;
 
 
-use think\Db;
+use app\model\AgentApplicationModel;
 class Agent extends Base
 {
     private $path = '';

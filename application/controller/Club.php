@@ -514,7 +514,7 @@ class Club extends Base
             $game_info['room_name'] = $val['room_name'];
 
             $room_cost = $this->getRoomCost($clubInfo , $val);
-            $game_info['room_cost'] = $room_cost;
+            $game_info['room_cost'] = intval($room_cost);
 
             $game_infos[] = $game_info;
         }
