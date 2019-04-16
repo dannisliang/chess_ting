@@ -67,25 +67,37 @@ class Agent extends Base
         }
 
     }
+
     /*接收客户端表单的提交*/
     public function recive(){
-        $opt = $this->opt;
-        $player_obj = getUserSessionInfo();
-        $data['player_id'] = $player_obj['uid'];
-        //$player_name = $player_obj['nickname'];
-        $data['phone'] = $player_obj['phone_num'];
-        $data['application_time'] = date('Y-m-d H:i:s');
-        $area = $opt['area'];
-        $area_array = explode(',',$area);
-        if(count($area) == 3){
-            $data['area_name'] = $area_array[1];
-            $data['area_infos'] = $area_array[2];
-        }else{
-            $data['area_name'] = $area_array[0];
-            $data['area_infos'] = $area_array[1];
+        $opt = ['phone_num','area'];
+        if(!has_keys($opt,$this->opt)){
+            return jsonRes(3006);
         }
-        $data['status'] = 0;
-        Db::name('agent_application')->insert($data);
+        $agentApplicationModel = new AgentApplicationModel();
+        $player_id = getUserIdFromSession();
+        $player_name = backNickname($player_id);
+        $area_array = explode(',',$this->opt['area']);
+        if(count($area_array) == 3){
+            $area_name = $area_array[1];
+            $area_infos = $area_array[2];
+        }else{
+            $area_name = $area_array[0];
+            $area_infos = $area_array[1];
+        }
+        $data = [
+            'player_id' => $player_id,
+            'phone' => $this ->opt['phone_num'],
+            'application_time' => date('Y-m-d H:i:s',time()),
+            'applicant' => $player_name,
+            'area_name' => $area_name,
+            'area_infos' => $area_infos,
+            'status' => 0,
+        ];
+        $result = $agentApplicationModel ->addData($data);
+        if(!$result){
+            return jsonRes(3017);
+        }
         return jsonRes(0);
 
     }
