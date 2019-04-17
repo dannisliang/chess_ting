@@ -38,18 +38,23 @@ class HorseLamp extends Base
     }
 
     /**
-     * 俱乐部跑马灯
+     * 俱乐部跑马灯(根据类型type 大厅、俱乐部、红包房)
      * @return \think\response\Json\
      */
     public function getScrollScreen(){
-        $opt = ['area_id'];
+        $opt = ['type'];
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
+        }
+        $area_id = 0;
+        if(isset($this->opt['area_id'])){
+            $area_id = $this->opt['area_id'];
         }
         $data = [
             'appid' => Definition::$CESHI_APPID,
             'status' => 1,
-            'areaid' => $this->opt['area_id'],
+            'areaid' => $area_id,
+            'type' => $this->opt['type'],
         ];
         $bulletinLists = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$HORSE_LAMP, $data);
         if ($bulletinLists['code'] == 0) {
