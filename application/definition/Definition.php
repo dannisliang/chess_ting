@@ -110,5 +110,13 @@ class Definition{
     public static $ASYNC_CALLBACK_URL = 'https://tjmahjong.chessvans.com/tianjin_mahjong/service/shop/reciveOrder.php'; //异步回调地址
 
 
+    /**
+     * 助手
+     * @var string
+     */
+    public static $ZHUSHOU_URL_TEST = 'https://record.chessvans.com:8001/records'; //助手牌局记录推送
+    public static $ZHUSHOU_URL = 'https://record.chessvans.com:8000/records'; //助手牌局记录推送
+
+
 }
 
