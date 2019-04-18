@@ -45,7 +45,12 @@ class Club extends Base
 
         //获取俱乐部信息
         $clubMessage = $this -> getClubMessage($user_id , $this ->opt['club_id']);
-
+        //判断俱乐部信息是否存在
+        if(is_int($clubMessage)){
+            if($clubMessage === 23004) return jsonRes(23004);
+            if($clubMessage === 3012)  return jsonRes(3012);
+            if($clubMessage === 3998)  return jsonRes(3998);
+        }
         //发送大数据
         $this->clubLoginBeeSender($clubMessage);
         $data = [
@@ -407,7 +412,7 @@ class Club extends Base
      * 获取俱乐部信息
      * @param $user_id
      * @param $club_id
-     * @return false|string|\think\Collection
+     * @return array | int
      */
     private function getClubMessage($user_id ,$club_id){
 
@@ -426,12 +431,12 @@ class Club extends Base
         ],'club_id');
 
         if(!$user_club){
-            return jsonRes(23004);
+            return 23004;
         }
         $clubInfo = $clubModel -> getOneByWhere( ['cid' => $club_id] , 'club_name,club_icon,content,club_type,area_id' );
 
         if(!$clubInfo){
-            return jsonRes(3012);
+            return 3012;
         }
 
         //获取地区名称
@@ -461,10 +466,10 @@ class Club extends Base
 
             return $list;
         }
-        //存在房间玩法
+        //存在房间玩法(判断房间玩法存在)
         $play = $playModel -> getOneByWhere(['id' => $room_options[0]['room_type']] , 'play');
         if(!$play){
-            return jsonRes(3998);
+            return 3998;
         }
 
         $room_type = [];
@@ -502,7 +507,10 @@ class Club extends Base
                 $back_list['socket_url'] = $socket['socket_url'];
                 $socket_h5 = $socket['socket_h5'];
             }else{
-                $back_sercie = $this->getService($val['room_type']);//根据玩法的ID去找出合适的服务器
+                $back_sercie = $this->getService($val['room_type']);//根据玩法的ID去找出合适的服务器(没有的话不返)
+                if(!$back_sercie){
+                    continue;
+                }
                 $back_list['socket_url'] = $back_sercie['socket_app'];
                 $socket_h5 = $back_sercie['socket_h5'];
             }
