@@ -31,8 +31,8 @@ class Definition{
     public static $MY_APP_NAME      = 'tianjin_mahjong';//报送大数据是传送的项目名字
     public static $NEED_DIAMOND     = '10';//结束后扣除的钻石数
     public static $MATCH_SERVICE    = 'http://mp.snplay.com:80'; //匹配服地址 （河南专用）
-    public static $NOTIFICATION_H5  = 'http://mp.snplay.com:80';//H5的通知地址
-    public static $NOTIFICATION_URL = 'http://mp.snplay.com:80';//通知中心服务器地址,
+    public static $NOTIFICATION_H5  = 'http://mp.snplay.com:11509';//H5的通知地址
+    public static $NOTIFICATION_URL = 'http://mp.snplay.com:11509';//通知中心服务器地址,
 
 
     /**
