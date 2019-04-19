@@ -119,13 +119,13 @@ class User
                     if(isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
                         $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $user_id]);
                         if(isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
-                            Log::write(date('Y-m-d H:i:s',time()).'解散房间失败','disBandRoomError');
                             return;
                         }
                     }
                 }
             }
         }
+        Log::write(date('Y-m-d H:i:s',time()).'解散房间失败','disBandRoomError');
         return;
     }
 
