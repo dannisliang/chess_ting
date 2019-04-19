@@ -23,6 +23,9 @@ class HorseLamp extends Base
         $url = Definition::$WEB_USER_URL;//运营中心域名
         $url_area = Definition::$HORSE_LAMP;//跑马灯
         $bulletinlist = sendHttpRequest($url.$url_area, $data);
+        if(!isset($bulletinlist['code'])){
+            return jsonRes(3004);
+        }
         if ($bulletinlist['code'] == 0) {
             $count = count($bulletinlist['data']);
             $result = array();
