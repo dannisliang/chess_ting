@@ -20,6 +20,7 @@ use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 use think\cache\driver\Redis;
+use think\Log;
 
 class User
 {
@@ -98,7 +99,6 @@ class User
     /**
      * 解散房间
      * @param $user_id
-     * @return bool|\think\response\Json\
      */
     private function disBandRoom($user_id){
 
@@ -119,13 +119,14 @@ class User
                     if(isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
                         $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $user_id]);
                         if(isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
-                            return false;
+                            Log::write(date('Y-m-d H:i:s',time()).'解散房间失败','disBandRoomError');
+                            return;
                         }
                     }
                 }
             }
         }
-        return jsonRes(3508);
+        return;
     }
 
     /**
