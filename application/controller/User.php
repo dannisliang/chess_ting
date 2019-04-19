@@ -240,7 +240,7 @@ class User
         $room_id = getRoomIdFromService($user_id);
 
         //不存在房间
-        if(!isset($room_id)){
+        if(!isset($room_id) || empty($room_id)){
             return false;
         }
 
