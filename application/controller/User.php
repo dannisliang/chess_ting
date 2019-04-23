@@ -104,7 +104,7 @@ class User
 
         # 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        $gameServiceNewInfos = $gameServiceNew->getGameService();
         $gameServiceNewArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
