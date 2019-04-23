@@ -209,17 +209,21 @@ class User
             $socket_url = $user_room_info['socket_url'];
             $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
             if (!$roomOption){
-                $roomOption = $userRoomModel -> getOptionsByRoomNum($user_room_info['room_id']);
-                $roomOption['room_type'] = $roomOption['play_type'];
+                $check = [];
+                $options = [];
+            }else{
+                $options = [];
+                if(isset($roomOption['options'])){
+                    $options = json_decode($roomOption['options']);
+                }
+                //获取play中的玩法
+                $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
+                $check = [];
+                if(!empty($play['play'])){
+                    //获取check
+                    $check = json_decode($play['play'],true)['checks'];
+                }
             }
-            $options = [];
-            if(isset($roomOption['options'])){
-                $options = json_decode($roomOption['options']);
-            }
-            //获取play中的玩法
-            $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
-            //获取check
-            $check = json_decode($play['play'],true)['checks'];
         }
 
         return $res = [
