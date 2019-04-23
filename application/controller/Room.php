@@ -144,6 +144,23 @@ class Room extends Base
             return jsonRes(3501);
         }
 
+        # 根据玩法的类型去查找玩法启动的服务
+        $gameServiceNew = new GameServiceNewModel();
+        $serviceInfos = $gameServiceNew->getServiceByPlayType($play['play_type']);
+        if(!$serviceInfos) {
+            return jsonRes(3521);
+        }
+        $rand = array_rand($serviceInfos, 1);
+        $serviceId = $serviceInfos[$rand]['id'];
+        $serviceGatewayNew = new ServiceGatewayNewModel();
+        $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
+        if(!$serviceGatewayNewInfo){
+            return jsonRes(3517);
+        }
+        $createRoomUrl = $serviceGatewayNewInfo['service'];
+        $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
+        $socketUrl = $serviceGatewayNewInfo['gateway_app'];
+
         # 玩法规则json解码
         $playInfoPlayJsonDecode = json_decode($playInfo['play'], true);
 
@@ -159,32 +176,6 @@ class Room extends Base
         //查找商务会长，给商务会长返利
         $commerceModel = new CommerceModel();
         $commerce = $commerceModel -> getOneByWhere(['senior_president' => $clubInfo['senior_president']]);
-
-        # 根据俱乐部ID获取俱乐部socket通道
-        $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfosByRoomTypeId($roomOptionsInfo['room_type']);
-        if(!$gameServiceNewInfos) {
-            return jsonRes(3521);
-        }
-        $serviceArr = [];
-        foreach ($gameServiceNewInfos as $k => $v){
-            if($v['is_goto'] == 1){ # 判断导流
-                $serviceArr[] = $v;
-            }
-        }
-        if(!$serviceArr){
-            return jsonRes(3521);
-        }
-        $rand = mt_rand(0, count($serviceArr)-1);
-        $serviceId = $serviceArr[$rand]['service_id'];
-        $serviceGatewayNew = new ServiceGatewayNewModel();
-        $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
-        if(!$serviceGatewayNewInfo){
-            return jsonRes(3517);
-        }
-        $createRoomUrl = $serviceGatewayNewInfo['service'];
-        $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
-        $socketUrl = $serviceGatewayNewInfo['gateway_app'];
 
         # 获取玩家vip
         $userVip = new UserVipModel();
@@ -594,13 +585,14 @@ class Room extends Base
 
         # 和逻辑服同步
         $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
-        if(!$gameServiceNewInfos){
+        $serviceInfos = $gameServiceNew->getGameService();
+        if(!$serviceInfos){ # 没有可用的服务 全都删了
+            $redisHandle->del(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
             return jsonRes(0, []);
         }
 
         $serviceIds = [];
-        foreach ($gameServiceNewInfos as $k => $v){
+        foreach ($serviceInfos as $k => $v){
             $serviceIds[] = $v['service_id'];
         }
 
@@ -611,7 +603,7 @@ class Room extends Base
             if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
                 $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }else{
-                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber]]);
+                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
             }
         }
 
@@ -743,7 +735,7 @@ class Room extends Base
 
         # 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        $gameServiceNewInfos = $gameServiceNew->getGameService();
         $gameServiceNewArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
@@ -774,7 +766,7 @@ class Room extends Base
 
         # 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
-        $gameServiceNewInfos = $gameServiceNew->getGameServiceNewInfos();
+        $gameServiceNewInfos = $gameServiceNew->getGameService();
         $gameServiceNewArr = [];
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
