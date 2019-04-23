@@ -71,7 +71,7 @@ function getUserProperty($userIds, $propertyType){
 function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
-//        'connect_timeout' => 1, # 最长握手时间
+        'connect_timeout' => 1, # 最长握手时间
 //        'timeout' => 1, # 最长等待时间
         'headers' => ['Accept-Encoding' => 'gzip'],
         'decode_content' => 'gzip',

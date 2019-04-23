@@ -18,16 +18,16 @@ class GameServiceNewModel extends Model{
      * @param $roomType
      * @return false|\PDOStatement|string|\think\Collection
      */
-    public function getGameServiceNewInfosByRoomTypeId($roomType){
-        return $this->where('is_open', '=', 1)->where('room_type', '=', $roomType)->group('service_id')->select();
+    public function getServiceByPlayType($playType){
+        return $this->where('is_open', '=', 1)->where('is_goto', '=', 1)->where('room_type', '=', $playType)->select();
     }
 
     /**
      * 获取所有可连接的服务器
      * @return false|\PDOStatement|string|\think\Collection
      */
-    public function getGameServiceNewInfos(){
-        return $this->where('is_open', '=', 1)->group('service_id')->select();
+    public function getGameService(){
+        return $this->where('is_open', '=', 1)->select();
     }
 
     /**
