@@ -507,7 +507,7 @@ class Club extends Base
                 $back_list['socket_url'] = $socket['socket_url'];
                 $socket_h5 = $socket['socket_h5'];
             }else{
-                $back_sercie = $this->getService($val['room_type']);//根据玩法的ID去找出合适的服务器(没有的话不返)
+                $back_sercie = $this->getService($val['play_type']);//根据玩法的ID去找出合适的服务器(没有的话不返)
                 if(!$back_sercie){
                     continue;
                 }
@@ -604,6 +604,7 @@ class Club extends Base
         $userRoomModel = new UserRoomModel();
         $where = [
             'is_open' => 1,
+            'is_goto' => 1,
             'room_type'=> $room_type
         ];
         $field = 'service_id';
