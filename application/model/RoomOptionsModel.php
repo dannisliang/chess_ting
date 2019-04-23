@@ -60,7 +60,7 @@ class RoomOptionsModel extends Model{
         return $this -> where($where)
             -> alias('a')
             -> join('play b','a.room_type = b.id')
-            -> field('a.room_type,a.room_rate,a.room_name,a.diamond,a.options,a.id,b.play')
+            -> field('a.room_type,a.room_rate,a.room_name,a.diamond,a.options,a.id,b.play,b.play_type')
             -> select();
     }
 
