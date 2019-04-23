@@ -146,7 +146,7 @@ class Room extends Base
 
         # 根据玩法的类型去查找玩法启动的服务
         $gameServiceNew = new GameServiceNewModel();
-        $serviceInfos = $gameServiceNew->getServiceByPlayType($play['play_type']);
+        $serviceInfos = $gameServiceNew->getServiceByPlayType($playInfo['play_type']);
         if(!$serviceInfos) {
             return jsonRes(3521);
         }
