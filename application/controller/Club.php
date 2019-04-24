@@ -134,7 +134,7 @@ class Club extends Base
             //根据club_id搜索club
             $club_info = $this -> getClubByCid($user_id , $this ->opt['club_id']);
             if(!$club_info){
-                return jsonRes(23005);
+                return json(['code'=>0,'mess'=>'查找的俱乐部不存在','data'=>[]]); //配合客户端修改返回值
             }
             $clubInfo[] = $club_info;
         }
