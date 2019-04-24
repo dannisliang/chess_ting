@@ -15,7 +15,7 @@ return [
     // 服务器地址
     'hostname'        => '192.168.9.18',
     // 数据库名
-    'database'        => 'db_tianjin_mahjong_test_refactor',
+    'database'        => 'db_tianjin_mahjong_test',
     // 用户名
     'username'        => 'rebuilder',
     // 密码
