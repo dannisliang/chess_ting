@@ -11,8 +11,8 @@
 
 namespace think\cache\driver;
 
-use think\Config;
 use think\cache\Driver;
+use think\Env;
 
 /**
  * Redis缓存驱动，适合单机部署、有前端代理实现高可用的场景，性能最好
@@ -24,10 +24,10 @@ use think\cache\Driver;
 class Redis extends Driver
 {
     protected $options = [
-        'host'       => '192.168.9.18',
-        'port'       => '6379',
-        'password'   => 'Grabs6DAD6Cjdhc1',
-        'select'     => '15',
+        'host'       => '',
+        'port'       => '',
+        'password'   => '',
+        'select'     => '',
         'timeout'    => 0,
         'expire'     => 0,
         'persistent' => false,
@@ -39,7 +39,7 @@ class Redis extends Driver
      * @param array $options 缓存参数
      * @access public
      */
-    public function __construct($options = [])
+    public function __construct($options = ['host' =>Env::get('redis.host'),  'port' => Env::get('redis.port'), 'password' => Env::get('redis.password'), 'select' => Env::get('redis.databaseplay')])
     {
         if (!extension_loaded('redis')) {
             throw new \BadFunctionCallException('not support: redis');
