@@ -60,6 +60,9 @@ class Token extends Base
             'headimgurl'    => $user_info['headimgurl'],
             'nickname'      => $user_info['nickname'],
         ];
+        if(empty($user_data)){
+            return jsonRes(3018);
+        }
         Session::set(RedisKey::$USER_SESSION_INFO, $user_data);
         return jsonRes( 0 ,[
             'session_id' => session_id(),
