@@ -213,7 +213,7 @@ return [
         // 是否自动开启 SESSION
         'auto_start'     => true,
         'host' => Env::get('redishost'),
-        'port' => Env::get('redispassword'),
+        'port' => Env::get('redisport'),
         'password' => Env::get('redispassword'),
         'select' => Env::get('redisdatabase'),
         //设置session过期时间1天
