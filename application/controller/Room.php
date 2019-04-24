@@ -580,7 +580,7 @@ class Room extends Base
         $redisHandle = $redis->handler();
         $sMembers = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
         if(!$sMembers){
-            return jsonRes(0, []);
+            return jsonRes(0, ['roominfo' => []]);
         }
 
         # 和逻辑服同步
@@ -588,7 +588,7 @@ class Room extends Base
         $serviceInfos = $gameServiceNew->getGameService();
         if(!$serviceInfos){ # 没有可用的服务 全都删了
             $redisHandle->del(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
-            return jsonRes(0, []);
+            return jsonRes(0, ['roominfo' => []]);
         }
 
         $serviceIds = [];
