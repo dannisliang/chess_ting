@@ -8,14 +8,14 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
-
+use think\Env;
 return [
     // +----------------------------------------------------------------------
     // | 应用设置
     // +----------------------------------------------------------------------
 
     // 应用调试模式
-    'app_debug'              => true,
+    'app_debug'              => Env::get('app_debug'),
     // 应用Trace
     'app_trace'              => false,
     // 应用模式状态
@@ -212,10 +212,10 @@ return [
         'type'           => 'redis',
         // 是否自动开启 SESSION
         'auto_start'     => true,
-        'host' => '192.168.9.18',
-        'port' => '6379',
-        'password' => 'Grabs6DAD6Cjdhc1',
-        'select' => 1,
+        'host' => Env::get('redishost'),
+        'port' => Env::get('redispassword'),
+        'password' => Env::get('redispassword'),
+        'select' => Env::get('redisdatabase'),
         //设置session过期时间1天
         'expire' => 60*60*24,
     ],
@@ -245,5 +245,12 @@ return [
         'type'      => 'bootstrap',
         'var_page'  => 'page',
         'list_rows' => 15,
+    ],
+
+    'redis'   => [
+        'host' => Env::get('redishost'),
+        'port' => Env::get('redispassword'),
+        'password' => Env::get('redispassword'),
+        'select' => Env::get('redisdatabaseplay'),
     ],
 ];
