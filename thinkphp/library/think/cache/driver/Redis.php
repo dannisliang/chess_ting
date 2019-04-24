@@ -39,8 +39,9 @@ class Redis extends Driver
      * @param array $options 缓存参数
      * @access public
      */
-    public function __construct($options = ['host' =>Env::get('redis.host'),  'port' => Env::get('redis.port'), 'password' => Env::get('redis.password'), 'select' => Env::get('redis.databaseplay')])
+    public function __construct($options = [])
     {
+        $options = ['host' =>Env::get('redis.host'), 'port' => Env::get('redis.port'), 'password' => Env::get('redis.password'), 'select' => Env::get('redis.databaseplay')];
         if (!extension_loaded('redis')) {
             throw new \BadFunctionCallException('not support: redis');
         }
