@@ -9,17 +9,18 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 
+use think\Env;
 return [
     // 数据库类型
     'type'            => 'mysql',
     // 服务器地址
-    'hostname'        => '192.168.9.18',
+    'hostname'        => Env::get('host'),
     // 数据库名
-    'database'        => 'db_tianjin_mahjong_test',
+    'database'        => Env::get('database'),
     // 用户名
-    'username'        => 'rebuilder',
+    'username'        => Env::get('username'),
     // 密码
-    'password'        => 'WASGAHasdasd1978',
+    'password'        => Env::get('password'),
     // 端口
     'hostport'        => '3306',
     // 连接dsn
