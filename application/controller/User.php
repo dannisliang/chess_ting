@@ -194,7 +194,6 @@ class User
      * @return array
      */
     private function getRoomInfo($user_room_info){
-        $userRoomModel = new UserRoomModel();
         $roomOptionModel = new RoomOptionsModel();
         $playModel = new PlayModel();
         //返回的房间信息
@@ -214,7 +213,7 @@ class User
             }else{
                 $options = [];
                 if(isset($roomOption['options'])){
-                    $options = json_decode($roomOption['options']);
+                    $options = json_decode($roomOption['options'],true);
                 }
                 //获取play中的玩法
                 $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
