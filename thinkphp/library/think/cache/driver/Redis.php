@@ -11,6 +11,7 @@
 
 namespace think\cache\driver;
 
+use think\Config;
 use think\cache\Driver;
 
 /**
@@ -24,9 +25,9 @@ class Redis extends Driver
 {
     protected $options = [
         'host'       => '192.168.9.18',
-        'port'       => 6379,
+        'port'       => '6379',
         'password'   => 'Grabs6DAD6Cjdhc1',
-        'select'     => 1,
+        'select'     => '15',
         'timeout'    => 0,
         'expire'     => 0,
         'persistent' => false,
