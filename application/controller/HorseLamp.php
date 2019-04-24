@@ -46,6 +46,9 @@ class HorseLamp extends Base
      */
     public function getScrollScreen(){
         $opt = ['type'];
+        if(!$this->opt){
+            return jsonRes(3006);
+        }
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }

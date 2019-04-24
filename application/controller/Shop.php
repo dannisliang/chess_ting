@@ -359,7 +359,7 @@ class Shop extends Base
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
 
         $result = sendHttpRequest( $url );
-        if($result['ErrCode'] != 0){
+        if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
             return jsonRes(3004);
         }
         //获取机型 和 类型
