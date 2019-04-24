@@ -247,10 +247,4 @@ return [
         'list_rows' => 15,
     ],
 
-    'redis'   => [
-        'host' => Env::get('redishost'),
-        'port' => Env::get('redispassword'),
-        'password' => Env::get('redispassword'),
-        'select' => Env::get('redisdatabaseplay'),
-    ],
 ];

@@ -9,7 +9,6 @@
 namespace app\definition;
 
 
-use think\Env;
 
 class Definition{
 
@@ -22,7 +21,7 @@ class Definition{
     public static $ROOM_URL     = 'http://192.168.9.18:80/'; //王朝翠的接口
 
     public static $ZHENGSHI_APPID = ''; //正式服appid
-    public static $CESHI_APPID  = Env::get('appid'); //测试服appid
+    public static $CESHI_APPID  = '72110'; //测试服appid
     public static $SOCKET_SSL   = ''; //未完成牌局的游戏服的ssl,
 
 
