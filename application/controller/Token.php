@@ -44,7 +44,7 @@ class Token extends Base
         ];
         $result = checkToken( $data );
 
-        if($result['result'] === false){
+        if(!isset($result['result']) || $result['result'] === false){
             return jsonRes(3002);
         }
         $user_info = getUserBaseInfo($this->opt['player_id']);
