@@ -8,7 +8,11 @@
 
 namespace app\controller;
 
+use app\model\ClubSocketModel;
 use app\model\CommerceModel;
+use app\model\MatchPlayModel;
+use app\model\PlayGroundModel;
+use think\Env;
 use think\Session;
 use Obs\ObsClient;
 use app\model\BeeSender;
@@ -160,6 +164,14 @@ class Room extends Base
         $createRoomUrl = $serviceGatewayNewInfo['service'];
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
+
+        if(Env::get('is_online') == false){
+            $clubSocket = new ClubSocketModel();
+            $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
+            $createRoomUrl = $clubSocketInfo['room_url'];
+            $socketH5 = $clubSocketInfo['socket_h5'];
+            $socketUrl = $clubSocketInfo['socket_url'];
+        }
 
         # 玩法规则json解码
         $playInfoPlayJsonDecode = json_decode($playInfo['play'], true);
@@ -626,7 +638,7 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomName', 'joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
                 $diamond = $roomHashValue['diamond'];
@@ -1533,5 +1545,66 @@ class Room extends Base
         }
         # 玩家扣钻模式完成
         return jsonRes(0);
+    }
+
+
+    public function matchRoom(){
+        if(!isset($this->opt['uid']) || !$this->opt['uid'] || !isset($this->opt['group']) || !is_array($this->opt['group'])){
+            return jsonRes(0);
+        }
+
+        $playGround = new PlayGroundModel();
+        $playGroundInfo = $playGround->getPlayGroundInfo();
+        if(!$playGroundInfo){
+            return jsonRes(0);
+        }
+
+        $beginDate = strtotime($playGroundInfo['match_date_start']);
+        $endDate = strtotime($playGroundInfo['match_date_end']);
+        if((time() < $beginDate) || (time() > $endDate)){
+            return jsonRes(0);
+        }
+
+        $beginTime = strtotime(date("Y-m-d").$playGroundInfo['match_time_start']);
+        $endTime = strtotime(date("Y-m-d").$playGroundInfo['match_time_end']);
+        if((time() < $beginTime) || (time() > $endTime)){
+            return jsonRes(0);
+        }
+
+        $matchPlay = new MatchPlayModel();
+        $matchPlayInfo = $matchPlay->getMatchPlayInfo();
+        if(!$matchPlayInfo){
+            return jsonRes(0);
+        }
+
+        # 判断玩家是否报名海选
+        $userMatch = '';
+
+        if($playGroundInfo['bureau'] == 8){
+            $options = [2,5,9,14,17,19];//八局的规则
+        }
+
+        if($playGroundInfo['bureau'] == 4){
+            $options = [22,5,9,14,17,19];//16局的规则
+        }
+
+        if($playGroundInfo['bureau'] == 16){
+            $options = [3,5,9,14,17,19];//默认的规则(八局)
+        }
+
+        if(!isset($options)){
+            return jsonRes(0);
+        }
+
+
+
+        $playInfo = json_decode($matchPlayInfo['play'], true);
+        if(!$playInfo){
+            return jsonRes(0);
+        }
+
+        $data['config'] = $playInfo['checks'];
+        $data['config']['options'] = $options;
+
     }
 }
