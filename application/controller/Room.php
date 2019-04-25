@@ -656,6 +656,7 @@ class Room extends Base
                 $clubRoomReturn[$i]['player_size'] = $roomHashValue['needUserNum'];
                 $clubRoomReturn[$i]['room_code'] = $roomHashValue['roomCode'];
                 $clubRoomReturn[$i]['room_rate'] = $roomHashValue['roomRate'];
+                $clubRoomReturn[$i]['room_name'] = $roomHashValue['roomName'];
                 $clubRoomReturn[$i]['socket_h5'] = $roomHashValue['socketH5'];
                 $clubRoomReturn[$i]['socket_url'] = $roomHashValue['socketUrl'];
                 $clubRoomReturn[$i]['options'] = json_decode($roomHashValue['roomOptions'], true);
