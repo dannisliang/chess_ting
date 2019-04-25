@@ -124,7 +124,7 @@ function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $confi
         $errorData = [
             $url
         ];
-        Log::write($errorData, 'errorRequest');
+        Log::write($errorData, 'errorConnectRequest');
         return [];
     }
 }
