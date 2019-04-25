@@ -638,7 +638,7 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomName', 'joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
                 $diamond = $roomHashValue['diamond'];
