@@ -166,11 +166,13 @@ class Room extends Base
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
 
         if(Env::get('is_online') == false){
-            $clubSocket = new ClubSocketModel();
-            $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
-            $createRoomUrl = $clubSocketInfo['room_url'];
-            $socketH5 = $clubSocketInfo['socket_h5'];
-            $socketUrl = $clubSocketInfo['socket_url'];
+            if(in_array($this->opt['club_id'], [555555, 999999, 888888])){
+                $clubSocket = new ClubSocketModel();
+                $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
+                $createRoomUrl = $clubSocketInfo['room_url'];
+                $socketH5 = $clubSocketInfo['socket_h5'];
+                $socketUrl = $clubSocketInfo['socket_url'];
+            }
         }
 
         # 玩法规则json解码
