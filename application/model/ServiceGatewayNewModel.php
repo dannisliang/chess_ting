@@ -55,4 +55,16 @@ class ServiceGatewayNewModel extends Model
     public function getServiceGatewayNewInfos(){
         return $this->select();
     }
+
+    /**
+     * 获取可连接的服务
+     * @param $where
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getServiceGatewayNewInfosByWhere($where){
+        return $this->where($where)->select();
+    }
 }
