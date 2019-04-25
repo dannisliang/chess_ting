@@ -57,6 +57,7 @@ class Club extends Base
             //俱乐部信息
             'check'         => $clubMessage['check'],       //玩法数组
             'club_id'       => $clubMessage['club_id'],     //俱乐部id
+            'area_id'       => $clubMessage['area_id'],     //俱乐部所在地区
             'rule_code'     => $clubMessage['rule_code'],   //规则数组
             'gameinfos'     => $clubMessage['gameinfos'],   //游戏信息
             'club_name'     => $clubMessage['club_name'],   // 俱乐部名称
