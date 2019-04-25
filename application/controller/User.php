@@ -76,7 +76,7 @@ class User
             'new_mail' => $email_num,
             'nickname' => $user_info['nickname'],
             'head_img' => $user_info['headimgurl'],
-            'is_mark'   => $user_info['ismark'], //是否绑定手机
+            'ismark'   => $user_info['ismark'], //是否绑定手机
             'club_name'=> $club_name,
             'club_id'  => $club_id,
             'room_id'  => $roomInfo['room_id'],
