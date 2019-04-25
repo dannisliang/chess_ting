@@ -459,7 +459,7 @@ function getUserBaseInfo($user_id)
 function getRoomIdFromService($user_id){
     $serviceGatewayModel = new \app\model\ServiceGatewayNewModel();
     $gameServiceNewModel = new \app\model\GameServiceNewModel();
-    $gameServices = $gameServiceNewModel ->getSomeByWhere(['isopen'=>1]);
+    $gameServices = $gameServiceNewModel ->getSomeByWhere(['is_open'=>1]);
     if(!$gameServices){
         return false;
     }
