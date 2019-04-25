@@ -1154,14 +1154,14 @@ class Room extends Base
             return jsonRes(0);
         }
 
-        # 报送助手
-        $zhushou = [
-            'product' => '-',
-            'type' => '-',
-            'timestamp' => time(),
-            'content' => $this->opt
-        ];
-        sendHttpRequest(Definition::$ZHUSHOU_URL_TEST, $zhushou);
+//        # 报送助手
+//        $zhushou = [
+//            'product' => '-',
+//            'type' => '-',
+//            'timestamp' => time(),
+//            'content' => $this->opt
+//        ];
+//        sendHttpRequest(Definition::$ZHUSHOU_URL_TEST, $zhushou);
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
