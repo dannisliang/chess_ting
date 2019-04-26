@@ -21,4 +21,17 @@ class PlayGroundModel extends Model
         return $this->where('status', '=', 1)->find();
     }
 
+
+    # 获取一个活动规则
+    public function getAPlayGroundInfo(){
+        $dateTime = date("Y-m-d H:i:s", time());
+        return $this->where('registration_time_end', '>', $dateTime)->find();
+    }
+
+    public function getBPlayGroundInfo(){
+        $dateTime = date("Y-m-d H:i:s", time());
+        $date = date("Y-m-d", time());
+        $time = date("H:i:s", time());
+        return $this->where('registration_time_start', '<', $dateTime)->where('match_date_end', '>', $date)->where('match_time_end', '>', $time)->find();
+    }
 }

@@ -10,8 +10,6 @@ namespace app\controller;
 
 use app\model\ClubSocketModel;
 use app\model\CommerceModel;
-use app\model\MatchPlayModel;
-use app\model\PlayGroundModel;
 use think\Env;
 use think\Session;
 use Obs\ObsClient;
@@ -1551,63 +1549,4 @@ class Room extends Base
     }
 
 
-    public function matchRoom(){
-        if(!isset($this->opt['uid']) || !$this->opt['uid'] || !isset($this->opt['group']) || !is_array($this->opt['group'])){
-            return jsonRes(0);
-        }
-
-        $playGround = new PlayGroundModel();
-        $playGroundInfo = $playGround->getPlayGroundInfo();
-        if(!$playGroundInfo){
-            return jsonRes(0);
-        }
-
-        $beginDate = strtotime($playGroundInfo['match_date_start']);
-        $endDate = strtotime($playGroundInfo['match_date_end']);
-        if((time() < $beginDate) || (time() > $endDate)){
-            return jsonRes(0);
-        }
-
-        $beginTime = strtotime(date("Y-m-d").$playGroundInfo['match_time_start']);
-        $endTime = strtotime(date("Y-m-d").$playGroundInfo['match_time_end']);
-        if((time() < $beginTime) || (time() > $endTime)){
-            return jsonRes(0);
-        }
-
-        $matchPlay = new MatchPlayModel();
-        $matchPlayInfo = $matchPlay->getMatchPlayInfo();
-        if(!$matchPlayInfo){
-            return jsonRes(0);
-        }
-
-        # 判断玩家是否报名海选
-        $userMatch = '';
-
-        if($playGroundInfo['bureau'] == 8){
-            $options = [2,5,9,14,17,19];//八局的规则
-        }
-
-        if($playGroundInfo['bureau'] == 4){
-            $options = [22,5,9,14,17,19];//16局的规则
-        }
-
-        if($playGroundInfo['bureau'] == 16){
-            $options = [3,5,9,14,17,19];//默认的规则(八局)
-        }
-
-        if(!isset($options)){
-            return jsonRes(0);
-        }
-
-
-
-        $playInfo = json_decode($matchPlayInfo['play'], true);
-        if(!$playInfo){
-            return jsonRes(0);
-        }
-
-        $data['config'] = $playInfo['checks'];
-        $data['config']['options'] = $options;
-
-    }
 }
