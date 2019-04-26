@@ -48,6 +48,10 @@ class Token extends Base
             return jsonRes(3002);
         }
         $user_info = getUserBaseInfo($this->opt['player_id']);
+        //没有查到用户信息验证不通过
+        if(!$user_info || empty($user_info['headimgurl']) || empty($user_info['nickname'])){
+            return jsonRes(3002);
+        }
         //验证完成的信息存入session
         $user_data = [
             'client_type'   => $this -> opt['client_type'],
