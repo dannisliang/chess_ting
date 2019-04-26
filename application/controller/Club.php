@@ -503,7 +503,7 @@ class Club extends Base
         //获取游戏的游戏信息
         foreach ($playOptions as $val){
             //查找合适的服务器
-            if($club_id == 999999){
+            if($club_id == 999999 || $club_id == 555555 || $club_id == 888888){
                 $socket = $club_socket->getClubSocketInfoByClubId($club_id);
                 $back_list['socket_url'] = $socket['socket_url'];
                 $socket_h5 = $socket['socket_h5'];
