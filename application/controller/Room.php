@@ -8,7 +8,9 @@
 
 namespace app\controller;
 
+use app\model\ClubSocketModel;
 use app\model\CommerceModel;
+use think\Env;
 use think\Session;
 use Obs\ObsClient;
 use app\model\BeeSender;
@@ -160,6 +162,16 @@ class Room extends Base
         $createRoomUrl = $serviceGatewayNewInfo['service'];
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
+
+        if(Env::get('is_online') == false){
+            if(in_array($this->opt['club_id'], [555555, 999999, 888888])){
+                $clubSocket = new ClubSocketModel();
+                $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
+                $createRoomUrl = $clubSocketInfo['room_url'];
+                $socketH5 = $clubSocketInfo['socket_h5'];
+                $socketUrl = $clubSocketInfo['socket_url'];
+            }
+        }
 
         # 玩法规则json解码
         $playInfoPlayJsonDecode = json_decode($playInfo['play'], true);
@@ -626,7 +638,7 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomName', 'joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
                 $diamond = $roomHashValue['diamond'];
@@ -642,6 +654,7 @@ class Room extends Base
                 $clubRoomReturn[$i]['player_size'] = $roomHashValue['needUserNum'];
                 $clubRoomReturn[$i]['room_code'] = $roomHashValue['roomCode'];
                 $clubRoomReturn[$i]['room_rate'] = $roomHashValue['roomRate'];
+                $clubRoomReturn[$i]['room_name'] = $roomHashValue['roomName'];
                 $clubRoomReturn[$i]['socket_h5'] = $roomHashValue['socketH5'];
                 $clubRoomReturn[$i]['socket_url'] = $roomHashValue['socketUrl'];
                 $clubRoomReturn[$i]['options'] = json_decode($roomHashValue['roomOptions'], true);
@@ -1154,26 +1167,13 @@ class Room extends Base
             return jsonRes(0);
         }
 
-//        # 报送助手
-//        $zhushou = [
-//            'product' => '-',
-//            'type' => '-',
-//            'timestamp' => time(),
-//            'content' => $this->opt
-//        ];
-//        sendHttpRequest(Definition::$ZHUSHOU_URL_TEST, $zhushou);
-
         $redis = new Redis();
         $redisHandle = $redis->handler();
         if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
             return jsonRes(0);
         }
 
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['commerceId', 'businessRebate', 'payMode', 'clubMode', 'clubRegionName', 'clubRegionId',
-                'clubName', 'gameStartTime', 'gameEndTime', 'tableNum', 'tableType', 'roomChannel', 'roomTypeName',
-                'roomOptionsId', 'playerInfos', 'clubId', 'clubType', 'roomRate', 'diamond', 'generalRebate',
-                'seniorRebate', 'seniorPresidentId', 'presidentId', 'presidentNickName', 'seniorPresidentNickName']);
+        $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); # 俱乐部移除房间
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
@@ -1219,6 +1219,32 @@ class Room extends Base
         foreach ($this->opt['statistics'] as $k => $v){
             $userScore[$v['playerId']] = $v['totalScore'];
             $userIds[] = $v['playerId'];
+        }
+
+        $baoSong = [];
+        foreach ($roomHashInfo as $k => $v){
+            if(in_array($k, ['playChecks', 'roomOptions', 'playerInfos', 'roomOptions', 'roundEndInfo', 'gameEndInfo'])){
+                $baoSong[$k] = json_decode($v, true);
+            }else{
+                $baoSong[$k] = $v;
+            }
+        }
+        $baoSong['opt'] = $this->opt;
+
+        foreach ($userIds as $v){
+            # 报送助手
+            $zhushou = [
+                'type' => 'common',
+                'timestamp' => time(),
+                'content' => $baoSong,
+                'product' => Definition::$CESHI_APPID,
+                'filter_userid' => $v,
+                'filter_clubid' => $roomHashInfo['clubId'],
+            ];
+            $data[] = $zhushou;
+        }
+        if(isset($data)){
+            sendHttpRequest(Definition::$ZHUSHOU_URL_TEST, $data, 'POST', [], ['connect_timeout' => 3]);
         }
 
         # 会长模式还钻
@@ -1534,4 +1560,6 @@ class Room extends Base
         # 玩家扣钻模式完成
         return jsonRes(0);
     }
+
+
 }
