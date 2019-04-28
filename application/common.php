@@ -471,14 +471,7 @@ function getRoomIdFromService($user_id){
     //获取所有逻辑服地址
     $services = $serviceGatewayModel -> getServiceGatewayNewInfosByWhere(['id'=>['in',$service_id]]);
     if(!$services){
-        if(\think\Env::get('is_online')){
-            $services = $clubSocketModel ->getSome();
-            if(!$services){
-                return false;
-            }
-        }else{
-            return false;
-        }
+        return false;
     }
     foreach ($services as $service){
         $path_info = Definition::$GET_USER_ROOM;
@@ -496,7 +489,29 @@ function getRoomIdFromService($user_id){
 
     //不存在房间
     if(!isset($room_id)){
-        return false;
+        //获取逻辑服特定的连接（内测使用）
+        if(\think\Env::get('is_online') === false){
+            $services = $clubSocketModel ->getSome();
+            if(!$services){
+                return false;
+            }
+            foreach ($services as $service){
+                $path_info = Definition::$GET_USER_ROOM;
+                //请求逻辑服
+                $serviceInfo = guzzleRequest( $service['room_url'] , $path_info , ['playerId' => (int)$user_id]);
+
+                if(!isset($serviceInfo['content'])){
+                    continue;
+                }
+                if(isset($serviceInfo['content']['roomId']) && array_key_exists('roomId',$serviceInfo['content'])){
+                    $room_id = $serviceInfo['content']['roomId'];
+                    break;
+                }
+            }
+            return $room_id;
+        }else{
+            return false;
+        }
     }
     return $room_id;
 }
