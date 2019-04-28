@@ -116,6 +116,10 @@ Route::rule('route/miss','Miss/index');
 
 
 
+Route::rule('match/getSort','Match/getSort');
+
+
+
 
 
 
