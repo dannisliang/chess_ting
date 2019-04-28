@@ -459,6 +459,7 @@ function getUserBaseInfo($user_id)
 function getRoomIdFromService($user_id){
     $serviceGatewayModel = new \app\model\ServiceGatewayNewModel();
     $gameServiceNewModel = new \app\model\GameServiceNewModel();
+    $clubSocketModel = new \app\model\ClubSocketModel();
     $gameServices = $gameServiceNewModel ->getSomeByWhere(['is_open'=>1]);
     if(!$gameServices){
         return false;
@@ -488,7 +489,30 @@ function getRoomIdFromService($user_id){
 
     //不存在房间
     if(!isset($room_id)){
-        return false;
+        //获取逻辑服特定的连接（内测使用）
+        if(\think\Env::get('is_online') == false){
+            $services = $clubSocketModel ->getSome();
+            if(!$services){
+                return false;
+            }
+            $room_id = 0;
+            foreach ($services as $service){
+                $path_info = Definition::$GET_USER_ROOM;
+                //请求逻辑服
+                $serviceInfo = guzzleRequest( $service['room_url'] , $path_info , ['playerId' => (int)$user_id]);
+
+                if(!isset($serviceInfo['content'])){
+                    continue;
+                }
+                if(isset($serviceInfo['content']['roomId']) && array_key_exists('roomId',$serviceInfo['content'])){
+                    $room_id = $serviceInfo['content']['roomId'];
+                    break;
+                }
+            }
+            return $room_id;
+        }else{
+            return false;
+        }
     }
     return $room_id;
 }
