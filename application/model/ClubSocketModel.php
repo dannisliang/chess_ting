@@ -21,4 +21,13 @@ class ClubSocketModel extends Model{
     public function getClubSocketInfoByClubId($clubId){
         return $this->where('club_id', '=', $clubId)->find();
     }
+
+    /**
+     * 获取逻辑服专属的地址
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\exception\DbException
+     */
+    public function getSome(){
+        return $this ->select();
+    }
 }
