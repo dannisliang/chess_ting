@@ -1433,7 +1433,7 @@ class Room extends Base
                     }
 
                     foreach ($operateData as $kk =>$vv){
-                        $userDiamondInfo = getUserProperty($vv['uid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
+                        $userDiamondInfo = getUserProperty($vv['uid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, 10000]);
                         if(isset($userDiamondInfo['code']) && ($userDiamondInfo['code'] == 0)){
                             $noBindDiamond = 0;
                             $bindDiamond = 0;
@@ -1445,7 +1445,7 @@ class Room extends Base
                                 if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
                                     $bindDiamond = $v['property_num'];
                                 }
-                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_GOLD){
+                                if($v['property_type'] == 10000){
                                     $gold = $v['property_num'];
                                 }
                             }
