@@ -74,6 +74,9 @@ class Agent extends Base
         if(!has_keys($opt,$this->opt)){
             return jsonRes(3006);
         }
+        if(strlen($this->opt['phone_num']) > 20){
+            return jsonRes(3610);
+        }
         $agentApplicationModel = new AgentApplicationModel();
         $player_id = getUserIdFromSession();
         $player_name = backNickname($player_id);
