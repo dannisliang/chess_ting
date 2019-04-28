@@ -1433,7 +1433,7 @@ class Room extends Base
                     }
 
                     foreach ($operateData as $kk =>$vv){
-                        $userDiamondInfo = getUserProperty($vv['user_id'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
+                        $userDiamondInfo = getUserProperty($vv['uid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
                         if(isset($userDiamondInfo['code']) && ($userDiamondInfo['code'] == 0)){
                             $noBindDiamond = 0;
                             $bindDiamond = 0;
@@ -1452,7 +1452,7 @@ class Room extends Base
 
                             $user_diamond = $noBindDiamond + $bindDiamond;
                             $send_data = array();
-                            $send_user[0] = $vv['user_id'];
+                            $send_user[0] = $vv['uid'];
                             $send_data['content']['gold'] = (int)$gold;
                             $send_data['content']['diamond'] = (int)$user_diamond;
                             $send_data['type'] = 1029;
