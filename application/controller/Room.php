@@ -515,6 +515,11 @@ class Room extends Base
             }
         }
 
+        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
+        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
+        if(!$getLock){
+            return jsonRes(0);
+        }
         # 请求逻辑服加入房间
         $joinRoomInfo = sendHttpRequest($roomHashInfo['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
 //        p($joinRoomInfo);
