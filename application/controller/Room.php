@@ -289,7 +289,7 @@ class Room extends Base
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
         # 使用redis锁写房间数据 失败写日志
         $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
-        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
+        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
         if(!$getLock){
             return jsonRes(0);
         }
