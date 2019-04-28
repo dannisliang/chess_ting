@@ -46,11 +46,13 @@ class RoomNumPush extends Command{
             $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $val);
         }
 
-        shuffle($res);
-        foreach ($res as $val){
-            $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $val);
+        if($res){
+            shuffle($res);
+            foreach ($res as $val){
+                $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $val);
+            }
         }
-
+        
         $output->writeln("脚本执行完毕");
         exit();
     }
