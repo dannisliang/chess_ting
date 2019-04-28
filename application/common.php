@@ -495,6 +495,7 @@ function getRoomIdFromService($user_id){
             if(!$services){
                 return false;
             }
+            $room_id = 0;
             foreach ($services as $service){
                 $path_info = Definition::$GET_USER_ROOM;
                 //请求逻辑服
