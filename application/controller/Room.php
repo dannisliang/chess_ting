@@ -287,7 +287,14 @@ class Room extends Base
         $data['roomId'] = $roomNumber;
         $data['config'] = $playInfoPlayJsonDecode;
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
+        # 使用redis锁写房间数据 失败写日志
+        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
+        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
+        if(!$getLock){
+            return jsonRes(0);
+        }
         $createRoomInfo = sendHttpRequest($createRoomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
+        $redisHandle->del($lockKey);
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
