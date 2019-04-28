@@ -8,6 +8,7 @@
 
 namespace app\command;
 
+use app\model\UserClubRoomRecordModel;
 use think\console\Command;
 use think\console\Input;
 use think\console\Output;
@@ -26,8 +27,15 @@ class RoomNumPush extends Command{
         $roomNumArr = [];
         $begin = 100000;
         $end = 1000000;
+
+        # 获取已经使用过的房间号,防止redis宕机恢复房间号时导致房间号重复
+        $userClubRoomRecord = new UserClubRoomRecordModel();
+        $res = $userClubRoomRecord->getUsedRoomNum();
+
         for ($i = $begin; $i < $end; $i++){
-            $roomNumArr[] = $i;
+            if(!in_array($i, $res)){
+                $roomNumArr[] = $i;
+            }
         }
         shuffle($roomNumArr);
 
@@ -38,6 +46,13 @@ class RoomNumPush extends Command{
             $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $val);
         }
 
+        if($res){
+            shuffle($res);
+            foreach ($res as $val){
+                $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $val);
+            }
+        }
+        
         $output->writeln("脚本执行完毕");
         exit();
     }
