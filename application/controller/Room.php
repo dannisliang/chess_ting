@@ -294,7 +294,6 @@ class Room extends Base
             return jsonRes(0);
         }
         $createRoomInfo = sendHttpRequest($createRoomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
-        $redisHandle->del($lockKey);
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
