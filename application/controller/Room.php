@@ -1431,6 +1431,39 @@ class Room extends Base
                         ];
                         $beeSender->add_batch('room_token_reduce', $bigData);
                     }
+
+                    foreach ($operateData as $kk =>$vv){
+                        $userDiamondInfo = getUserProperty($vv['user_id'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
+                        if(isset($userDiamondInfo['code']) && ($userDiamondInfo['code'] == 0)){
+                            $noBindDiamond = 0;
+                            $bindDiamond = 0;
+                            $gold = 0;
+                            foreach ($userDiamondInfo['data'] as $k => $v){
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
+                                    $noBindDiamond = $v['property_num'];
+                                }
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
+                                    $bindDiamond = $v['property_num'];
+                                }
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_GOLD){
+                                    $gold = $v['property_num'];
+                                }
+                            }
+
+                            $user_diamond = $noBindDiamond + $bindDiamond;
+                            $send_data = array();
+                            $send_user[0] = $vv['user_id'];
+                            $send_data['content']['gold'] = (int)$gold;
+                            $send_data['content']['diamond'] = (int)$user_diamond;
+                            $send_data['type'] = 1029;
+                            $send_data['sender'] = 0;
+                            $send_data['reciver'] = $send_user;
+                            $send_data['appid'] = Definition::$CESHI_APPID;
+                            $send_url = Definition::$INFORM_URL . 'api/send.php';
+                            $client = new Client();
+                            $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
+                        }
+                    }
                 }
             }
 
