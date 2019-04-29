@@ -66,13 +66,13 @@ class Vip extends Base{
         }
 
         $vipCard = new VipCardModel();
-        $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($this->opt['vid']);
+        $vipCardInfo = $vipCard->getVipCardInfo($this->opt['vid']);
         if(!$vipCardInfo){
             return jsonRes(3512);
         }
 
         $club = new ClubModel();
-        $clubInfo = $club->getClubInfoByClubId($this->opt['club_id']);
+        $clubInfo = $club->getClubInfo($this->opt['club_id']);
         if(!$clubInfo){
             return jsonRes(3500);
         }

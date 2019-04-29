@@ -18,7 +18,7 @@ class ClubModel extends Model{
      * @param $id 俱乐部ID的
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getClubInfoByClubId($clubId)
+    public function getClubInfo($clubId)
     {
         return $this->where('cid', '=', $clubId)->where('club_status', '=', 1)->find();
     }

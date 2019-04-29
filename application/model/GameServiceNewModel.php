@@ -18,7 +18,7 @@ class GameServiceNewModel extends Model{
      * @param $roomType
      * @return false|\PDOStatement|string|\think\Collection
      */
-    public function getServiceByPlayType($playType){
+    public function getService($playType){
         return $this->where('is_open', '=', 1)->where('is_goto', '=', 1)->where('room_type', '=', $playType)->select();
     }
 

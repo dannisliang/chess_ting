@@ -33,7 +33,7 @@ class ServiceGatewayNewModel extends Model
      * @param $serviceId 服务器ID
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getServiceGatewayNewInfoByServiceId($serviceId){
+    public function getServiceGatewayNewInfo($serviceId){
         return $this->where('id', '=', $serviceId)->find();
     }
 

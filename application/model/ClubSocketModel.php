@@ -18,7 +18,7 @@ class ClubSocketModel extends Model{
      * @param $clubId 俱乐部ID
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getClubSocketInfoByClubId($clubId){
+    public function getClubSocketInfo($clubId){
         return $this->where('club_id', '=', $clubId)->find();
     }
 

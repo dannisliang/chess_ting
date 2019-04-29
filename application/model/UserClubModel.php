@@ -35,7 +35,7 @@ class UserClubModel extends Model
      * @param $clubId 俱乐部ID
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getUserClubInfoByUserIDAndClubId($userId, $clubId){
+    public function getUserClubInfo($userId, $clubId){
         return $this->where('player_id', '=', $userId)->where('club_id', '=', $clubId)->where('status', '=', 1)->find();
     }
 
