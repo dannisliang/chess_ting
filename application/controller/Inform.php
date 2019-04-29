@@ -66,7 +66,7 @@ class Inform extends Base
             return jsonRes(3004);
         }
         $data['appid'] = Env::get('app_id');
-        $list = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $data);
+        $list = guzzleRequest(Env::get('inform_url') , Definition::$SEND , $data);
         if($list['code'] == 0){
             return json(['code' => 0,'mess' => '发送成功']);
         }else if($list['code'] == '4002'){

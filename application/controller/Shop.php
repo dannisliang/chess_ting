@@ -259,7 +259,7 @@ class Shop extends Base
             ],
             'appid'  => Env::get('app_id'),
         ];
-        $url        = Definition::$INFORM_URL;
+        $url        = Env::get('inform_url');
         $pathInfo   = Definition::$SEND;
         $res = guzzleRequest($url , $pathInfo , $data);
         if($res['code'] != 0){

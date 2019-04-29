@@ -21,7 +21,7 @@ class HorseLamp extends Base
     public function lists(){
         $data['appid'] = Env::get('app_id');
         $data['status'] = 1;
-        $url = Definition::$WEB_USER_URL;//运营中心域名
+        $url = Env::get('web_user_url');//运营中心域名
         $url_area = Definition::$HORSE_LAMP;//跑马灯
         $bulletinlist = sendHttpRequest($url.$url_area, $data);
         if(!isset($bulletinlist['code'])){
@@ -63,7 +63,7 @@ class HorseLamp extends Base
             'areaid' => $area_id,
             'type' => $this->opt['type'],
         ];
-        $bulletinLists = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$HORSE_LAMP, $data);
+        $bulletinLists = sendHttpRequest(Env::get('web_user_url'). Definition::$HORSE_LAMP, $data);
         if ($bulletinLists['code'] == 0) {
             $data = [];
             foreach ($bulletinLists['data'] as $bulletinlist){

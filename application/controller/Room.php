@@ -368,7 +368,7 @@ class Room extends Base
             'roomType' => $roomOptionsInfo['room_type'], # 规则表中的类型 对应play表Id
             'socketH5' => $socketH5, # H5的socket连接地址
             'socketUrl' => $socketUrl, # socket的连接地址
-            'socketSsl' => Definition::$SOCKET_SSL, # socket证书
+            'socketSsl' => Env::get('socket_ssl'), # socket证书
             'roomUrl' => $createRoomUrl, # 房间操作的接口的请求地址
             'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), # 玩法数据中的play的checks json
             'roomCode' => $playInfoPlayJsonDecode['code'], # 客户端需要
@@ -418,7 +418,7 @@ class Room extends Base
             'check' => $playInfoPlayJsonDecode['checks'], # play表的json的checks
             'options' => $roomOptionsInfoOptionsJsonDecode, # room_options表的options
             'room_num' => $roomNumber, # 房间号
-            'socket_ssl' => Definition::$SOCKET_SSL,
+            'socket_ssl' => Env::get('socket_ssl'),
             'socket_h5' => $socketH5,
             'socket_url' =>  $socketUrl,
         ];
@@ -861,7 +861,7 @@ class Room extends Base
                     ];
 
                     // Todo 报送
-                    $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+                    $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
                     $beeSender->send('room_join', $bigData);
                     break;
                 }
@@ -951,7 +951,7 @@ class Room extends Base
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
 
-        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
         // Todo 报送
         if($playerInfos){
@@ -1004,12 +1004,12 @@ class Room extends Base
 
         # 上传牌局记录到华为云
         $obsClient = new ObsClient([
-            'key' => Definition::$OBS_KEY,
-            'secret' => Definition::$OBS_SECRET,
-            'endpoint' => Definition::$OBS_ENDPOINT
+            'key' => Env::get('obs.key'),
+            'secret' => Env::get('obs.secret'),
+            'endpoint' => Env::get('obs.endpoint')
         ]);
         $obsClient -> putObject([
-            'Bucket' => Definition::$CHESS_RECORD,
+            'Bucket' => Env::get('obs.chess_record'),
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
             'Body' => $this->opt['playBack']
         ]);
@@ -1033,7 +1033,7 @@ class Room extends Base
             $userScore[$v['playerId']] = $v['score'];
             $userIds[] = $v['playerId'];
         }
-        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
 
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
         if($playerInfo){
@@ -1185,7 +1185,7 @@ class Room extends Base
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         // Todo 报送
-        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
 
         if($playerInfo){
             foreach ($playerInfo as $k => $userInfo){
@@ -1251,7 +1251,7 @@ class Room extends Base
             $data[] = $zhushou;
         }
         if(isset($data)){
-            sendHttpRequest(Definition::$ZHUSHOU_URL_TEST, $data, 'POST', [], ['connect_timeout' => 3]);
+            sendHttpRequest(Env::get('zhushou_url'), $data, 'POST', [], ['connect_timeout' => 3]);
         }
 
         # 会长模式还钻
@@ -1466,7 +1466,7 @@ class Room extends Base
                             $send_data['sender'] = 0;
                             $send_data['reciver'] = $send_user;
                             $send_data['appid'] = Env::get('app_id');
-                            $send_url = Definition::$INFORM_URL . 'api/send.php';
+                            $send_url = Env::get('inform_url') . 'api/send.php';
                             $client = new Client();
                             $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
                         }
