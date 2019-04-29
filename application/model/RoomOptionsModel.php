@@ -18,7 +18,7 @@ class RoomOptionsModel extends Model{
      * @param $id 玩法规则ID
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getRoomOptionInfoByRoomOptionsId($roomOptionsId){
+    public function getRoomOptionInfo($roomOptionsId){
         return $this->where('id', $roomOptionsId)->find();
     }
 

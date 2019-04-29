@@ -40,4 +40,8 @@ class VipCardModel extends Model{
     public function getAllVipCardInfo(){
         return $this->select();
     }
+
+    public function getVipCardInfo($vipCardId){
+        return $this->where('vip_id', '=', $vipCardId)->find();
+    }
 }

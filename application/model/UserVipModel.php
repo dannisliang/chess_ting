@@ -18,7 +18,7 @@ class UserVipModel extends Model{
      * @param $clubId 俱乐部ID
      * @return array|false|\PDOStatement|string|Model
      */
-    public function getUserVipInfoByUserIdAndClubId($userId, $clubId){
+    public function getUserVipInfo($userId, $clubId){
         $date = date("Y-m-d H:i:s", time());
         return $this->where('uid', '=', $userId)->where('club_id', '=', $clubId)->where('vip_status', '=', 1)->where('end_day', '>', $date)->find();
     }

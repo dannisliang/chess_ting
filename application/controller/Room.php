@@ -60,13 +60,13 @@ class Room extends Base
         # 根据房间规则ID获取
         if(isset($this->opt['match_id']) && is_numeric($this->opt['match_id'])){
             $roomOptions = new RoomOptionsModel();
-            $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
+            $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
             if(!$roomOptionsInfo){
                 return jsonRes(3501);
             }
 
             $club = new ClubModel();
-            $clubInfo = $club->getClubInfoByClubId($roomOptionsInfo['club_id']);
+            $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
             if(!$clubInfo){
                 return jsonRes(3500);
             }
@@ -99,19 +99,19 @@ class Room extends Base
         $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
         $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
         if(!$getLock){
-            return jsonRes(0);
+            return jsonRes(3523);
         }
 
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
-        $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
+        $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $this->opt['club_id']);
         if(!$userClubInfo){
             return jsonRes(3511);
         }
 
         # 根据俱乐部ID获取俱乐部相关数据
         $club = new ClubModel();
-        $clubInfo = $club->getClubInfoByClubId($this->opt['club_id']);
+        $clubInfo = $club->getClubInfo($this->opt['club_id']);
         if(!$clubInfo){
             return jsonRes(3500);
         }
@@ -139,7 +139,7 @@ class Room extends Base
 
         # 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
-        $roomOptionsInfo = $roomOptions->getRoomOptionInfoByRoomOptionsId($this->opt['match_id']);
+        $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
         if(!$roomOptionsInfo){
             return jsonRes(3501);
         }
@@ -150,21 +150,21 @@ class Room extends Base
 
         # 根据房间类型ID获取房间玩法相关数据（大json）
         $play = new PlayModel();
-        $playInfo = $play->getPlayInfoByPlayId($roomOptionsInfo['room_type']);
+        $playInfo = $play->getPlayInfo($roomOptionsInfo['room_type']);
         if(!$playInfo){
             return jsonRes(3501);
         }
 
         # 根据玩法的类型去查找玩法启动的服务
         $gameServiceNew = new GameServiceNewModel();
-        $serviceInfos = $gameServiceNew->getServiceByPlayType($playInfo['play_type']);
+        $serviceInfos = $gameServiceNew->getService($playInfo['play_type']);
         if(!$serviceInfos) {
             return jsonRes(3521);
         }
         $rand = array_rand($serviceInfos, 1);
         $serviceId = $serviceInfos[$rand]['id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
-        $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfoByServiceId($serviceId);
+        $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
             return jsonRes(3517);
         }
@@ -175,7 +175,7 @@ class Room extends Base
         if(Env::get('is_online') == false){
             if(in_array($this->opt['club_id'], [555555, 999999, 888888])){
                 $clubSocket = new ClubSocketModel();
-                $clubSocketInfo = $clubSocket->getClubSocketInfoByClubId($this->opt['club_id']);
+                $clubSocketInfo = $clubSocket->getClubSocketInfo($this->opt['club_id']);
                 $createRoomUrl = $clubSocketInfo['room_url'];
                 $socketH5 = $clubSocketInfo['socket_h5'];
                 $socketUrl = $clubSocketInfo['socket_url'];
@@ -200,7 +200,7 @@ class Room extends Base
 
         # 获取玩家vip
         $userVip = new UserVipModel();
-        $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
+        $userVipInfo = $userVip->getUserVipInfo($userSessionInfo['userid'], $this->opt['club_id']);
         # 计算房费
         $needDiamond = $roomOptionsInfo['diamond'];
         if($clubInfo['club_type'] == 0){
@@ -216,7 +216,7 @@ class Room extends Base
             # 获取折扣
             if($userVipInfo){
                 $vipCard = new VipCardModel();
-                $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($userVipInfo['vid']);
+                $vipCardInfo = $vipCard->getVipCardInfo($userVipInfo['vid']);
                 if($vipCardInfo){
                     $needDiamond = bcmul($needDiamond, bcdiv($vipCardInfo['diamond_consumption'], 100, 1), 0);
                 }
@@ -454,14 +454,14 @@ class Room extends Base
 
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
-        $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
+        $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $roomHashInfo['clubId']);
         if(!$userClubInfo){
             return jsonRes(3511);
         }
 
         # 获取玩家vip卡
         $userVip = new UserVipModel();
-        $userVipInfo = $userVip->getUserVipInfoByUserIdAndClubId($userSessionInfo['userid'], $roomHashInfo['clubId']);
+        $userVipInfo = $userVip->getUserVipInfo($userSessionInfo['userid'], $roomHashInfo['clubId']);
         # 计算房费
         $needDiamond = $roomHashInfo['diamond']; # 基础房费
         if($roomHashInfo['clubType'] == 0){
@@ -473,7 +473,7 @@ class Room extends Base
             # 获取折扣
             if($userVipInfo){
                 $vipCard = new VipCardModel();
-                $vipCardInfo = $vipCard->getVipCardInfoByVipCardId($userVipInfo['vid']);
+                $vipCardInfo = $vipCard->getVipCardInfo($userVipInfo['vid']);
                 if($vipCardInfo){
                     $needDiamond = bcmul($needDiamond, bcdiv($vipCardInfo['diamond_consumption'], 100, 1), 0);
                 }
