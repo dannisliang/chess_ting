@@ -18,7 +18,7 @@ class HorseLamp extends Base
      * @param
      * */
     public function lists(){
-        $data['appid'] = Definition::$CESHI_APPID;
+        $data['appid'] = Definition::$APPID;
         $data['status'] = 1;
         $url = Definition::$WEB_USER_URL;//运营中心域名
         $url_area = Definition::$HORSE_LAMP;//跑马灯
@@ -57,7 +57,7 @@ class HorseLamp extends Base
             $area_id = $this->opt['area_id'];
         }
         $data = [
-            'appid' => Definition::$CESHI_APPID,
+            'appid' => Definition::$APPID,
             'status' => 1,
             'areaid' => $area_id,
             'type' => $this->opt['type'],

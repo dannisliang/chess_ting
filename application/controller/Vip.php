@@ -166,7 +166,7 @@ class Vip extends Base{
             'props_name' => '会员卡',
             'props_num' => 1,
         ];
-        $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Definition::$APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
         $beeSender->send('props_use', $bigData);
         return jsonRes(3515);
     }

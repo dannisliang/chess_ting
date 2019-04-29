@@ -64,7 +64,7 @@ class Inform extends Base
         if (!$data){
             return jsonRes(3004);
         }
-        $data['appid'] = Definition::$CESHI_APPID;
+        $data['appid'] = Definition::$APPID;
         $list = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $data);
         if($list['code'] == 0){
             return json(['code' => 0,'mess' => '发送成功']);
