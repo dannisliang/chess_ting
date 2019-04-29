@@ -143,7 +143,7 @@ class Record extends Base{
         ]);
 
         $playBackInfo = $obsClient->getObject([
-            'Bucket' => Definition::$CHESS_RECORD_TEST,
+            'Bucket' => Definition::$CHESS_RECORD,
             'Key' => $recordArr[1],
         ]);
 
