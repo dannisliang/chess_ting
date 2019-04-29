@@ -43,9 +43,9 @@ class Generalize extends Base
             return jsonRes(3003);
         }
         $data = [
-            'p_player_id' =>$this -> opt['p_player_id'],
-            'p_player_name' => $p_player_info['nickname'],
-            'p_player_img_url' => $p_player_info['headimgurl'],
+            'player_id' =>$this -> opt['p_player_id'],
+            'player_name' => $p_player_info['nickname'],
+            'image_url' => $p_player_info['headimgurl'],
         ];
         return jsonRes(0 , $data);
     }
@@ -89,9 +89,9 @@ class Generalize extends Base
         $data = [
             'invite_list'  => $infos, //邀请列表信息
             'claim_number' => $claim_number, //可领取的红包券数量
-            'player_id'    => $p_player_info['p_player_id'],
-            'nick_name'    => $p_player_info['p_nick_name'],
-            'image_url'    => $p_player_info['p_img_url']
+            'p_player_id'    => $p_player_info['p_player_id'],
+            'p_nick_name'    => $p_player_info['p_nick_name'],
+            'p_image_url'    => $p_player_info['p_img_url']
         ];
         return json(['code'=>0,'mess'=>'获取数据成功','data'=>$data]);
     }
