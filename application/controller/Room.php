@@ -1009,7 +1009,7 @@ class Room extends Base
             'endpoint' => Definition::$OBS_ENDPOINT
         ]);
         $obsClient -> putObject([
-            'Bucket' => Definition::$CHESS_RECORD_TEST,
+            'Bucket' => Definition::$CHESS_RECORD,
             'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
             'Body' => $this->opt['playBack']
         ]);
