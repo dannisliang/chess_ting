@@ -103,6 +103,18 @@ Route::rule('service/inform/inform','Inform/inform');
  */
 Route::rule('service/area/get_area','Area/lists');
 
+/**
+ * 推广员相关
+ */
+Route::rule('service/generalize/bandPlayerId','Generalize/bandPlayerId'); //绑定邀请玩家
+Route::rule('service/generalize/getUserInfo','Generalize/getUserInfo'); //推广员首页时的用户信息
+Route::rule('service/generalize/getPlayerList','Generalize/getPlayerList'); //获取绑定其他玩家的信息
+
+/**
+ * 河南海选段相关
+ */
+Route::rule('match/getSort','Match/getSort');
+
 //测试
 Route::rule('service/test','AsyncTest/test');
 Route::rule('service/demo','AsyncTest/demo');
@@ -113,12 +125,6 @@ Route::rule('service/demo1','AsyncTest/demo1');
  */
 Route::miss('Miss/index');
 Route::rule('route/miss','Miss/index');
-
-
-
-Route::rule('match/getSort','Match/getSort');
-
-
 
 
 
