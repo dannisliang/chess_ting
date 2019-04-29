@@ -80,6 +80,9 @@ class Generalize extends Base
         $claim_number = $this -> getClaimNumber($player_id);
         //获取父id信息
         $p_player_info = $this -> getParentPlayerInfo($player_id);
+        if(!$p_player_info){
+            return jsonRes(3601);
+        }
         $data = [
             'invite_list' => $infos, //邀请列表信息
             'claim_number' => $claim_number, //可领取的红包券数量
@@ -99,13 +102,14 @@ class Generalize extends Base
         $playerRelationInfo = $playerRelationModel ->getOneByWhere(['player_id' => $player_id]);
         //不存在上级用户
         if(!$playerRelationInfo){
-            $playerInfo = getUserBaseInfo($this->opt['player_id']);
+            $playerInfo = getUserBaseInfo($player_id);
             if(!$playerInfo){
                 return false;
             }
             $data = [
                 'p_player_id' => 0,
                 'p_nick_name' => '',
+                'p_img_url' => '',
             ];
             return $data;
         }
