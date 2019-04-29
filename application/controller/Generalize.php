@@ -53,24 +53,29 @@ class Generalize extends Base
      */
     public function getPlayerList(){
         $player_id = getUserIdFromSession();
+        if(!$player_id){
+            return jsonRes(9999);
+        }
         $playerRelationModel = new PlayerRelationModel();
         $players = $playerRelationModel -> getSomeByWhere(['p_player_id'=>$player_id]);
-        if(!$players){
-            return jsonRes(0);
-        }
-        $player_ids = [];
-        foreach ($players as $player){
-            $player_ids[] = $player['player_id'];
-        }
-        $playerInfos = getUserBaseInfos($player_ids);
+
         $infos = [];
-        foreach ($playerInfos as $playerInfo){
-            $temp['nick_name'] = $playerInfo['nickname'];
-            $temp['player_id'] = $playerInfo['uid'];
-            $temp['image_url'] = isset($playerInfo['headimgurl']) ? $playerInfo['headimgurl']:'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56v...avHiaiceqxibJxCfHe/0';
-            $temp['last_login_time'] = $playerInfo['last_login_time'];
-            $infos[] = $temp;
+        if($players){
+            $player_ids = [];
+            foreach ($players as $player){
+                $player_ids[] = $player['player_id'];
+            }
+            $playerInfos = getUserBaseInfos($player_ids);
+
+            foreach ($playerInfos as $playerInfo){
+                $temp['nick_name'] = $playerInfo['nickname'];
+                $temp['player_id'] = $playerInfo['uid'];
+                $temp['image_url'] = !empty($playerInfo['headimgurl']) ? $playerInfo['headimgurl']:'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56v...avHiaiceqxibJxCfHe/0';
+                $temp['last_login_time'] = strtotime($playerInfo['last_login_time']);
+                $infos[] = $temp;
+            }
         }
+
         //获取可领取的红包的数量
         $claim_number = $this -> getClaimNumber($player_id);
         //获取父id信息
