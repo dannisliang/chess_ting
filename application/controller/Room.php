@@ -765,10 +765,6 @@ class Room extends Base
             $gameServiceNewArr[] = $v['service_id'];
         }
 
-        if(config('app_debug')){
-            $gameServiceNewArr[] = 4;
-        }
-
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
 
