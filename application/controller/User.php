@@ -102,6 +102,8 @@ class User
      */
     private function disBandRoom($user_id){
 
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
         # 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
         $gameServiceNewInfos = $gameServiceNew->getGameService();
@@ -109,7 +111,6 @@ class User
         foreach ($gameServiceNewInfos as $k => $v){
             $gameServiceNewArr[] = $v['service_id'];
         }
-
         if($gameServiceNewArr){
             $serviceGatewayNew = new ServiceGatewayNewModel();
             $serviceGatewayNewInfos = $serviceGatewayNew->getServiceGatewayNewInfos();
@@ -119,6 +120,8 @@ class User
                     if(isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
                         $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $user_id]);
                         if(isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
+                            $redisHandle->lRem(RedisKey::$ROOM_NUMBER_KEY_LIST, 1, $userRoom['content']['roomId']);
+                            $redisHandle->lPush(RedisKey::$ROOM_NUMBER_KEY_LIST, $userRoom['content']['roomId']);
                             return;
                         }
                     }
