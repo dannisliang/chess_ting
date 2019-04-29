@@ -639,8 +639,6 @@ class Room extends Base
             $roomCheckInfo = json_decode($results[$roomNumber]->getBody()->getContents(), true);
             if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                 $newNumbers[] = $roomNumber;
-            }else{
-                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }
         }
         # 和逻辑服同步
