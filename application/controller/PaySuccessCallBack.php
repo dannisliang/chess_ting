@@ -303,7 +303,7 @@ class PaySuccessCallBack
     private function sendToClient($content , $reciver){
         //给客户端发送一条数据
         $notice_data = [
-            'appid' => Definition::$CESHI_APPID,
+            'appid' => Definition::$APPID,
             'content' => $content,
             'reciver' =>$reciver,
             'sender'  => 0,

@@ -256,7 +256,7 @@ class Shop extends Base
             'reciver'=> [
                 $user_id,
             ],
-            'appid'  => Definition::$CESHI_APPID,
+            'appid'  => Definition::$APPID,
         ];
         $url        = Definition::$INFORM_URL;
         $pathInfo   = Definition::$SEND;
@@ -347,7 +347,7 @@ class Shop extends Base
                 break;
         }
         $sign_data = [
-            'app_id' => Definition::$CESHI_APPID,
+            'app_id' => Definition::$APPID,
             'cp_order_id'=> $order_num,
             'fee' => $price,
             'goods_inf' => $goods_info,
@@ -356,7 +356,7 @@ class Shop extends Base
         ];
         //获取签名？应该
         $sign = $this -> get_sign($sign_data , 'c80b7d337dc57d5d');
-        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$CESHI_APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
+        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Definition::$APPID . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
 
         $result = sendHttpRequest( $url );
         if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){

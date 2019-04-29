@@ -321,7 +321,7 @@ class User
 
         //请求email需要的数据
         $email_data = [
-            'appid'         => Definition::$CESHI_APPID,
+            'appid'         => Definition::$APPID,
             'recipient'     => $user_id,
             'read_status'   => 0
         ];
