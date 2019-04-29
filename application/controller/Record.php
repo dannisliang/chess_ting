@@ -128,7 +128,7 @@ class Record extends Base{
         foreach ($playerInfos as $k => $userInfo){
             $userInfos[$k]['playerId'] = $userInfo['userId'];
             $userInfos[$k]['nickname'] = $userInfo['nickName'];
-            $userInfos[$k]['head_img'] = $userInfo['headImgUrl'];
+            $userInfos[$k]['headImgUrl'] = $userInfo['headImgUrl'];
             $userInfos[$k]['sex'] = $userInfo['sex'];
             $userInfos[$k]['vip'] = $userInfo['vipId'];
             $userInfos[$k]['ip'] = $userInfo['ipAddr'];
@@ -152,7 +152,6 @@ class Record extends Base{
             'data' => json_decode($playBackInfo['Body'], true),
             'user_info' => $userInfos
         ];
-        Log::write($userInfos, "rror");
         return jsonRes(0, $returnData);
     }
 
