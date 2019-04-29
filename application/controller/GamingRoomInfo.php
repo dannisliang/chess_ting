@@ -47,7 +47,7 @@ class GamingRoomInfo extends Base
                 $evalInfo = $this ->getEvaluate($play_info['userId']);
                 $player = [
                     'nickname'  => $play_info['nickName'],
-                    'head_img'  => $play_info['headImgUrl'],
+                    'headImgUrl'  => $play_info['headImgUrl'],
                     'gender'    => (int)$play_info['sex'],
                     'vip_id'    => $play_info['vipId'],
                     'ip'        => $play_info['ipAddr'],
