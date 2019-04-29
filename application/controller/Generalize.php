@@ -25,6 +25,9 @@ class Generalize extends Base
             return jsonRes(3006);
         }
         $player_id = getUserIdFromSession();
+        if(!$player_id){
+            return jsonRes(9999);
+        }
         $playerRelationModel = new PlayerRelationModel();
         //查询是否绑定
         $result = $playerRelationModel ->getOneByWhere(['player_id' => $player_id]);
