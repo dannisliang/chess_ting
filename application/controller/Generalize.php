@@ -71,7 +71,7 @@ class Generalize extends Base
                 $temp['nick_name'] = $playerInfo['nickname'];
                 $temp['player_id'] = $playerInfo['uid'];
                 $temp['image_url'] = !empty($playerInfo['headimgurl']) ? $playerInfo['headimgurl']:'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56v...avHiaiceqxibJxCfHe/0';
-                $temp['last_login_time'] = $playerInfo['last_login_time'];
+                $temp['last_login_time'] = strtotime($playerInfo['last_login_time']);
                 $infos[] = $temp;
             }
         }
