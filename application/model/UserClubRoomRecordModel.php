@@ -31,4 +31,9 @@ class UserClubRoomRecordModel extends Model
     public function delUserClubRecord($dateTime){
         return $this->where('add_time', '<', $dateTime)->delete();
     }
+
+
+    public function getUsedRoomNum(){
+        return $this->column('room_id');
+    }
 }

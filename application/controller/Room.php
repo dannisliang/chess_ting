@@ -93,6 +93,15 @@ class Room extends Base
             return jsonRes(3006);
         }
 
+        # 使用redis锁写房间数据 失败写日志
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
+        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
+        if(!$getLock){
+            return jsonRes(0);
+        }
+
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
         $userClubInfo = $userClub->getUserClubInfoByUserIDAndClubId($userSessionInfo['userid'], $this->opt['club_id']);
@@ -256,8 +265,6 @@ class Room extends Base
         }
 
         # 生成房间号
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
         $roomNumber = $redisHandle->rpoplpush(RedisKey::$ROOM_NUMBER_KEY_LIST, RedisKey::$ROOM_NUMBER_KEY_LIST);
         if(!$roomNumber){
             return jsonRes(3517);
@@ -287,14 +294,7 @@ class Room extends Base
         $data['roomId'] = $roomNumber;
         $data['config'] = $playInfoPlayJsonDecode;
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
-        # 使用redis锁写房间数据 失败写日志
-        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
-        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
-        if(!$getLock){
-            return jsonRes(0);
-        }
         $createRoomInfo = sendHttpRequest($createRoomUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
-        $redisHandle->del($lockKey);
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
@@ -437,9 +437,15 @@ class Room extends Base
             return jsonRes(3006);
         }
 
-        # 获取房间信息中的俱乐部ID
         $redis = new Redis();
         $redisHandle = $redis->handler();
+        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
+        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
+        if(!$getLock){
+            return jsonRes(0);
+        }
+
+        # 获取房间信息中的俱乐部ID
         if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
             return jsonRes(3505);
         }
