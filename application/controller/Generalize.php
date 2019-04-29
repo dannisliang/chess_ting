@@ -73,7 +73,7 @@ class Generalize extends Base
             foreach ($playerInfos as $playerInfo){
                 $temp['nick_name'] = $playerInfo['nickname'];
                 $temp['player_id'] = $playerInfo['uid'];
-                $temp['image_url'] = !empty($playerInfo['headimgurl']) ? $playerInfo['headimgurl']:'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56vxLSUfpb6n5WKSYVY0ChQKkiaJSgQ1dZuTOgvLLrhJbERQQ4eMsv84eavHiaiceqxibJxCfHe/0",';
+                $temp['image_url'] = !empty($playerInfo['headimgurl']) ? $playerInfo['headimgurl']:'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56vxLSUfpb6n5WKSYVY0ChQKkiaJSgQ1dZuTOgvLLrhJbERQQ4eMsv84eavHiaiceqxibJxCfHe/0';
                 $temp['last_login_time'] = strtotime($playerInfo['last_login_time']);
                 $infos[] = $temp;
             }
