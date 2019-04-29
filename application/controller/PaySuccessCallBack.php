@@ -20,6 +20,7 @@ use app\model\UserVipModel;
 use app\model\VipCardModel;
 use think\Db;
 use think\Log;
+use think\Env;
 
 class PaySuccessCallBack
 {
@@ -303,7 +304,7 @@ class PaySuccessCallBack
     private function sendToClient($content , $reciver){
         //给客户端发送一条数据
         $notice_data = [
-            'appid' => Definition::$APPID,
+            'appid' => Env::get('app_id'),
             'content' => $content,
             'reciver' =>$reciver,
             'sender'  => 0,

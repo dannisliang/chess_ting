@@ -10,6 +10,7 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use think\Env;
 
 class Notice
 {
@@ -18,7 +19,7 @@ class Notice
     {
         $url = Definition::$WEB_USER_URL;//运营中心的域名
         $url_area = Definition::$NOTICE_LIST;//公告列表
-        $data['appid'] = Definition::$APPID;//该地区的APPid
+        $data['appid'] = Env::get('app_id');//该地区的APPid
         $list = sendHttpRequest($url.$url_area, $data);
         if(!isset($list['data'])){
             return jsonRes(3004);

@@ -861,7 +861,7 @@ class Room extends Base
                     ];
 
                     // Todo 报送
-                    $beeSender = new BeeSender(Definition::$APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+                    $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
                     $beeSender->send('room_join', $bigData);
                     break;
                 }
@@ -951,7 +951,7 @@ class Room extends Base
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
 
-        $beeSender = new BeeSender(Definition::$APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
         // Todo 报送
         if($playerInfos){
@@ -1033,7 +1033,7 @@ class Room extends Base
             $userScore[$v['playerId']] = $v['score'];
             $userIds[] = $v['playerId'];
         }
-        $beeSender = new BeeSender(Definition::$APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
 
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
         if($playerInfo){
@@ -1185,7 +1185,7 @@ class Room extends Base
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         // Todo 报送
-        $beeSender = new BeeSender(Definition::$APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
 
         if($playerInfo){
             foreach ($playerInfo as $k => $userInfo){
@@ -1244,7 +1244,7 @@ class Room extends Base
                 'type' => 'common',
                 'timestamp' => time(),
                 'content' => $baoSong,
-                'product' => Definition::$APPID,
+                'product' => Env::get('app_id'),
                 'filter_userid' => $v,
                 'filter_clubid' => $roomHashInfo['clubId'],
             ];
@@ -1465,7 +1465,7 @@ class Room extends Base
                             $send_data['type'] = 1029;
                             $send_data['sender'] = 0;
                             $send_data['reciver'] = $send_user;
-                            $send_data['appid'] = Definition::$APPID;
+                            $send_data['appid'] = Env::get('app_id');
                             $send_url = Definition::$INFORM_URL . 'api/send.php';
                             $client = new Client();
                             $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);

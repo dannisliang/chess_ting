@@ -12,6 +12,7 @@ namespace app\controller;
 use app\definition\Definition;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use think\Env;
 
 class Inform extends Base
 {
@@ -64,7 +65,7 @@ class Inform extends Base
         if (!$data){
             return jsonRes(3004);
         }
-        $data['appid'] = Definition::$APPID;
+        $data['appid'] = Env::get('app_id');
         $list = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $data);
         if($list['code'] == 0){
             return json(['code' => 0,'mess' => '发送成功']);

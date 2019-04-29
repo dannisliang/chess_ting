@@ -24,6 +24,7 @@ use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 use app\model\UserVipModel;
 use think\Db;
+use think\Env;
 use think\Log;
 
 class Club extends Base
@@ -338,7 +339,7 @@ class Club extends Base
      * 报送大数据
      */
     private function beeSender($event_name , $club_info){
-        $beeSender = new BeeSender(Definition::$APPID,Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Definition::$IS_DEBUG);
+        $beeSender = new BeeSender(Env::get('app_id'),Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Env::get('app_debug'));
         //获取报送大数据的基础事件
         $content  = getBeeBaseInfo();
         $contents = array_merge($content,$club_info);
@@ -659,7 +660,7 @@ class Club extends Base
         $pathInfo = Definition::$GET_PLAYER_PROPERTY;
         $data = [
             'uid' => $user_id,
-            'app_id' => Definition::$APPID,
+            'app_id' => Env::get('app_id'),
             'property_type' => 10001
         ];
         $result = guzzleRequest($url , $pathInfo , $data);

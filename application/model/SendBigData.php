@@ -22,7 +22,7 @@ class SendBigData extends Model
     //$context = getSendBasc($senior_president,$uuid);
     public function sendMatch($event_type,$content='',$event_name,$player_id){
 
-        $beesender = new BeeSender(Definition::$APPID,Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Env::get('app_debug'));
+        $beesender = new BeeSender(Env::get('app_id'), Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Env::get('app_debug'));
 
         $uuid = '-';
         $senior_president =$player_id;
