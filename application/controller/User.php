@@ -18,9 +18,9 @@ use app\model\RoomOptionsModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
-use app\model\UserRoomModel;
 use think\cache\driver\Redis;
 use think\Log;
+use think\Env;
 
 class User
 {
@@ -321,7 +321,7 @@ class User
 
         //请求email需要的数据
         $email_data = [
-            'appid'         => Definition::$APPID,
+            'appid'         => Env::get('app_id'),
             'recipient'     => $user_id,
             'read_status'   => 0
         ];

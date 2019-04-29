@@ -12,6 +12,7 @@ use app\model\ClubModel;
 use app\model\UserVipModel;
 use app\model\VipCardModel;
 use think\Db;
+use think\Env;
 class Mail extends Base
 {
 
@@ -21,7 +22,7 @@ class Mail extends Base
      */
     public function lists(){
         $mail_type = $this->opt['mail_type'];//邮件的类型
-        $data['appid'] = Definition::$APPID;//省份的appid
+        $data['appid'] = Env::get('app_id');//省份的appid
         $player_id = getUserIdFromSession();//用户ID
 
         if(!$player_id){
@@ -81,7 +82,7 @@ class Mail extends Base
         if(!$player_id){
             return jsonRes( 9999 );
         }
-        $data['appid'] = (int)Definition::$APPID;//省份的appid
+        $data['appid'] = Env::get('app_id');//省份的appid
         $data['id'] = $mail_id;
         $data['playerId'] = $player_id;
         $url = Definition::$WEB_USER_URL;//运营中心域名
@@ -156,7 +157,7 @@ class Mail extends Base
                 //都为1则删除
                 $url = Definition::$WEB_USER_URL;
                 $url_area = Definition::$EMAIL_DELETE;
-                $datadel['appid'] = Definition::$APPID;
+                $datadel['appid'] = Env::get('app_id');
                 $datadel['id'] = $mail_id;
                 sendHttpRequest($url.$url_area,$datadel);
             }
@@ -172,7 +173,7 @@ class Mail extends Base
      * @param
      */
     public function delete(){
-        $data['appid'] = Definition::$APPID;//游戏的appID
+        $data['appid'] = Env::get('app_id');//游戏的appID
         $id = $this->opt['mail_id'];
         $data['id'] = $id;//邮件的ID
         $player = getUserIdFromSession();
@@ -180,7 +181,7 @@ class Mail extends Base
         if($id == '0'){
             //查询该玩家所有的邮件,然后再循环获取所有邮件的id数组
             $url_area = Definition::$EMAIL_LIST;//邮件列表
-            $appid = Definition::$APPID;
+            $appid = Env::get('app_id');
             $datas['appid'] = $appid;//appid
             $datas['recipient'] = $player;//玩家的ID
             $email_list = sendHttpRequest($url.$url_area, $datas);//玩家的邮件列表
@@ -211,7 +212,7 @@ class Mail extends Base
             return jsonRes( 9999 );
         }
         $data = [
-            'appid' => (int)Definition::$APPID,//省份的appid;
+            'appid' => Env::get('app_id'),//省份的appid;
             'id'    => $mail_id,
             'playerId' => $player_id
         ];
@@ -249,7 +250,7 @@ class Mail extends Base
         }
         //修改邮件的状态
         $datas = [
-            'appid' => (int)Definition::$APPID,
+            'appid' => Env::get('app_id'),
             'id' => (int)$mail_id,
             'receive_status' => 1,
         ];
@@ -271,7 +272,7 @@ class Mail extends Base
                 'type' => 1029,
                 'sender' => 0,
                 'reciver' => [$player_id],
-                'appid' => (int)Definition::$APPID
+                'appid' => Env::get('app_id')
             ];
             //发送数据
             $list = sendHttpRequest(Definition::$ROOM_URL . Definition::$SEND,$send_data);

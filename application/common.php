@@ -7,6 +7,7 @@ use app\definition\RedisKey;
 use app\definition\Definition;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use think\Env;
 
 // 应用公共文件
 
@@ -53,7 +54,7 @@ function checkUserToken($userSessionInfo){
  */
 function getUserProperty($userIds, $propertyType){
     $requestUrl = Definition::$WEB_API_URL.Definition::$GET_PLAYER_PROPERTY;
-    $data['app_id'] = Definition::$APPID;
+    $data['app_id'] = Env::get('app_id');
     $data['property_type'] = $propertyType;
     $data['uid'] = $userIds;
     $response = sendHttpRequest($requestUrl, $data);
@@ -275,7 +276,7 @@ function has_keys($key, $arr, $is_true = false){
 function operaUserProperty($player, $type, $diamond){
     $url = Definition::$WEB_API_URL.Definition::$RAISE_PLAYER_PROPERTY;
     $data['uid'] = $player;
-    $data['app_id'] = Definition::$APPID;
+    $data['app_id'] = Env::get('app_id');
     $data['property_type'] = $type;
     $data['property_num'] = $diamond;
     return sendHttpRequest($url, $data);
@@ -295,7 +296,7 @@ function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_
     $url      = Definition::$WEB_API_URL;
     $pathInfo = Definition::$PROPERTY_CHANGE;
     $data = [
-        'app_id' => Definition::$APPID,
+        'app_id' => Env::get('app_id'),
         'upinfo' => [
             [
                 'uid'           => $player_id,
@@ -325,7 +326,7 @@ function operatePlayerProperty($data){
     $url      = Definition::$WEB_API_URL;
     $pathInfo = Definition::$PROPERTY_CHANGE;
     $info = [
-        'app_id' => Definition::$APPID,
+        'app_id' => Env::get('app_id'),
         'upinfo' => $data,
     ];
     $res = guzzleRequest($url , $pathInfo , $info);
@@ -413,7 +414,7 @@ function backNickname($player_id){
     }else{
         $data = [
             'uid'=>$player_id,
-            'app_id'=>Definition::$APPID,
+            'app_id'=> Env::get('app_id'),
         ];
         $url = Definition::$WEB_API_URL;
         $path_info = Definition::$GET_INFO;
@@ -444,7 +445,7 @@ function getUserBaseInfo($user_id)
     //向用户中心传输的请求参数
     $data = [
         'uid' => $user_id,
-        'app_id'=> Definition::$APPID,
+        'app_id'=> Env::get('app_id'),
     ];
     $result = guzzleRequest( $url , $userInfo_url , $data);
 
@@ -466,7 +467,7 @@ function getUserBaseInfos($user_id)
     //向用户中心传输的请求参数
     $data = [
         'uid' => $user_id,
-        'app_id'=> Definition::$APPID,
+        'app_id'=> Env::get('app_id'),
     ];
     $result = guzzleRequest( $url , $userInfo_url , $data);
     if($result['code'] != 0){
