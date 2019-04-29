@@ -639,8 +639,6 @@ class Room extends Base
             $roomCheckInfo = json_decode($results[$roomNumber]->getBody()->getContents(), true);
             if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                 $newNumbers[] = $roomNumber;
-            }else{
-                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }
         }
         # 和逻辑服同步
@@ -807,7 +805,7 @@ class Room extends Base
                     if(isset($userRoom['content']['roomId']) && $userRoom['content']['roomId']){
                         $disBandRes = sendHttpRequest($v['service'].Definition::$DIS_BAND_ROOM.$userRoom['content']['roomId'], ['playerId' => $this->opt['uid']]);
                         if(isset($disBandRes['content']['result']) && ($disBandRes['content']['result'] == 0)){
-                            return jsonRes(3507);
+                            return jsonRes(0);
                         }
                     }
                 }
