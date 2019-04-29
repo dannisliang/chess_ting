@@ -17,7 +17,7 @@ class Notice
     /*获取游戏的公告列表*/
     public function lists()
     {
-        $url = Definition::$WEB_USER_URL;//运营中心的域名
+        $url = Env::get('web_user_url');//运营中心的域名
         $url_area = Definition::$NOTICE_LIST;//公告列表
         $data['appid'] = Env::get('app_id');//该地区的APPid
         $list = sendHttpRequest($url.$url_area, $data);

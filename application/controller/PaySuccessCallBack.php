@@ -310,7 +310,7 @@ class PaySuccessCallBack
             'sender'  => 0,
             'type'    => 1029
         ];
-        $res = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $notice_data);
+        $res = guzzleRequest(Env::get('inform_url') , Definition::$SEND , $notice_data);
         return $res;
     }
 
