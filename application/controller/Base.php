@@ -30,8 +30,8 @@ class Base extends Controller
         $this->opt = file_get_contents("php://input");
         $this->opt = json_decode($this->opt,true);
 
-        if(!$this->opt){
-            return json(['code'=>3006, 'mess' => '缺少请求参数'])->send();
-        }
+//        if(!$this->opt){
+//            return json(['code'=>3006, 'mess' => '缺少请求参数'])->send();
+//        }
     }
 }
