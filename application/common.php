@@ -8,6 +8,7 @@ use app\definition\Definition;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use think\Env;
+use think\Debug;
 
 // 应用公共文件
 
@@ -94,20 +95,14 @@ function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $confi
     }
 
     try{
-        $requestBeginTime = microtime();
+        Debug::remark('begin');
         $httpClient = new Client(['base_uri' => $url]);
         $response = $httpClient->request($type, '', $requestConfig);
-        $requestEndTime = microtime();
-
-        $requestBeginTimeArr = explode(' ', $requestBeginTime);
-        $requestEndTimeArr = explode(' ', $requestEndTime);
-        $requestBeginTime = bcadd($requestBeginTimeArr[0], $requestBeginTimeArr[1], 2);
-        $requestEndTime = bcadd($requestEndTimeArr[0], $requestEndTimeArr[1], 2);
-        $requestKeepTime = bcsub($requestEndTime, $requestBeginTime, 1);
-
-        if($requestKeepTime > 0.5){
+        Debug::remark('end');
+        $markTime = Debug::getRangeTime('begin','end');
+        if($markTime > 0.5){
             $errorData = [
-                $requestKeepTime,
+                $markTime.'s',
                 $url
             ];
             Log::write($errorData, 'slowRequest');
