@@ -46,52 +46,44 @@ class Room extends Base
         if(isset($this->opt['room_id']) && is_numeric($this->opt['room_id'])){
             $redis = new Redis();
             $redisHandle = $redis->handler();
-
-            if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
-                return jsonRes(3505);
+            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
+                $returnData = [
+                    'room_cheat' => $roomHashInfo['isGps'],
+                    'gps_range' => $roomHashInfo['gpsRange']
+                ];
+                return jsonRes(0, $returnData);
             }
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
-            $returnData = [
-                'room_cheat' => $roomHashInfo['isGps'],
-                'gps_range' => $roomHashInfo['gpsRange']
-            ];
-            return jsonRes(0, $returnData);
         }
 
         # 根据房间规则ID获取
         if(isset($this->opt['match_id']) && is_numeric($this->opt['match_id'])){
             $roomOptions = new RoomOptionsModel();
             $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
-            if(!$roomOptionsInfo){
-                return jsonRes(3501);
+            if($roomOptionsInfo){
+                $club = new ClubModel();
+                $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
+                if($clubInfo){
+                    $returnData = [
+                        'room_cheat' => $roomOptionsInfo['cheat'],
+                        'gps_range' => $clubInfo['gps']
+                    ];
+                    return jsonRes(0, $returnData);
+                }
             }
-
-            $club = new ClubModel();
-            $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
-            if(!$clubInfo){
-                return jsonRes(3500);
-            }
-
-            $returnData = [
-                'room_cheat' => $roomOptionsInfo['cheat'],
-                'gps_range' => $clubInfo['gps']
-            ];
-            return jsonRes(0, $returnData);
         }
-
-        return jsonRes(3006); # 请求参数有误
     }
     # 创建房间完成
     public function createRoom(){
         # 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id']) || !is_numeric($this->opt['match_id']) || !is_numeric($this->opt['club_id'])){
-            return jsonRes(3006);
+            return json([]);
         }
 
         # 获取用户的session数据
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
         if(!$userSessionInfo){
-            return jsonRes(3006);
+            return json([]);
         }
 
         # 使用redis锁写房间数据 失败写日志
@@ -100,21 +92,21 @@ class Room extends Base
         $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
         $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
         if(!$getLock){
-            return jsonRes(3523);
+            return json(['code' => 3523]);
         }
 
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
         $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $this->opt['club_id']);
         if(!$userClubInfo){
-            return jsonRes(3511);
+            return json([]);
         }
 
         # 根据俱乐部ID获取俱乐部相关数据
         $club = new ClubModel();
         $clubInfo = $club->getClubInfo($this->opt['club_id']);
         if(!$clubInfo){
-            return jsonRes(3500);
+            return json([]);
         }
 
         # 获取会长昵称
@@ -135,39 +127,44 @@ class Room extends Base
 
         # 计费模式有问题
         if(($clubInfo['club_type'] != 0) && ($clubInfo['club_type'] != 1)){
-            return jsonRes(3504);
+            return json([]);
         }
 
         # 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
         $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
         if(!$roomOptionsInfo){
-            return jsonRes(3501);
+            return json([]);
         }
 
         if(!in_array($roomOptionsInfo['room_type'], explode(',', $clubInfo['play_id']))){
-            return jsonRes(3502);
+            return json([]);
         }
 
         # 根据房间类型ID获取房间玩法相关数据（大json）
         $play = new PlayModel();
         $playInfo = $play->getPlayInfo($roomOptionsInfo['room_type']);
         if(!$playInfo){
-            return jsonRes(3501);
+            return json([]);
         }
 
         # 根据玩法的类型去查找玩法启动的服务
         $gameServiceNew = new GameServiceNewModel();
         $serviceInfos = $gameServiceNew->getService($playInfo['play_type']);
         if(!$serviceInfos) {
-            return jsonRes(3521);
+            return json(['code' => 3521]);
         }
-        $rand = array_rand($serviceInfos, 1);
+
+        $serviceIds = [];
+        foreach ($serviceInfos as $v){
+            $serviceIds[] = $v['id'];
+        }
+        $rand = rand(0, count($serviceIds)-1);
         $serviceId = $serviceInfos[$rand]['id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
-            return jsonRes(3517);
+            return json([]);
         }
         $createRoomUrl = $serviceGatewayNewInfo['service'];
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
