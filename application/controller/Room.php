@@ -8,28 +8,29 @@
 
 namespace app\controller;
 
-use app\model\ClubSocketModel;
-use app\model\CommerceModel;
+use think\Log;
 use think\Env;
 use think\Session;
 use Obs\ObsClient;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 use app\model\BeeSender;
 use app\model\AreaModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
 use app\model\VipCardModel;
 use app\model\UserVipModel;
+use app\model\CommerceModel;
 use app\model\UserClubModel;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use app\model\ClubSocketModel;
 use app\definition\Definition;
 use app\model\RoomOptionsModel;
 use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserClubRoomRecordModel;
-use think\Log;
-use GuzzleHttp\Client;
-use GuzzleHttp\Promise;
+
 
 
 
