@@ -77,13 +77,13 @@ class Room extends Base
     public function createRoom(){
         # 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id']) || !is_numeric($this->opt['match_id']) || !is_numeric($this->opt['club_id'])){
-            return json([]);
+            return jsonRes(3006);
         }
 
         # 获取用户的session数据
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
         if(!$userSessionInfo){
-            return json([]);
+            return jsonRes(3006);
         }
 
         # 使用redis锁写房间数据 失败写日志
@@ -92,21 +92,21 @@ class Room extends Base
         $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
         $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
         if(!$getLock){
-            return json(['code' => 3523]);
+            return jsonRes(3523);
         }
 
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
         $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $this->opt['club_id']);
         if(!$userClubInfo){
-            return json([]);
+            return jsonRes(3511);
         }
 
         # 根据俱乐部ID获取俱乐部相关数据
         $club = new ClubModel();
         $clubInfo = $club->getClubInfo($this->opt['club_id']);
         if(!$clubInfo){
-            return json([]);
+            return jsonRes(3500);
         }
 
         # 获取会长昵称
@@ -127,32 +127,32 @@ class Room extends Base
 
         # 计费模式有问题
         if(($clubInfo['club_type'] != 0) && ($clubInfo['club_type'] != 1)){
-            return json([]);
+            return jsonRes(3504);
         }
 
         # 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
         $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
         if(!$roomOptionsInfo){
-            return json([]);
+            return jsonRes(3501);
         }
 
         if(!in_array($roomOptionsInfo['room_type'], explode(',', $clubInfo['play_id']))){
-            return json([]);
+            return jsonRes(3502);
         }
 
         # 根据房间类型ID获取房间玩法相关数据（大json）
         $play = new PlayModel();
         $playInfo = $play->getPlayInfo($roomOptionsInfo['room_type']);
         if(!$playInfo){
-            return json([]);
+            return jsonRes(3501);
         }
 
         # 根据玩法的类型去查找玩法启动的服务
         $gameServiceNew = new GameServiceNewModel();
         $serviceInfos = $gameServiceNew->getService($playInfo['play_type']);
         if(!$serviceInfos) {
-            return json(['code' => 3521]);
+            return jsonRes(3521);
         }
 
         $serviceIds = [];
@@ -164,7 +164,7 @@ class Room extends Base
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
-            return json([]);
+            return jsonRes(3517);
         }
         $createRoomUrl = $serviceGatewayNewInfo['service'];
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
