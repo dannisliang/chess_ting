@@ -177,7 +177,7 @@ class User
         $evaluateModel = new UserEvaluateModel();
         $evalInfo = $evaluateModel ->getInfoById($user_id);
         $evaluate = [
-            'good_num' => 0 ,
+            'good_num' => 0,
             'bad_num'   => 0,
         ];
         if(!empty($evalInfo)){
@@ -186,8 +186,6 @@ class User
                 'bad_num'   => $evalInfo['bad_num'],
             ];
         }
-
-
         return $evaluate;
     }
 
@@ -246,7 +244,7 @@ class User
         $room_id = getRoomIdFromService($user_id);
 
         //不存在房间
-        if(!isset($room_id) || empty($room_id)){
+        if(!$room_id){
             return false;
         }
 
