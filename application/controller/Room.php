@@ -1024,6 +1024,7 @@ class Room extends Base
             'faanNames' => $this->opt['faanNames'],
             'duration' => $this->opt['duration'],
             'roundId' => $roundId,
+            'roundEndTime' => date("Y-m-d H:i:s", time())
         ];
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
