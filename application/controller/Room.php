@@ -8,28 +8,29 @@
 
 namespace app\controller;
 
-use app\model\ClubSocketModel;
-use app\model\CommerceModel;
+use think\Log;
 use think\Env;
 use think\Session;
 use Obs\ObsClient;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 use app\model\BeeSender;
 use app\model\AreaModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
 use app\model\VipCardModel;
 use app\model\UserVipModel;
+use app\model\CommerceModel;
 use app\model\UserClubModel;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use app\model\ClubSocketModel;
 use app\definition\Definition;
 use app\model\RoomOptionsModel;
 use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserClubRoomRecordModel;
-use think\Log;
-use GuzzleHttp\Client;
-use GuzzleHttp\Promise;
+
 
 
 
@@ -45,40 +46,32 @@ class Room extends Base
         if(isset($this->opt['room_id']) && is_numeric($this->opt['room_id'])){
             $redis = new Redis();
             $redisHandle = $redis->handler();
-
-            if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
-                return jsonRes(3505);
+            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
+                $returnData = [
+                    'room_cheat' => $roomHashInfo['isGps'],
+                    'gps_range' => $roomHashInfo['gpsRange']
+                ];
+                return jsonRes(0, $returnData);
             }
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
-            $returnData = [
-                'room_cheat' => $roomHashInfo['isGps'],
-                'gps_range' => $roomHashInfo['gpsRange']
-            ];
-            return jsonRes(0, $returnData);
         }
 
         # 根据房间规则ID获取
         if(isset($this->opt['match_id']) && is_numeric($this->opt['match_id'])){
             $roomOptions = new RoomOptionsModel();
             $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
-            if(!$roomOptionsInfo){
-                return jsonRes(3501);
+            if($roomOptionsInfo){
+                $club = new ClubModel();
+                $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
+                if($clubInfo){
+                    $returnData = [
+                        'room_cheat' => $roomOptionsInfo['cheat'],
+                        'gps_range' => $clubInfo['gps']
+                    ];
+                    return jsonRes(0, $returnData);
+                }
             }
-
-            $club = new ClubModel();
-            $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
-            if(!$clubInfo){
-                return jsonRes(3500);
-            }
-
-            $returnData = [
-                'room_cheat' => $roomOptionsInfo['cheat'],
-                'gps_range' => $clubInfo['gps']
-            ];
-            return jsonRes(0, $returnData);
         }
-
-        return jsonRes(3006); # 请求参数有误
     }
     # 创建房间完成
     public function createRoom(){
@@ -161,7 +154,12 @@ class Room extends Base
         if(!$serviceInfos) {
             return jsonRes(3521);
         }
-        $rand = array_rand($serviceInfos, 1);
+
+        $serviceIds = [];
+        foreach ($serviceInfos as $v){
+            $serviceIds[] = $v['id'];
+        }
+        $rand = rand(0, count($serviceIds)-1);
         $serviceId = $serviceInfos[$rand]['id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
@@ -356,54 +354,56 @@ class Room extends Base
         # 报送大数据结束
 
         $roomHashInfo = [
-            'createTime' => date('Y-m-d H:i:s'), # 房间创建时间
-            'needUserNum' => $needUserNum, # 房间需要的人数
-            'serviceId' => $serviceId, # 服务器ID
-            'diamond' => $roomOptionsInfo['diamond'], # 进房需要的钻石  没均分没折扣的值
-            'joinStatus' => 1, # 其他人是否能够申请加入
-            'clubId' => $this->opt['club_id'], # 俱乐部ID
-            'clubType' => $clubInfo['club_type'], # 俱乐部结算类型 免费房间和不免费房间 凌驾于roomRate之上
-            'roomRate' => $roomOptionsInfo['room_rate'], # 房间结算类型 大赢家/房主/均摊
-            'roomCheat' => $roomOptionsInfo['cheat'], # 是否检查GPS房间
-            'roomType' => $roomOptionsInfo['room_type'], # 规则表中的类型 对应play表Id
-            'socketH5' => $socketH5, # H5的socket连接地址
-            'socketUrl' => $socketUrl, # socket的连接地址
-            'socketSsl' => Env::get('socket_ssl'), # socket证书
-            'roomUrl' => $createRoomUrl, # 房间操作的接口的请求地址
-            'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), # 玩法数据中的play的checks json
-            'roomCode' => $playInfoPlayJsonDecode['code'], # 客户端需要
-            'roomOptions' => $roomOptionsInfo['options'], # 玩法相关数据 json
-            'playerInfos' => json_encode($playerInfo), # 用户信息集 json
-            'isGps' => $roomOptionsInfo['cheat'], # 是否判断gps 0不检测
-            'gpsRange' => $clubInfo['gps'], # gps检测距离
-            'presidentId' => $clubInfo['president_id'], # 普通会长ID
-            'generalRebate' => $clubInfo['pin_drilling_ratio'], # 普通会长返利比
-            'seniorPresidentId' => $clubInfo['senior_president'], # 高级会长ID
-            'seniorRebate' => $clubInfo['rebate'], # 高级会长返利比
-            'gameStartTime' => '', # 房间开始时间
-            'gameEndTime' => '', # 房间结束时间
-            'roundEndInfo' => '', # 对局结束相关数据
-            'gameEndInfo' => '', # 房间结束相关数据
-            'roomName' => $playInfoPlayJsonDecode['name'], # 房间记录列表需要
+            'founderId' => '', // 接受回调保存房主ID
+            'players' => '', // 接受回调保存玩家
+            'createTime' => date('Y-m-d H:i:s'), // 房间创建时间
+            'needUserNum' => $needUserNum, // 房间需要的人数
+            'serviceId' => $serviceId, // 服务器ID
+            'diamond' => $roomOptionsInfo['diamond'], // 进房需要的钻石  没均分没折扣的值
+            'joinStatus' => 1, // 其他人是否能够申请加入
+            'clubId' => $this->opt['club_id'], // 俱乐部ID
+            'clubType' => $clubInfo['club_type'], // 俱乐部结算类型 免费房间和不免费房间 凌驾于roomRate之上
+            'roomRate' => $roomOptionsInfo['room_rate'], // 房间结算类型 大赢家/房主/均摊
+            'roomCheat' => $roomOptionsInfo['cheat'], // 是否检查GPS房间
+            'roomType' => $roomOptionsInfo['room_type'], // 规则表中的类型 对应play表Id
+            'socketH5' => $socketH5, // H5的socket连接地址
+            'socketUrl' => $socketUrl, // socket的连接地址
+            'socketSsl' => Env::get('socket_ssl'), // socket证书
+            'roomUrl' => $createRoomUrl, // 房间操作的接口的请求地址
+            'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), // 玩法数据中的play的checks json
+            'roomCode' => $playInfoPlayJsonDecode['code'], // 客户端需要
+            'roomOptions' => $roomOptionsInfo['options'], // 玩法相关数据 json
+            'playerInfos' => json_encode($playerInfo), // 用户信息集 json
+            'isGps' => $roomOptionsInfo['cheat'], // 是否判断gps 0不检测
+            'gpsRange' => $clubInfo['gps'], // gps检测距离
+            'presidentId' => $clubInfo['president_id'], // 普通会长ID
+            'generalRebate' => $clubInfo['pin_drilling_ratio'], // 普通会长返利比
+            'seniorPresidentId' => $clubInfo['senior_president'], // 高级会长ID
+            'seniorRebate' => $clubInfo['rebate'], // 高级会长返利比
+            'gameStartTime' => '', // 房间开始时间
+            'gameEndTime' => '', // 房间结束时间
+            'roundEndInfo' => '', // 对局结束相关数据
+            'gameEndInfo' => '', // 房间结束相关数据
+            'roomName' => $playInfoPlayJsonDecode['name'], // 房间记录列表需要
 
             # 大数据报送
-            'roomOptionsId' => $this->opt['match_id'], # roomOptionsID
+            'roomOptionsId' => $this->opt['match_id'], // roomOptionsID
             'roomTypeName' => $roomOptionsInfo['room_name'],
-            'roomChannel' => 1, # 房间渠道：朋友diy/俱乐部会长房间
-            'ruleDetail' => '-',# 创建房间时勾选的详细玩法
-            'tableType' => $tableType, # 按圈玩还是按局玩
-            'setNum' => $setNum, # 圈数
-            'tableNum' => $roundNum, # 创建房间时所选择的要进行多少牌局
-            'betNums' => $baseScore, # 底分数量
-            'clubName' => base64_decode($clubInfo['club_name']), # 俱乐部名称
-            'clubRegionId' => $clubInfo['area_id'], # 俱乐部地域id
-            'clubRegionName' => $areaName, # 俱乐部地域名
-            'clubMode' => $clubMode, # 房间模式
-            'payMode' => isset($payMode) ? $payMode : '-', # 支付方式
-            'presidentNickName' => isset($presidentNickName) ? $presidentNickName : '-', # 会长昵称
-            'seniorPresidentNickName' => isset($seniorPresidentNickName) ? $seniorPresidentNickName : '-', # 高级会长昵称
-            'commerceId' => isset($commerce['commerce_id']) ? $commerce['commerce_id'] : '', # 商务会长ID
-            'businessRebate' => $clubInfo['business_rebate'], # 上午会长返利比
+            'roomChannel' => 1, // 房间渠道：朋友diy/俱乐部会长房间
+            'ruleDetail' => '-', // 创建房间时勾选的详细玩法
+            'tableType' => $tableType, // 按圈玩还是按局玩
+            'setNum' => $setNum, // 圈数
+            'tableNum' => $roundNum, // 创建房间时所选择的要进行多少牌局
+            'betNums' => $baseScore, // 底分数量
+            'clubName' => base64_decode($clubInfo['club_name']), // 俱乐部名称
+            'clubRegionId' => $clubInfo['area_id'], // 俱乐部地域id
+            'clubRegionName' => $areaName, // 俱乐部地域名
+            'clubMode' => $clubMode, // 房间模式
+            'payMode' => isset($payMode) ? $payMode : '-', // 支付方式
+            'presidentNickName' => isset($presidentNickName) ? $presidentNickName : '-', // 会长昵称
+            'seniorPresidentNickName' => isset($seniorPresidentNickName) ? $seniorPresidentNickName : '-', // 高级会长昵称
+            'commerceId' => isset($commerce['commerce_id']) ? $commerce['commerce_id'] : '', // 商务会长ID
+            'businessRebate' => $clubInfo['business_rebate'], // 上午会长返利比
         ];
 
         # 写房间hash 写失败记录日志
@@ -932,7 +932,9 @@ class Room extends Base
 
         $changeRoomInfo = [
             'joinStatus' => 2, # 游戏中
-            'gameStartTime' => date('Y-m-d H:i:s', time())
+            'gameStartTime' => date('Y-m-d H:i:s', time()),
+            'founderId' => $this->opt['founderId'],
+            'players' => json_encode($this->opt['players'])
         ];
         $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
         return jsonRes(0);
@@ -1008,17 +1010,20 @@ class Room extends Base
             'secret' => Env::get('obs.secret'),
             'endpoint' => Env::get('obs.endpoint')
         ]);
+
+        $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'];
         $obsClient -> putObject([
             'Bucket' => Env::get('obs.chess_record'),
-            'Key' => date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+            'Key' => $roundId,
             'Body' => $this->opt['playBack']
         ]);
 
         $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
         $roundEndInfo[] = [
-            $this->opt['score'],
-            date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
-            date("Y-m-d H:i:s", time())
+            'score' => $this->opt['score'],
+            'faanNames' => $this->opt['faanNames'],
+            'duration' => $this->opt['duration'],
+            'roundId' => $roundId,
         ];
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
 
@@ -1305,13 +1310,14 @@ class Room extends Base
 
         # 牌局记录入库
         if($playerInfo && $this->opt['round']){
+            $addTime = date("Y-m-d H:i:s", time());
             $insertAll = [];
             foreach ($playerInfo as $k => $userInfo){
                 $insert = [
                     'room_id' => $this->opt['roomId'],
                     'user_id' => $userInfo['userId'],
                     'club_id' => $roomHashInfo['clubId'],
-                    'add_time' => date("Y-m-d H:i:s", time()),
+                    'add_time' => $addTime,
                 ];
                 $insertAll[] = $insert;
             }
