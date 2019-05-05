@@ -11,6 +11,7 @@ use app\definition\Definition;
 use app\model\UserEvaluateModel;
 use Psr\Http\Message\ResponseInterface;
 use Obs\ObsClient;
+use think\Env;
 use think\Log;
 use think\Session;
 use app\definition\RedisKey;
@@ -137,13 +138,13 @@ class Record extends Base{
         }
 
         $obsClient = new ObsClient([
-            'key' => Definition::$OBS_KEY,
-            'secret' => Definition::$OBS_SECRET,
-            'endpoint' => Definition::$OBS_ENDPOINT
+            'key' => Env::get('obs.key'),
+            'secret' => Env::get('obs.secret'),
+            'endpoint' => Env::get('obs.endpoint')
         ]);
 
         $playBackInfo = $obsClient->getObject([
-            'Bucket' => Definition::$CHESS_RECORD,
+            'Bucket' => Env::get('obs.chess_record'),
             'Key' => $recordArr[1],
         ]);
 

@@ -18,9 +18,9 @@ use app\model\RoomOptionsModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
-use app\model\UserRoomModel;
 use think\cache\driver\Redis;
 use think\Log;
+use think\Env;
 
 class User
 {
@@ -84,10 +84,10 @@ class User
             'socket_h5'=> $roomInfo['socket_h5'],
             'check'    => $roomInfo['check'],
             'options'  => $roomInfo['options'],
-            'socket_ssl'=> Definition::$SOCKET_SSL,
-            'notification_h5'=> Definition::$NOTIFICATION_H5,
-            'notification_url'=> Definition::$NOTIFICATION_URL,
-            'match_service' => Definition::$MATCH_SERVICE,
+            'socket_ssl'=> Env::get('socket_ssl'),
+            'notification_h5'=> Env::get('notification_h5'),
+            'notification_url'=> Env::get('notification_url'),
+            'match_service' => Env::get('match_service'),
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
             'diamond_num'=> $assets['diamond_num'],
@@ -312,14 +312,14 @@ class User
     private function getEmailNum($user_id)
     {
         //请求运营中心接口地址
-        $url = Definition::$WEB_USER_URL;
+        $url = Env::get('web_user_url');
 
         //获取运营中心接口邮件列表
         $email_url = Definition::$EMAIL_LIST;
 
         //请求email需要的数据
         $email_data = [
-            'appid'         => Definition::$CESHI_APPID,
+            'appid'         => Env::get('app_id'),
             'recipient'     => $user_id,
             'read_status'   => 0
         ];
@@ -378,9 +378,9 @@ class User
             'socket_h5'=> $roomInfo['socket_h5'],
             'check'    => $roomInfo['check'],
             'options'  => $roomInfo['options'],
-            'socket_ssl'=> Definition::$SOCKET_SSL,
-            'notification_h5'=> Definition::$NOTIFICATION_H5,
-            'notification_url'=> Definition::$NOTIFICATION_URL,
+            'socket_ssl'=> Env::get('socket_ssl'),
+            'notification_h5'=> Env::get('notification_h5'),
+            'notification_url'=> Env::get('notification_url'),
         ];
 
         return jsonRes( 0 , $result);

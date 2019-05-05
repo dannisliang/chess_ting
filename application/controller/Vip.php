@@ -17,6 +17,7 @@ use app\model\VipCardModel;
 use app\model\UserVipModel;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use think\Env;
 
 class Vip extends Base{
 
@@ -166,7 +167,7 @@ class Vip extends Base{
             'props_name' => '会员卡',
             'props_num' => 1,
         ];
-        $beeSender = new BeeSender(Definition::$CESHI_APPID, Definition::$MY_APP_NAME, Definition::$SERVICE_IP, config('app_debug'));
+        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
         $beeSender->send('props_use', $bigData);
         return jsonRes(3515);
     }

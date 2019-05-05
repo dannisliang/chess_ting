@@ -24,6 +24,7 @@ use app\model\UserLastClubModel;
 use app\model\UserRoomModel;
 use app\model\UserVipModel;
 use think\Db;
+use think\Env;
 use think\Log;
 
 class Club extends Base
@@ -338,7 +339,7 @@ class Club extends Base
      * 报送大数据
      */
     private function beeSender($event_name , $club_info){
-        $beeSender = new BeeSender(Definition::$CESHI_APPID,Definition::$MY_APP_NAME,Definition::$SERVICE_IP,Definition::$IS_DEBUG);
+        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip') ,Env::get('app_debug'));
         //获取报送大数据的基础事件
         $content  = getBeeBaseInfo();
         $contents = array_merge($content,$club_info);
@@ -633,9 +634,9 @@ class Club extends Base
         //根据服务器的ID查出服务器的地址
         $game_service = $serviceGateWayNewModel -> getOneByWhere($where , $field);
         if (!$game_service){
-            $room_url = Definition::$ROOM_URL;
-            $socket_h5 = Definition::$SOCKET_H5;
-            $socket_app = Definition::$SOCKET_URL;
+            $room_url = Env::get('room_url');
+            $socket_h5 = Env::get('socket_h5');
+            $socket_app = Env::get('socket_url');
         }
         $room_url   = $game_service['service'];  //逻辑服地址
         $socket_h5  = $game_service['gateway_h5']; //给H5的逻辑服地址
@@ -655,11 +656,11 @@ class Club extends Base
      * @return int
      */
     private function getUserProperty($user_id){
-        $url = Definition::$WEB_API_URL;
+        $url = Env::get('web_api_url');
         $pathInfo = Definition::$GET_PLAYER_PROPERTY;
         $data = [
             'uid' => $user_id,
-            'app_id' => Definition::$CESHI_APPID,
+            'app_id' => Env::get('app_id'),
             'property_type' => 10001
         ];
         $result = guzzleRequest($url , $pathInfo , $data);

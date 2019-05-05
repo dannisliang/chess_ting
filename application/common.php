@@ -7,6 +7,7 @@ use app\definition\RedisKey;
 use app\definition\Definition;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use think\Env;
 
 // 应用公共文件
 
@@ -40,7 +41,7 @@ function checkUserToken($userSessionInfo){
     $data['uid'] = $userSessionInfo['userid'];
     $data['ip'] = $userSessionInfo['ip'];
     $data['token'] = $userSessionInfo['token'];
-    $requestUrl = Definition::$WEB_API_URL.Definition::$CHECK_TOKEN_TIME;
+    $requestUrl = Env::get('web_api_url').Definition::$CHECK_TOKEN_TIME;
     $response = sendHttpRequest($requestUrl, $data);
     return $response;
 }
@@ -52,8 +53,8 @@ function checkUserToken($userSessionInfo){
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
-    $requestUrl = Definition::$WEB_API_URL.Definition::$GET_PLAYER_PROPERTY;
-    $data['app_id'] = Definition::$CESHI_APPID;
+    $requestUrl = Env::get('web_api_url').Definition::$GET_PLAYER_PROPERTY;
+    $data['app_id'] = Env::get('app_id');
     $data['property_type'] = $propertyType;
     $data['uid'] = $userIds;
     $response = sendHttpRequest($requestUrl, $data);
@@ -273,9 +274,9 @@ function has_keys($key, $arr, $is_true = false){
  * @return mixed
  */
 function operaUserProperty($player, $type, $diamond){
-    $url = Definition::$WEB_API_URL.Definition::$RAISE_PLAYER_PROPERTY;
+    $url = Env::get('web_api_url').Definition::$RAISE_PLAYER_PROPERTY;
     $data['uid'] = $player;
-    $data['app_id'] = Definition::$CESHI_APPID;
+    $data['app_id'] = Env::get('app_id');
     $data['property_type'] = $type;
     $data['property_num'] = $diamond;
     return sendHttpRequest($url, $data);
@@ -292,10 +293,10 @@ function operaUserProperty($player, $type, $diamond){
  * @return mixed
  */
 function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_id ,$property_name){
-    $url      = Definition::$WEB_API_URL;
+    $url      = Env::get('web_api_url');
     $pathInfo = Definition::$PROPERTY_CHANGE;
     $data = [
-        'app_id' => Definition::$CESHI_APPID,
+        'app_id' => Env::get('app_id'),
         'upinfo' => [
             [
                 'uid'           => $player_id,
@@ -322,10 +323,10 @@ function operateUserProperty($player_id, $type, $diamond, $event_type , $reason_
  * @return mixed
  */
 function operatePlayerProperty($data){
-    $url      = Definition::$WEB_API_URL;
+    $url      = Env::get('web_api_url');
     $pathInfo = Definition::$PROPERTY_CHANGE;
     $info = [
-        'app_id' => Definition::$CESHI_APPID,
+        'app_id' => Env::get('app_id'),
         'upinfo' => $data,
     ];
     $res = guzzleRequest($url , $pathInfo , $info);
@@ -369,7 +370,7 @@ function getUserIdFromSession(){
  */
 function checkToken($data){
     //验证传输的token是否可靠
-    $url = Definition::$WEB_API_URL;
+    $url = Env::get('web_api_url');
     $pathInfo = Definition::$AUTHENTICATE;
     $result = guzzleRequest( $url , $pathInfo , $data );
     return $result;
@@ -413,9 +414,9 @@ function backNickname($player_id){
     }else{
         $data = [
             'uid'=>$player_id,
-            'app_id'=>Definition::$CESHI_APPID,
+            'app_id'=> Env::get('app_id'),
         ];
-        $url = Definition::$WEB_API_URL;
+        $url = Env::get('web_api_url');
         $path_info = Definition::$GET_INFO;
         $user_info = guzzleRequest($url , $path_info , $data);
         $nick_name = $user_info['data']['nickname'];
@@ -438,13 +439,13 @@ function getUserBaseInfo($user_id)
 {
 
     //请求用户中心接口地址
-    $url = Definition::$WEB_API_URL;
+    $url = Env::get('web_api_url');
     //获取用户中心接口路径
     $userInfo_url = Definition::$GET_INFO;
     //向用户中心传输的请求参数
     $data = [
         'uid' => $user_id,
-        'app_id'=> Definition::$CESHI_APPID,
+        'app_id'=> Env::get('app_id'),
     ];
     $result = guzzleRequest( $url , $userInfo_url , $data);
 
@@ -460,13 +461,13 @@ function getUserBaseInfos($user_id)
 {
 
     //请求用户中心接口地址
-    $url = Definition::$WEB_API_URL;
+    $url = Env::get('web_api_url');
     //获取用户中心接口路径
     $userInfo_url = Definition::$GET_BATCH_INFO;
     //向用户中心传输的请求参数
     $data = [
         'uid' => $user_id,
-        'app_id'=> Definition::$CESHI_APPID,
+        'app_id'=> Env::get('app_id'),
     ];
     $result = guzzleRequest( $url , $userInfo_url , $data);
     if($result['code'] != 0){

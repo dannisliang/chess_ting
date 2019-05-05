@@ -20,6 +20,7 @@ use app\model\UserVipModel;
 use app\model\VipCardModel;
 use think\Db;
 use think\Log;
+use think\Env;
 
 class PaySuccessCallBack
 {
@@ -303,13 +304,13 @@ class PaySuccessCallBack
     private function sendToClient($content , $reciver){
         //给客户端发送一条数据
         $notice_data = [
-            'appid' => Definition::$CESHI_APPID,
+            'appid' => Env::get('app_id'),
             'content' => $content,
             'reciver' =>$reciver,
             'sender'  => 0,
             'type'    => 1029
         ];
-        $res = guzzleRequest(Definition::$INFORM_URL , Definition::$SEND , $notice_data);
+        $res = guzzleRequest(Env::get('inform_url') , Definition::$SEND , $notice_data);
         return $res;
     }
 

@@ -12,6 +12,7 @@ use app\model\ClubModel;
 use app\model\UserVipModel;
 use app\model\VipCardModel;
 use think\Db;
+use think\Env;
 class Mail extends Base
 {
 
@@ -21,7 +22,7 @@ class Mail extends Base
      */
     public function lists(){
         $mail_type = $this->opt['mail_type'];//邮件的类型
-        $data['appid'] = Definition::$CESHI_APPID;//省份的appid
+        $data['appid'] = Env::get('app_id');//省份的appid
         $player_id = getUserIdFromSession();//用户ID
 
         if(!$player_id){
@@ -34,7 +35,7 @@ class Mail extends Base
             //不等于1则代表是自己发送的邮件列表
             $data['sender'] = $player_id;
         }
-        $url = Definition::$WEB_USER_URL;//刘进永运营中心的域名
+        $url = Env::get('web_user_url');//刘进永运营中心的域名
         $url_area = Definition::$EMAIL_LIST;//接口方法路径
         $list = sendHttpRequest($url.$url_area,$data);
         $mail_num = $list['data'];
@@ -81,10 +82,10 @@ class Mail extends Base
         if(!$player_id){
             return jsonRes( 9999 );
         }
-        $data['appid'] = (int)Definition::$CESHI_APPID;//省份的appid
+        $data['appid'] = Env::get('app_id');//省份的appid
         $data['id'] = $mail_id;
         $data['playerId'] = $player_id;
-        $url = Definition::$WEB_USER_URL;//运营中心域名
+        $url = Env::get('web_user_url');//运营中心域名
         $url_area = Definition::$EMAIL_DETAIL;//邮件详情
         $list = sendHttpRequest($url.$url_area, $data);
 
@@ -154,9 +155,9 @@ class Mail extends Base
             $recive_statua = $liujinyon['receive_status'];
             if(($read_status ==1 && $recive_statua ==1) || ($read_status ==1 && $liujinyon['goods'] == '')){
                 //都为1则删除
-                $url = Definition::$WEB_USER_URL;
+                $url = Env::get('web_user_url');
                 $url_area = Definition::$EMAIL_DELETE;
-                $datadel['appid'] = Definition::$CESHI_APPID;
+                $datadel['appid'] = Env::get('app_id');
                 $datadel['id'] = $mail_id;
                 sendHttpRequest($url.$url_area,$datadel);
             }
@@ -172,15 +173,15 @@ class Mail extends Base
      * @param
      */
     public function delete(){
-        $data['appid'] = Definition::$CESHI_APPID;//游戏的appID
+        $data['appid'] = Env::get('app_id');//游戏的appID
         $id = $this->opt['mail_id'];
         $data['id'] = $id;//邮件的ID
         $player = getUserIdFromSession();
-        $url = Definition::$WEB_USER_URL;//运营中心的域名
+        $url = Env::get('web_user_url');//运营中心的域名
         if($id == '0'){
             //查询该玩家所有的邮件,然后再循环获取所有邮件的id数组
             $url_area = Definition::$EMAIL_LIST;//邮件列表
-            $appid = Definition::$CESHI_APPID;
+            $appid = Env::get('app_id');
             $datas['appid'] = $appid;//appid
             $datas['recipient'] = $player;//玩家的ID
             $email_list = sendHttpRequest($url.$url_area, $datas);//玩家的邮件列表
@@ -211,11 +212,11 @@ class Mail extends Base
             return jsonRes( 9999 );
         }
         $data = [
-            'appid' => (int)Definition::$CESHI_APPID,//省份的appid;
+            'appid' => Env::get('app_id'),//省份的appid;
             'id'    => $mail_id,
             'playerId' => $player_id
         ];
-        $email_detail = sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DETAIL, $data);
+        $email_detail = sendHttpRequest(Env::get('web_user_url'). Definition::$EMAIL_DETAIL, $data);
         $goods_array = json_decode($email_detail['data']['goods'],true);//"{"10002":"1000"}"
 //        var_dump($goods_array);die;
         foreach ($goods_array as $key=>$value){
@@ -249,18 +250,18 @@ class Mail extends Base
         }
         //修改邮件的状态
         $datas = [
-            'appid' => (int)Definition::$CESHI_APPID,
+            'appid' => Env::get('app_id'),
             'id' => (int)$mail_id,
             'receive_status' => 1,
         ];
-        $result = sendHttpRequest(Definition::$WEB_USER_URL .  Definition::$UPDATE_STATU, $datas);
+        $result = sendHttpRequest(Env::get('web_user_url').  Definition::$UPDATE_STATU, $datas);
         if ($result['code'] == 0) {
             //删除邮件
             $datadel = [
                 'appid' => $mail_id,
                 'id' => $mail_id,
             ];
-            sendHttpRequest(Definition::$WEB_USER_URL . Definition::$EMAIL_DELETE, $datadel);
+            sendHttpRequest(Env::get('web_user_url'). Definition::$EMAIL_DELETE, $datadel);
 
             $property = $this -> getUserPro($player_id);
             $send_data = [
@@ -271,10 +272,10 @@ class Mail extends Base
                 'type' => 1029,
                 'sender' => 0,
                 'reciver' => [$player_id],
-                'appid' => (int)Definition::$CESHI_APPID
+                'appid' => Env::get('app_id')
             ];
             //发送数据
-            $list = sendHttpRequest(Definition::$ROOM_URL . Definition::$SEND,$send_data);
+            $list = sendHttpRequest(Env::get('room_url') . Definition::$SEND,$send_data);
 
             return jsonRes(0);
 
