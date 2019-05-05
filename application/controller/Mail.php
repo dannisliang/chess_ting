@@ -141,7 +141,12 @@ class Mail extends Base
                             $vip_id = $opt[1];
                             //查出vip卡的图片(实例化化模型)目前没有,自己单独查询
                             $vip_opt = Db::query("SELECT icon FROM tb_vip_card WHERE vip_id = $vip_id");
-                            $vip_icon = $vip_opt[0]['icon'];
+                            if(!$vip_opt){
+                                $vip_icon = '';
+                            }else{
+                                $vip_icon = $vip_opt[0]['icon'];
+                            }
+
                             $new_goods[$i]['vip_icon'] = "https://tjmahjong.chessvans.com//GMBackstage/public/"."$vip_icon";
                         }
                     }else{
