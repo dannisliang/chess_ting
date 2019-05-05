@@ -512,7 +512,7 @@ function getRoomIdFromService($user_id){
     }
 
     //不存在房间
-    if(!isset($room_id)){
+    if(empty($room_id)){
         //获取逻辑服特定的连接（内测使用）
         if(\think\Env::get('is_online') == false){
             $services = $clubSocketModel ->getSome();
