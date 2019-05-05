@@ -324,7 +324,9 @@ class User
             'read_status'   => 0
         ];
         $result = guzzleRequest( $url , $email_url , $email_data);
-
+        if(!$result){
+            return 0;
+        }
         return count($result['data']);
     }
 
