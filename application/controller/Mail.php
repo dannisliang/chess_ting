@@ -38,9 +38,12 @@ class Mail extends Base
         $url = Env::get('web_user_url');//刘进永运营中心的域名
         $url_area = Definition::$EMAIL_LIST;//接口方法路径
         $list = sendHttpRequest($url.$url_area,$data);
+        $result = array();
+        if(!isset($list['data'])){
+            return jsonRes(3004,$result);
+        }
         $mail_num = $list['data'];
         $count = count($mail_num);
-        $result = array();
         for ($i = 0; $i < $count; $i++) {
             $result[$i]['mail_id'] = (int)$list['data'][$i]['id'];
             $result[$i]['is_read'] = (int)$list['data'][$i]['read_status'];
@@ -138,7 +141,12 @@ class Mail extends Base
                             $vip_id = $opt[1];
                             //查出vip卡的图片(实例化化模型)目前没有,自己单独查询
                             $vip_opt = Db::query("SELECT icon FROM tb_vip_card WHERE vip_id = $vip_id");
-                            $vip_icon = $vip_opt[0]['icon'];
+                            if(!$vip_opt){
+                                $vip_icon = '';
+                            }else{
+                                $vip_icon = $vip_opt[0]['icon'];
+                            }
+
                             $new_goods[$i]['vip_icon'] = "https://tjmahjong.chessvans.com//GMBackstage/public/"."$vip_icon";
                         }
                     }else{
@@ -217,6 +225,9 @@ class Mail extends Base
             'playerId' => $player_id
         ];
         $email_detail = sendHttpRequest(Env::get('web_user_url'). Definition::$EMAIL_DETAIL, $data);
+        if(!isset($email_detail['data']['goods']) || empty($email_detail['data']['goods'])){
+            return jsonRes(3019);
+        }
         $goods_array = json_decode($email_detail['data']['goods'],true);//"{"10002":"1000"}"
 //        var_dump($goods_array);die;
         foreach ($goods_array as $key=>$value){
