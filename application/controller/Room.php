@@ -8,28 +8,29 @@
 
 namespace app\controller;
 
-use app\model\ClubSocketModel;
-use app\model\CommerceModel;
+use think\Log;
 use think\Env;
 use think\Session;
 use Obs\ObsClient;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 use app\model\BeeSender;
 use app\model\AreaModel;
 use app\model\PlayModel;
 use app\model\ClubModel;
 use app\model\VipCardModel;
 use app\model\UserVipModel;
+use app\model\CommerceModel;
 use app\model\UserClubModel;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use app\model\ClubSocketModel;
 use app\definition\Definition;
 use app\model\RoomOptionsModel;
 use app\model\GameServiceNewModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserClubRoomRecordModel;
-use think\Log;
-use GuzzleHttp\Client;
-use GuzzleHttp\Promise;
+
 
 
 
@@ -45,40 +46,32 @@ class Room extends Base
         if(isset($this->opt['room_id']) && is_numeric($this->opt['room_id'])){
             $redis = new Redis();
             $redisHandle = $redis->handler();
-
-            if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
-                return jsonRes(3505);
+            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
+                $returnData = [
+                    'room_cheat' => $roomHashInfo['isGps'],
+                    'gps_range' => $roomHashInfo['gpsRange']
+                ];
+                return jsonRes(0, $returnData);
             }
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['isGps', 'gpsRange']);
-            $returnData = [
-                'room_cheat' => $roomHashInfo['isGps'],
-                'gps_range' => $roomHashInfo['gpsRange']
-            ];
-            return jsonRes(0, $returnData);
         }
 
         # 根据房间规则ID获取
         if(isset($this->opt['match_id']) && is_numeric($this->opt['match_id'])){
             $roomOptions = new RoomOptionsModel();
             $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
-            if(!$roomOptionsInfo){
-                return jsonRes(3501);
+            if($roomOptionsInfo){
+                $club = new ClubModel();
+                $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
+                if($clubInfo){
+                    $returnData = [
+                        'room_cheat' => $roomOptionsInfo['cheat'],
+                        'gps_range' => $clubInfo['gps']
+                    ];
+                    return jsonRes(0, $returnData);
+                }
             }
-
-            $club = new ClubModel();
-            $clubInfo = $club->getClubInfo($roomOptionsInfo['club_id']);
-            if(!$clubInfo){
-                return jsonRes(3500);
-            }
-
-            $returnData = [
-                'room_cheat' => $roomOptionsInfo['cheat'],
-                'gps_range' => $clubInfo['gps']
-            ];
-            return jsonRes(0, $returnData);
         }
-
-        return jsonRes(3006); # 请求参数有误
     }
     # 创建房间完成
     public function createRoom(){
@@ -161,7 +154,12 @@ class Room extends Base
         if(!$serviceInfos) {
             return jsonRes(3521);
         }
-        $rand = array_rand($serviceInfos, 1);
+
+        $serviceIds = [];
+        foreach ($serviceInfos as $v){
+            $serviceIds[] = $v['id'];
+        }
+        $rand = rand(0, count($serviceIds)-1);
         $serviceId = $serviceInfos[$rand]['id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
