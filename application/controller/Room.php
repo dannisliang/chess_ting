@@ -613,6 +613,7 @@ class Room extends Base
         $serviceInfos = $gameServiceNew->getGameService();
         if(!$serviceInfos){ # 没有可用的服务 全都删了
             $redisHandle->del(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
+            Log::write('没有可用服', "error");
             return jsonRes(0, ['roominfo' => []]);
         }
 
@@ -626,6 +627,7 @@ class Room extends Base
         foreach ($sMembers as $k => $roomNumber){
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
             if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
+                Log::write('房间所在服不可用', "error");
                 $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }else{
                 $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
@@ -639,6 +641,9 @@ class Room extends Base
             $roomCheckInfo = json_decode($results[$roomNumber]->getBody()->getContents(), true);
             if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                 $newNumbers[] = $roomNumber;
+            }else{
+                Log::write('房间不存在', "error");
+                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }
         }
         # 和逻辑服同步

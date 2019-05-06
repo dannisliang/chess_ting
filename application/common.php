@@ -28,7 +28,9 @@ function jsonRes($code, $data = []){
         'mess' => CodeMes::$errorCode[$code],
     ];
 
-    $res['data'] = $data;
+    if($data){
+        $res['data'] = $data;
+    }
     return json($res);
 }
 
