@@ -170,14 +170,13 @@ class Room extends Base
         $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
         $socketUrl = $serviceGatewayNewInfo['gateway_app'];
 
-        if(Env::get('is_online') == false){
-            if(in_array($this->opt['club_id'], [555555, 999999, 888888, 777777])){
-                $clubSocket = new ClubSocketModel();
-                $clubSocketInfo = $clubSocket->getClubSocketInfo($this->opt['club_id']);
-                $createRoomUrl = $clubSocketInfo['room_url'];
-                $socketH5 = $clubSocketInfo['socket_h5'];
-                $socketUrl = $clubSocketInfo['socket_url'];
-            }
+        if(Env::get('is_online') == false && in_array($this->opt['club_id'], [555555, 999999, 888888, 777777])){
+            $clubSocket = new ClubSocketModel();
+            $clubSocketInfo = $clubSocket->getClubSocketInfo($this->opt['club_id']);
+            $serviceId = $clubSocketInfo['id'];
+            $createRoomUrl = $clubSocketInfo['room_url'];
+            $socketH5 = $clubSocketInfo['socket_h5'];
+            $socketUrl = $clubSocketInfo['socket_url'];
         }
 
         # 玩法规则json解码
