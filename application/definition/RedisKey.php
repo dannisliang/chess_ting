@@ -23,5 +23,7 @@ class RedisKey{
 
     public static $USE_VIP_CARD = 'use_vip_card'; # 使用vip卡加锁
 
-    public static $GATEWAY_CACHE = 'gateway_cache:'; # 使用vip卡加锁
+    public static $GATEWAY_CACHE = 'gateway_cache:'; // 网关缓存
+
+    public static $OPEN_SERVICE_CACHE = 'open_service_cache'; // 开启的服务的缓存
 }

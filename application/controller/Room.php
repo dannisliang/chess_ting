@@ -365,7 +365,10 @@ class Room extends Base
             'roomRate' => $roomOptionsInfo['room_rate'], // 房间结算类型 大赢家/房主/均摊
             'roomCheat' => $roomOptionsInfo['cheat'], // 是否检查GPS房间
             'roomType' => $roomOptionsInfo['room_type'], // 规则表中的类型 对应play表Id
+            'socketH5' => $socketH5, // H5的socket连接地址
+            'socketUrl' => $socketUrl, // socket的连接地址
             'socketSsl' => Env::get('socket_ssl'), // socket证书
+            'roomUrl' => $httpUrl, // 房间操作的接口的请求地址
             'playChecks' => json_encode($playInfoPlayJsonDecode['checks']), // 玩法数据中的play的checks json
             'roomCode' => $playInfoPlayJsonDecode['code'], // 客户端需要
             'roomOptions' => $roomOptionsInfo['options'], // 玩法相关数据 json
@@ -442,15 +445,9 @@ class Room extends Base
         }
 
         # 获取房间信息中的俱乐部ID
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['diamond', 'needUserNum', 'clubType', 'roomRate', 'clubId', 'serviceId']);
-        if(!$roomHashInfo['serviceId']){
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['diamond', 'needUserNum', 'clubType', 'roomRate', 'clubId', 'roomUrl']);
+        if(!$roomHashInfo['roomUrl']){
             return jsonRes(3505);
-        }
-
-        $serviceGatewayNew = new ServiceGatewayNewModel();
-        $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($roomHashInfo['serviceId']);
-        if(!$serviceGatewayNewInfo){
-            return jsonRes(3517);
         }
 
         # 查询玩家是否加入此俱乐部
@@ -524,7 +521,7 @@ class Room extends Base
         }
 
         # 请求逻辑服加入房间
-        $joinRoomInfo = sendHttpRequest($serviceGatewayNewInfo['service'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
+        $joinRoomInfo = sendHttpRequest($roomHashInfo['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
 //        p($joinRoomInfo);
         if(!isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
             return jsonRes(3506);
@@ -548,7 +545,7 @@ class Room extends Base
             }
         }
         if($getLock){ # 拿到锁处理数据并解锁
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['needUserNum', 'playerInfos', 'playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
+            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['needUserNum', 'playerInfos', 'socketUrl', 'socketH5', 'playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
             # 重写hash中用户信息
             $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
             $userInfo = [
@@ -580,7 +577,7 @@ class Room extends Base
             }
             $redisHandle->del($lockKey); # 解锁
         }else{
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
+            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['socketUrl', 'socketH5', 'playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
         }
 
         $returnData = [
@@ -588,8 +585,8 @@ class Room extends Base
             'room_num' => $this->opt['room_id'], # 房间号
             'check' => json_decode($roomHashInfo['playChecks'], true), #
             'options' => json_decode($roomHashInfo['roomOptions'], true), # 规则
-            'socket_h5' => $serviceGatewayNewInfo['gateway_h5'], # H5链接地址
-            'socket_url' => $serviceGatewayNewInfo['gateway_app'], # app链接地址
+            'socket_h5' => $roomHashInfo['socketH5'], # H5链接地址
+            'socket_url' => $roomHashInfo['socketUrl'], # app链接地址
             'socket_ssl' => $roomHashInfo['socketSsl'], # 证书
             'club_id' => $roomHashInfo['clubId'],
             'club_name' => $roomHashInfo['clubName'],
@@ -613,8 +610,8 @@ class Room extends Base
         $gameServiceNew = new GameServiceNewModel();
         $serviceInfos = $gameServiceNew->getGameService();
         if(!$serviceInfos){ # 没有可用的服务 全都删了
+            Log::write('没有可用服', "error");
             $redisHandle->del(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
-            Log::write('没有可用服', "log");
             return jsonRes(0, ['roominfo' => []]);
         }
 
@@ -626,19 +623,12 @@ class Room extends Base
         $client = new Client();
         $promises = [];
         foreach ($sMembers as $k => $roomNumber){
-            $serviceId= $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, 'serviceId');
-            if(!in_array($serviceId, $serviceIds)){
-                Log::write('房间所在服不存在', "log");
+            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
+            if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
+                Log::write('房间所在服不可用', "error");
                 $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
             }else{
-                $serviceGatewayNew = new ServiceGatewayNewModel();
-                $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
-                if(!$serviceGatewayNewInfo){
-                    Log::write('房间所在服不存在', "log");
-                    $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
-                }else{
-                    $promises[$roomNumber] = $client->postAsync($serviceGatewayNewInfo['service'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
-                }
+                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
             }
         }
 
@@ -662,7 +652,7 @@ class Room extends Base
             if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$roomNum)){
                 continue;
             }
-            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomName', 'joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'roomOptions', 'playerInfos', 'createTime']);
+            $roomHashValue = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNum, ['roomName', 'joinStatus', 'clubType', 'roomRate', 'roomCode', 'diamond', 'roomOptionsId', 'needUserNum', 'roomRate', 'socketH5', 'socketUrl', 'roomOptions', 'playerInfos', 'createTime']);
 //            p($roomHashValue);
             if($roomHashValue){
                 $diamond = $roomHashValue['diamond'];
@@ -679,8 +669,8 @@ class Room extends Base
                 $clubRoomReturn[$i]['room_code'] = $roomHashValue['roomCode'];
                 $clubRoomReturn[$i]['room_rate'] = $roomHashValue['roomRate'];
                 $clubRoomReturn[$i]['room_name'] = $roomHashValue['roomName'];
-                $clubRoomReturn[$i]['socket_h5'] = '';
-                $clubRoomReturn[$i]['socket_url'] = '';
+                $clubRoomReturn[$i]['socket_h5'] = $roomHashValue['socketH5'];
+                $clubRoomReturn[$i]['socket_url'] = $roomHashValue['socketUrl'];
                 $clubRoomReturn[$i]['options'] = json_decode($roomHashValue['roomOptions'], true);
                 $roomUserInfos = json_decode($roomHashValue['playerInfos'], true);
                 if($roomUserInfos){
