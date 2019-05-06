@@ -285,7 +285,7 @@ class Mail extends Base
                 'appid' => Env::get('app_id')
             ];
             //发送数据
-            $list = sendHttpRequest(Env::get('room_url') . Definition::$SEND,$send_data);
+            $list = sendHttpRequest(Env::get('inform_url') . Definition::$SEND,$send_data);
 
             return jsonRes(0);
 
