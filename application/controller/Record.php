@@ -92,13 +92,13 @@ class Record extends Base{
 
         $returnData = [];
         foreach ($roundEndInfo as $k => $v){
-            foreach ($v[0] as $kk => $vv){
-                $v[0][$kk]['player_id'] = $vv['playerId'];
+            foreach ($v['score'] as $kk => $vv){
+                $v['score'][$kk]['player_id'] = $vv['playerId'];
             }
 
-            $returnData[$k]['time'] = strtotime($v[2]);
-            $returnData[$k]['record_id'] = $this->opt['room_id'].'|'.$v[1];
-            $returnData[$k]['infos'] = $v[0];
+            $returnData[$k]['time'] = strtotime($v['roundEndTime']);
+            $returnData[$k]['record_id'] = $this->opt['room_id'].'|'.$v['roundId'];
+            $returnData[$k]['infos'] = $v['score'];
         }
         return jsonRes(0, $returnData);
     }
