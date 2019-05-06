@@ -23,4 +23,5 @@ class RedisKey{
 
     public static $USE_VIP_CARD = 'use_vip_card'; # 使用vip卡加锁
 
+    public static $GATEWAY_CACHE = 'gateway_cache:'; # 使用vip卡加锁
 }
