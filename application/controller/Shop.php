@@ -61,12 +61,12 @@ class Shop extends Base
                 $goods = $clubShopModel -> getSomeByWhere(['goods_type'=>10001,'status'=>1],'goods_position desc');
                 break;
             default:
-                return jsonRes(3004);
+                return jsonRes(23403);
                 break;
         }
         //没有商品
         if(!$goods){
-            return jsonRes(3004);
+            return jsonRes(23403);
         }
         $shopList = [];
         foreach ($goods as $good){
