@@ -22,15 +22,13 @@ function p($info){
  * @param $data 返回值
  * @return \think\response\Json\
  */
-function jsonRes($code, $data = [] ){
+function jsonRes($code, $data = []){
     $res = [
         'code' => $code,
         'mess' => CodeMes::$errorCode[$code],
     ];
 
-    if($data){
-        $res['data'] = $data;
-    }
+    $res['data'] = $data;
     return json($res);
 }
 
