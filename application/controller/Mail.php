@@ -17,7 +17,7 @@ class Mail extends Base
 {
 
     /**
-     * 获取邮件列表
+     * 获取邮件列表1
      * @param mail_type:邮件类型,limit:查看的邮件最大数量
      */
     public function lists(){
@@ -211,7 +211,7 @@ class Mail extends Base
     }
 
     /*
-     * 领取邮件里的物品
+     * 领取邮件里的物品1
      */
     public function receive(){
         $player_id = getUserIdFromSession();
@@ -252,7 +252,6 @@ class Mail extends Base
                 }
             }elseif(count($keys) == 2){
                 //添加会员卡
-
                 $addCardResult = $this->addCard($player_id , (int)$keys[0] , (int)$keys[1] , $value);
                 if(!$addCardResult){
                     return jsonRes(3010);
