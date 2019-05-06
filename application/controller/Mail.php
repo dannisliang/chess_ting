@@ -13,6 +13,8 @@ use app\model\UserVipModel;
 use app\model\VipCardModel;
 use think\Db;
 use think\Env;
+use think\Log;
+
 class Mail extends Base
 {
 
@@ -286,7 +288,7 @@ class Mail extends Base
             ];
             //发送数据
             $list = sendHttpRequest(Env::get('inform_url') . Definition::$SEND,$send_data);
-
+            Log::write($list,'notice_error');
             return jsonRes(0);
 
         } else {
