@@ -8,8 +8,6 @@
 namespace app\model;
 
 use think\Model;
-use think\cache\driver\Redis;
-use app\definition\RedisKey;
 class GameServiceNewModel extends Model{
 
     protected $name = 'game_service_new';
