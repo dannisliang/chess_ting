@@ -189,11 +189,9 @@ function getPlayInfoWhichInOptionsInfo($playInfoPlayJsonDecodeChecksGroup, $room
     $ret = '';
     if(is_array($playInfoPlayJsonDecodeChecksGroup) && is_array($roomOptionsInfoOptionsJsonDecode)){
         foreach($playInfoPlayJsonDecodeChecksGroup as $k => $v){
-            if($k === $keyName){
-                if(in_array($v, $roomOptionsInfoOptionsJsonDecode)){
-                    $ret = $v;
-                    break;
-                }
+            if(isset($v['id']) && in_array($v['id'], $roomOptionsInfoOptionsJsonDecode) && isset($v['option'][$keyName])){
+                $ret = $v['option'][$keyName];
+                break;
             }else{
                 $ret = getPlayInfoWhichInOptionsInfo($v, $roomOptionsInfoOptionsJsonDecode, $keyName);
                 if($ret){
