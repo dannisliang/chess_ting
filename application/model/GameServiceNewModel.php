@@ -8,7 +8,8 @@
 namespace app\model;
 
 use think\Model;
-
+use think\cache\driver\Redis;
+use app\definition\RedisKey;
 class GameServiceNewModel extends Model{
 
     protected $name = 'game_service_new';
@@ -27,7 +28,16 @@ class GameServiceNewModel extends Model{
      * @return false|\PDOStatement|string|\think\Collection
      */
     public function getGameService(){
-        return $this->where('is_open', '=', 1)->select();
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
+        $data = $redisHandle->get(RedisKey::$OPEN_SERVICE_CACHE);
+        if($data){
+            return json_decode($data, true);
+        }else{
+            $data = $this->where('is_open', '=', 1)->select();
+            $redisHandle->set(RedisKey::$OPEN_SERVICE_CACHE, json_encode($data));
+            return $data;
+        }
     }
 
     /**

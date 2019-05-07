@@ -7,7 +7,6 @@
  */
 namespace app\controller;
 
-use app\definition\Definition;
 use app\model\AreaModel;
 use app\model\BeeSender;
 use app\model\ClubModel;
