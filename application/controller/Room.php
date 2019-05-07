@@ -293,7 +293,7 @@ class Room extends Base
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
         $createRoomInfo = sendHttpRequest($httpUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
 //        p($createRoomInfo);
-        if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ # 创建房间失败
+        if(!isset($createRoomInfo['content']['result'])){ # 创建房间失败
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
                 $operateData[] = [
                     'uid' => $clubInfo['president_id'],
@@ -308,12 +308,30 @@ class Room extends Base
                     Log::write(json_encode($operateData), 'operateError');
                 }
             }
-
             return jsonRes(3517);
-        }
+        }else{
+            if($createRoomInfo['content']['result'] != 0){
+                if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
+                    $operateData[] = [
+                        'uid' => $clubInfo['president_id'],
+                        'event_type' => '+',
+                        'reason_id' => 8,
+                        'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
+                        'property_name' => '赠送蓝钻',
+                        'change_num' => $needDiamond
+                    ];
+                    $operaRes = operatePlayerProperty($operateData);
+                    if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
+                        Log::write(json_encode($operateData), 'operateError');
+                    }
+                }
 
-        if(isset($createRoomInfo['content']['result']) && ($createRoomInfo['content']['result'] == 10002)){
-            return jsonRes(9999);
+                if($createRoomInfo['content']['result'] == 10002){
+                    return jsonRes(9999);
+                }else{
+                    return jsonRes(3517);
+                }
+            }
         }
 
         # Redis数据
@@ -523,12 +541,16 @@ class Room extends Base
         # 请求逻辑服加入房间
         $joinRoomInfo = sendHttpRequest($roomHashInfo['roomUrl'].Definition::$JOIN_ROOM.$userSessionInfo['userid'], ['roomId' => $this->opt['room_id']]);
 //        p($joinRoomInfo);
-        if(!isset($joinRoomInfo['content']['result']) || ($joinRoomInfo['content']['result'] != 0)){
+        if(!isset($joinRoomInfo['content']['result'])){
             return jsonRes(3506);
-        }
-
-        if(isset($joinRoomInfo['content']['result']) && ($joinRoomInfo['content']['result'] == 10002)){
-            return jsonRes(9999);
+        }else{
+            if($joinRoomInfo['content']['result'] != 0){
+                if($joinRoomInfo['content']['result'] == 10002){
+                    return jsonRes(9999);
+                }else{
+                    return jsonRes(3506);
+                }
+            }
         }
 
         # 使用redis锁写房间数据 失败写日志
@@ -1247,20 +1269,19 @@ class Room extends Base
         }
         $baoSong['opt'] = $this->opt;
 
-        foreach ($userIds as $v){
+        if($userIds){
             # 报送助手
             $zhushou = [
                 'type' => 'common',
                 'timestamp' => time(),
-                'content' => $baoSong,
+                'content' => json_encode($baoSong),
                 'product' => Env::get('app_id'),
-                'filter_userid' => $v,
+                'filter_userid' => $userIds,
                 'filter_clubid' => $roomHashInfo['clubId'],
+                'filter_roomid' => $this->opt['roomId'],
+                'filter_presidentid' => $roomHashInfo['presidentId'],
             ];
-            $data[] = $zhushou;
-        }
-        if(isset($data)){
-            sendHttpRequest(Env::get('zhushou_url'), $data, 'POST', [], ['connect_timeout' => 3]);
+            sendHttpRequest(Env::get('zhushou_url'), $zhushou, 'POST', [], ['connect_timeout' => 3]);
         }
 
         # 会长模式还钻
