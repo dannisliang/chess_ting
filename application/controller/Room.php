@@ -1247,20 +1247,19 @@ class Room extends Base
         }
         $baoSong['opt'] = $this->opt;
 
-        foreach ($userIds as $v){
+        if($userIds){
             # 报送助手
             $zhushou = [
                 'type' => 'common',
                 'timestamp' => time(),
-                'content' => $baoSong,
+                'content' => json_encode($baoSong),
                 'product' => Env::get('app_id'),
-                'filter_userid' => $v,
+                'filter_userid' => $userIds,
                 'filter_clubid' => $roomHashInfo['clubId'],
+                'filter_roomid' => $this->opt['roomId'],
+                'filter_presidentid' => $roomHashInfo['presidentId'],
             ];
-            $data[] = $zhushou;
-        }
-        if(isset($data)){
-            sendHttpRequest(Env::get('zhushou_url'), $data, 'POST', [], ['connect_timeout' => 3]);
+            sendHttpRequest(Env::get('zhushou_url'), $zhushou, 'POST', [], ['connect_timeout' => 3]);
         }
 
         # 会长模式还钻
