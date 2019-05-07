@@ -36,16 +36,7 @@ class ServiceGatewayNewModel extends Model
      * @return array|false|\PDOStatement|string|Model
      */
     public function getServiceGatewayNewInfo($serviceId){
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $data = $redisHandle->get(RedisKey::$GATEWAY_CACHE.$serviceId);
-        if($data){
-            return json_decode($data, true);
-        }else{
-            $data = $this->where('id', '=', $serviceId)->find();
-            $redisHandle->set(RedisKey::$GATEWAY_CACHE.$serviceId, json_encode($data));
-            return $data;
-        }
+        return $this->where('id', '=', $serviceId)->find();
     }
 
     /**
