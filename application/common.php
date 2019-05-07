@@ -215,11 +215,9 @@ function guzzleRequest( $url , $pathInfo , $data )
 {
     //实例化guzzle
     $client = new \guzzle\GuzzleHttp( $url );
-    \think\Log::write($url,'$url_opt_opt');
-    \think\Log::write($data,'$data_optopt');
-    \think\Log::write($pathInfo,'$pathInfo_opt_opt');
+
     $result = $client -> getBodyContent( $pathInfo , $data );
-    \think\Log::write($result,'$resultsdfsdfs');
+
     return $result;
 }
 
