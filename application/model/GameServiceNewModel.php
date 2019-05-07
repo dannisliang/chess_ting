@@ -28,16 +28,7 @@ class GameServiceNewModel extends Model{
      * @return false|\PDOStatement|string|\think\Collection
      */
     public function getGameService(){
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $data = $redisHandle->get(RedisKey::$OPEN_SERVICE_CACHE);
-        if($data){
-            return json_decode($data, true);
-        }else{
-            $data = $this->where('is_open', '=', 1)->select();
-            $redisHandle->set(RedisKey::$OPEN_SERVICE_CACHE, json_encode($data));
-            return $data;
-        }
+        return $this->where('is_open', '=', 1)->select();
     }
 
     /**
