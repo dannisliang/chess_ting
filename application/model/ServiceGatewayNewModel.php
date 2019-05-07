@@ -9,9 +9,7 @@
 namespace app\model;
 
 
-use app\definition\RedisKey;
 use think\Model;
-use think\cache\driver\Redis;
 
 class ServiceGatewayNewModel extends Model
 {
