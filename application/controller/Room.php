@@ -266,6 +266,7 @@ class Room extends Base
         if(!$roomNumber){
             return jsonRes(3517);
         }
+        $roomNumber = (string)$roomNumber;
 
         # 扣会长资产 判断会长资产是否充足 充足直接结算
         if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 直接扣钻
