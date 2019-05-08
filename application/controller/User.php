@@ -31,7 +31,7 @@ class User
     public function getUserInfo()
     {
         //设置程序的开始时间
-        $start_time = microtime();
+//        $start_time = microtime();
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
@@ -95,13 +95,13 @@ class User
             'diamond_num'=> $assets['diamond_num'],
             'gold_num' => $assets['gold_num']
         ];
-        $end_time = microtime();
-        list($beginMTime,$beginTime) = explode(' ',$start_time);
-        list($startMTime,$startTime) = explode(' ',$end_time);
-        $requestBeginTime  = bcadd($beginMTime, $beginTime, 4);
-        $requestEndTime    = bcadd($startMTime, $startTime, 4);
-        $requestKeepTime   = bcsub($requestEndTime, $requestBeginTime, 4);
-        Log::write($requestKeepTime,'getUserInfo_useTime_error');
+//        $end_time = microtime();
+//        list($beginMTime,$beginTime) = explode(' ',$start_time);
+//        list($startMTime,$startTime) = explode(' ',$end_time);
+//        $requestBeginTime  = bcadd($beginMTime, $beginTime, 4);
+//        $requestEndTime    = bcadd($startMTime, $startTime, 4);
+//        $requestKeepTime   = bcsub($requestEndTime, $requestBeginTime, 4);
+//        Log::write($requestKeepTime,'getUserInfo_useTime_error');
         return jsonRes( 0 , $result);
     }
 
