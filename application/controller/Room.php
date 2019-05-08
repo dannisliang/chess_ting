@@ -262,7 +262,7 @@ class Room extends Base
         }
 
         # 生成房间号
-        $roomNumber = $redisHandle->rpoplpush(RedisKey::$ROOM_NUMBER_KEY_LIST, RedisKey::$ROOM_NUMBER_KEY_LIST);
+        $roomNumber = $this->getRoomNum($redisHandle);
         if(!$roomNumber){
             return jsonRes(3517);
         }
@@ -294,6 +294,7 @@ class Room extends Base
         $createRoomInfo = sendHttpRequest($httpUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result'])){ # 创建房间失败
+            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
                 $operateData[] = [
                     'uid' => $clubInfo['president_id'],
@@ -311,7 +312,8 @@ class Room extends Base
             return jsonRes(3517);
         }else{
             if($createRoomInfo['content']['result'] != 0){
-                if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
+                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 还钻
                     $operateData[] = [
                         'uid' => $clubInfo['president_id'],
                         'event_type' => '+',
@@ -427,7 +429,7 @@ class Room extends Base
         $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $roomHashInfo);
 
         # 加入到俱乐部房间集
-        $redisHandle->sadd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+        $redisHandle->sAdd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
 
         # 接口返回值
         $returnData = [
@@ -631,11 +633,6 @@ class Room extends Base
         # 和逻辑服同步
         $gameServiceNew = new GameServiceNewModel();
         $serviceInfos = $gameServiceNew->getGameService();
-        if(!$serviceInfos){ # 没有可用的服务 全都删了
-            Log::write('没有可用服', "error");
-            $redisHandle->del(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
-            return jsonRes(0, ['roominfo' => []]);
-        }
 
         $serviceIds = [];
         foreach ($serviceInfos as $k => $v){
@@ -647,8 +644,9 @@ class Room extends Base
         foreach ($sMembers as $k => $roomNumber){
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
             if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
-                Log::write('房间所在服不可用', "error");
+                Log::write('房间所在服务没开启， 移除房间'.$this->opt['club_id'].'_'.$roomNumber, "log");
                 $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
             }else{
                 $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
             }
@@ -662,8 +660,9 @@ class Room extends Base
             if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                 $newNumbers[] = $roomNumber;
             }else{
-                Log::write('房间不存在', "error");
+                Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
                 $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
             }
         }
         # 和逻辑服同步
@@ -1212,7 +1211,8 @@ class Room extends Base
         }
 
         $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-        $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); # 俱乐部移除房间
+        $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
+        $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         // Todo 报送
@@ -1630,6 +1630,25 @@ class Room extends Base
         }
         # 玩家扣钻模式完成
         return jsonRes(0);
+    }
+
+
+    private function getRoomNum($redisHandle){
+        $roomNum = '';
+
+        $timeout = bcadd(time(), 2, 0);
+        while (true){
+            if(time() > $timeout){
+                break;
+            }
+            $rand = mt_rand(100000, 999999);
+            $res = $redisHandle->sAdd(RedisKey::$USED_ROOM_NUM, $rand);
+            if($res){
+                $roomNum = $rand;
+                break;
+            }
+        }
+        return $roomNum;
     }
 
 
