@@ -288,7 +288,7 @@ class Mail extends Base
             ];
             //发送数据
             $list = sendHttpRequest(Env::get('inform_url') . Definition::$SEND,$send_data);
-            Log::write($list,'notice_error');
+//            Log::write($list,'notice_error');
             return jsonRes(0);
 
         } else {
