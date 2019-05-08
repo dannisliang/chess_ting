@@ -646,8 +646,10 @@ class Room extends Base
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
             if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
                 Log::write('房间所在服务没开启， 移除房间'.$this->opt['club_id'].'_'.$roomNumber, "log");
-                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
-                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                if($res){
+                    $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                }
             }else{
                 $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
             }
@@ -662,8 +664,10 @@ class Room extends Base
                 $newNumbers[] = $roomNumber;
             }else{
                 Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
-                $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
-                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                if($res){
+                    $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                }
             }
         }
         # 和逻辑服同步
@@ -1212,8 +1216,10 @@ class Room extends Base
         }
 
         $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-        $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
-        $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
+        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
+        if($remRes){
+            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
+        }
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         // Todo 报送
