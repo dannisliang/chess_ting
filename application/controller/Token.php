@@ -10,6 +10,7 @@ namespace app\controller;
 
 
 use app\definition\RedisKey;
+use think\Log;
 use think\Session;
 
 class Token extends Base
