@@ -309,7 +309,7 @@ class Club extends Base
             'club_region_name'=> $clubMessage['area_name'] ,//俱乐部地域名
             'club_mode' => $club_mode //俱乐部模式 free免费/divide分成
         ];
-        $this -> beeSender('club_login' , $club_info);
+        $this -> beeSender('club_log_in' , $club_info);
     }
 
     /**
