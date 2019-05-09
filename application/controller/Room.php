@@ -1340,25 +1340,6 @@ class Room extends Base
         }
         # 会长模式报送完成
 
-        # 牌局记录入库
-        if($playerInfo && $this->opt['round']){
-            $addTime = date("Y-m-d H:i:s", time());
-            $insertAll = [];
-            foreach ($playerInfo as $k => $userInfo){
-                $insert = [
-                    'room_id' => $this->opt['roomId'],
-                    'user_id' => $userInfo['userId'],
-                    'club_id' => $roomHashInfo['clubId'],
-                    'add_time' => $addTime,
-                ];
-                $insertAll[] = $insert;
-            }
-            if($insertAll){
-                $userClubRoomRecord = new UserClubRoomRecordModel();
-                $userClubRoomRecord->insertAllUserRecord($insertAll);
-            }
-        }
-
         # 玩家模式扣钻
         if(($roomHashInfo['clubType'] == 0) && $playerInfo && $this->opt['round']){
             $rebate = 0; # 返利基数
@@ -1634,6 +1615,26 @@ class Room extends Base
         $beeSender->batch_send();
         if(!$this->opt['round']){
             $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
+        }
+
+        if($playerInfo && $this->opt['round']){
+            $addTime = date("Y-m-d H:i:s", time());
+            $redisHandle->rEname(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].$addTime);
+
+            $insertAll = [];
+            foreach ($playerInfo as $k => $userInfo){
+                $insert = [
+                    'room_id' => $this->opt['roomId'],
+                    'user_id' => $userInfo['userId'],
+                    'club_id' => $roomHashInfo['clubId'],
+                    'add_time' => $addTime,
+                ];
+                $insertAll[] = $insert;
+            }
+            if($insertAll){
+                $userClubRoomRecord = new UserClubRoomRecordModel();
+                $userClubRoomRecord->insertAllUserRecord($insertAll);
+            }
         }
         # 玩家扣钻模式完成
         return jsonRes(0);
