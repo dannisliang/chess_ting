@@ -475,6 +475,7 @@ class Club extends Base
         }
 
         $room_type = [];
+
         foreach ($room_options as $room_option){
             $room_type[] = $room_option['room_type'];
         }
