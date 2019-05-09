@@ -562,12 +562,9 @@ class Club extends Base
             }
             //人数
             $playSize = getRoomNeedUserNum(json_decode($val['play'],true),json_decode($val['options'],true));
-            //如果反回false则说明配置规则有问题
-            if (!$playSize){
+
+            if($playSize == 0 || !$playSize){
                 $diamond = $val['diamond'];
-            }
-            if($diamond == 0){
-                $diamond = 0;
             }else{
                 $diamond = $diamond/$playSize;
             }
