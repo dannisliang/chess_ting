@@ -1222,6 +1222,41 @@ class Room extends Base
         }
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
+        // 牌局记录
+        if($this->opt['round']){
+            $addTime = date("Y-m-d H:i:s", time());
+
+            # 上传游戏记录到华为云
+            $obsClient = new ObsClient([
+                'key' => Env::get('obs.key'),
+                'secret' => Env::get('obs.secret'),
+                'endpoint' => Env::get('obs.endpoint')
+            ]);
+
+            $obsClient -> putObject([
+                'Bucket' => Env::get('obs.chess_record'),
+                'Key' => $addTime.$this->opt['roomId'],
+                'Body' => $roomHashInfo
+            ]);
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
+
+            $insertAll = [];
+            foreach ($playerInfo as $k => $userInfo){
+                $insert = [
+                    'room_id' => $this->opt['roomId'],
+                    'user_id' => $userInfo['userId'],
+                    'club_id' => $roomHashInfo['clubId'],
+                    'add_time' => $addTime,
+                ];
+                $insertAll[] = $insert;
+            }
+            if($insertAll){
+                $userClubRoomRecord = new UserClubRoomRecordModel();
+                $userClubRoomRecord->insertAllUserRecord($insertAll);
+            }
+        }
+        // 牌局记录完成
+
         // Todo 报送
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
 
@@ -1617,25 +1652,7 @@ class Room extends Base
             $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         }
 
-        if($playerInfo && $this->opt['round']){
-            $addTime = date("Y-m-d H:i:s", time());
-            $redisHandle->rEname(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].$addTime);
 
-            $insertAll = [];
-            foreach ($playerInfo as $k => $userInfo){
-                $insert = [
-                    'room_id' => $this->opt['roomId'],
-                    'user_id' => $userInfo['userId'],
-                    'club_id' => $roomHashInfo['clubId'],
-                    'add_time' => $addTime,
-                ];
-                $insertAll[] = $insert;
-            }
-            if($insertAll){
-                $userClubRoomRecord = new UserClubRoomRecordModel();
-                $userClubRoomRecord->insertAllUserRecord($insertAll);
-            }
-        }
         # 玩家扣钻模式完成
         return jsonRes(0);
     }
