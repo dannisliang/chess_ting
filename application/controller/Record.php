@@ -35,37 +35,42 @@ class Record extends Base{
             return jsonRes(0, []);
         }
 
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
+        $obsClient = new ObsClient([
+            'key' => Env::get('obs.key'),
+            'secret' => Env::get('obs.secret'),
+            'endpoint' => Env::get('obs.endpoint')
+        ]);
 
         $returnData = [];
         foreach ($userClubRoomRecordInfo as $k => $v){
-            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'])){
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$v['room_id'], ['playChecks', 'gameEndTime', 'playerInfos', 'roomOptions', 'gameEndInfo', 'roomCode', 'roomName']);
-                $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
-                $gameEndInfo = json_decode($roomHashInfo['gameEndInfo'], true);
-                # 处理数据
-                $userScore = [];
-                foreach ($gameEndInfo as $kk => $scoreInfo){
-                    $userScore[$scoreInfo['playerId']] = $scoreInfo['totalScore'];
-                }
-                foreach ($roomUserInfo as $kkk => $userInfo){
-                    $roomUserInfo[$kkk]['head_img'] = $roomUserInfo[$kkk]['headImgUrl'];
-                    $roomUserInfo[$kkk]['nickname'] = $roomUserInfo[$kkk]['nickName'];
-                    $roomUserInfo[$kkk]['player_id'] = $roomUserInfo[$kkk]['userId'];
-                    $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
-                }
-
-                $return = [];
-                $return['check'] = json_decode($roomHashInfo['playChecks'], true);
-                $return['name'] = $roomHashInfo['roomName'];
-                $return['player_infos'] = $roomUserInfo;
-                $return['time'] = strtotime($roomHashInfo['gameEndTime']);
-                $return['room_id'] = $v['room_id'];
-                $return['options'] = json_decode($roomHashInfo['roomOptions'], true);
-                $return['room_code'] = $roomHashInfo['roomCode'];
-                $returnData[] = $return;
+            $gameInfo = $obsClient->getObject([
+                'Bucket' => Env::get('obs.chess_record'),
+                'Key' => $v['add_time'].$v['room_id'],
+            ]);
+            $body = json_decode($gameInfo['Body'], true);
+            $roomUserInfo = json_decode($body['playerInfos'], true);
+            $gameEndInfo = json_decode($body['gameEndInfo'], true);
+            # 处理数据
+            $userScore = [];
+            foreach ($gameEndInfo as $kk => $scoreInfo){
+                $userScore[$scoreInfo['playerId']] = $scoreInfo['totalScore'];
             }
+            foreach ($roomUserInfo as $kkk => $userInfo){
+                $roomUserInfo[$kkk]['head_img'] = $roomUserInfo[$kkk]['headImgUrl'];
+                $roomUserInfo[$kkk]['nickname'] = $roomUserInfo[$kkk]['nickName'];
+                $roomUserInfo[$kkk]['player_id'] = $roomUserInfo[$kkk]['userId'];
+                $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
+            }
+
+            $return = [];
+            $return['check'] = json_decode($body['playChecks'], true);
+            $return['name'] = $body['roomName'];
+            $return['player_infos'] = $roomUserInfo;
+            $return['time'] = strtotime($body['gameEndTime']);
+            $return['room_id'] = $v['add_time'].$v['room_id'];
+            $return['options'] = json_decode($body['roomOptions'], true);
+            $return['room_code'] = $body['roomCode'];
+            $returnData[] = $return;
         }
         return jsonRes(0, $returnData);
     }
@@ -76,15 +81,20 @@ class Record extends Base{
             return jsonRes(3006);
         }
 
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'])){
-            return jsonRes(3006);
-        }
+        $obsClient = new ObsClient([
+            'key' => Env::get('obs.key'),
+            'secret' => Env::get('obs.secret'),
+            'endpoint' => Env::get('obs.endpoint')
+        ]);
 
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['roundEndInfo', 'playerInfos']);
-        $roundEndInfo = json_decode($roomHashInfo['roundEndInfo'], true);
-        $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
+        $gameInfo = $obsClient->getObject([
+            'Bucket' => Env::get('obs.chess_record'),
+            'Key' => $this->opt['room_id'],
+        ]);
+        $body = json_decode($gameInfo['Body'], true);
+
+        $roundEndInfo = json_decode($body['roundEndInfo'], true);
+        $playerInfos = json_decode($body['playerInfos'], true);
 
         if(!is_array($playerInfos) || !is_array($roundEndInfo)){
             return jsonRes(0, []);
@@ -112,15 +122,19 @@ class Record extends Base{
         }
 
         $recordArr = explode('|', $this->opt['record_id']);
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        if (!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH . $recordArr[0])) {
-            return jsonRes(3006);
-        }
+        $obsClient = new ObsClient([
+            'key' => Env::get('obs.key'),
+            'secret' => Env::get('obs.secret'),
+            'endpoint' => Env::get('obs.endpoint')
+        ]);
 
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$recordArr[0], ['playChecks', 'playerInfos']);
+        $gameInfo = $obsClient->getObject([
+            'Bucket' => Env::get('obs.chess_record'),
+            'Key' => $recordArr[0],
+        ]);
+        $body = json_decode($gameInfo['Body'], true);
 
-        $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
+        $playerInfos = json_decode($body['playerInfos'], true);
         if(!$playerInfos){
             return jsonRes(3006);
         }
@@ -137,19 +151,13 @@ class Record extends Base{
             $userInfos[$k]['bad_num'] = 0;
         }
 
-        $obsClient = new ObsClient([
-            'key' => Env::get('obs.key'),
-            'secret' => Env::get('obs.secret'),
-            'endpoint' => Env::get('obs.endpoint')
-        ]);
-
         $playBackInfo = $obsClient->getObject([
             'Bucket' => Env::get('obs.chess_record'),
             'Key' => $recordArr[1],
         ]);
 
         $returnData = [
-            'room_check' => json_decode($roomHashInfo['playChecks'], true),
+            'room_check' => json_decode($body['playChecks'], true),
             'data' => json_decode($playBackInfo['Body'], true),
             'user_info' => $userInfos
         ];
