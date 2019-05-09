@@ -1236,7 +1236,7 @@ class Room extends Base
             $obsClient -> putObject([
                 'Bucket' => Env::get('obs.chess_record'),
                 'Key' => $addTime.$this->opt['roomId'],
-                'Body' => $roomHashInfo
+                'Body' => json_encode($roomHashInfo)
             ]);
             $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
 
@@ -1254,6 +1254,10 @@ class Room extends Base
                 $userClubRoomRecord = new UserClubRoomRecordModel();
                 $userClubRoomRecord->insertAllUserRecord($insertAll);
             }
+        }
+
+        if(!$this->opt['round']){
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         }
         // 牌局记录完成
 
@@ -1648,11 +1652,6 @@ class Room extends Base
             }
         }
         $beeSender->batch_send();
-        if(!$this->opt['round']){
-            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-        }
-
-
         # 玩家扣钻模式完成
         return jsonRes(0);
     }

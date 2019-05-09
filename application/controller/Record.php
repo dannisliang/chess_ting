@@ -77,7 +77,7 @@ class Record extends Base{
 
     # 获取房间的牌局记录
     public function getRecordList(){
-        if(!isset($this->opt['room_id']) || !is_numeric($this->opt['room_id'])){
+        if(!isset($this->opt['room_id'])){
             return jsonRes(3006);
         }
 
