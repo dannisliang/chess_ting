@@ -30,8 +30,6 @@ class User
      */
     public function getUserInfo()
     {
-        //设置程序的开始时间
-//        $start_time = microtime();
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
@@ -47,7 +45,7 @@ class User
         //获取用户电话
         $phone_num  = isset($user_info['tel_number']) ? $user_info['tel_number'] : '' ;
         //获取是否显示招募代理入口参数
-        $is_open    = $this -> isShowAgentEntrance();
+        $is_open    = (int)Env::get('recruit.is_open');
 
         //获取上次登录的俱乐部id
         $lastClub = $lastClubModel -> getLastClubId($user_id);
@@ -95,13 +93,6 @@ class User
             'diamond_num'=> $assets['diamond_num'],
             'gold_num' => $assets['gold_num']
         ];
-//        $end_time = microtime();
-//        list($beginMTime,$beginTime) = explode(' ',$start_time);
-//        list($startMTime,$startTime) = explode(' ',$end_time);
-//        $requestBeginTime  = bcadd($beginMTime, $beginTime, 4);
-//        $requestEndTime    = bcadd($startMTime, $startTime, 4);
-//        $requestKeepTime   = bcsub($requestEndTime, $requestBeginTime, 4);
-//        Log::write($requestKeepTime,'getUserInfo_useTime_error');
         return jsonRes( 0 , $result);
     }
 
@@ -293,20 +284,6 @@ class User
         }
         $club_name = base64_decode($club['club_name']);
         return $club_name;
-    }
-
-    /**
-     * 显示是否显示招募代理入口
-     * @return mixed
-     */
-    private function isShowAgentEntrance()
-    {
-        //是否显示招募代理入口
-        $file_path = __DIR__ . "/../../application/open_recruit.php";
-        $str = file_get_contents($file_path);//将整个文件内容读入到一个字符串中
-        $str = str_replace("\r\n","<br />",$str);
-        $str = json_decode($str,true);
-        return $str['is_open'];
     }
 
     /**

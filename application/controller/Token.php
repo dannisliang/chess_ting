@@ -20,7 +20,6 @@ class Token extends Base
      * @return \think\response\Json\
      */
     public function getToken(){
-//        $start_time = microtime();
         //验证必须传的参数
         $opt = ['player_id','token','client_type','app_type'];// uid token 机型 app还是h5
         if(!has_keys($opt,$this->opt,true)){
@@ -74,13 +73,6 @@ class Token extends Base
             return jsonRes(3018);
         }
         Session::set(RedisKey::$USER_SESSION_INFO, $user_data);
-//        $end_time = microtime();
-//        list($beginMTime,$beginTime) = explode(' ',$start_time);
-//        list($startMTime,$startTime) = explode(' ',$end_time);
-//        $requestBeginTime  = bcadd($beginMTime, $beginTime, 4);
-//        $requestEndTime    = bcadd($startMTime, $startTime, 4);
-//        $requestKeepTime   = bcsub($requestEndTime, $requestBeginTime, 4);
-//        Log::write($requestKeepTime,'getToken_useTime_error');
         return jsonRes( 0 ,[
             'session_id' => session_id(),
             'curent_time'=> time()
