@@ -358,7 +358,6 @@ class Shop extends Base
         //获取签名？应该
         $sign = $this -> get_sign($sign_data , 'c80b7d337dc57d5d');
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Env::get('app_id') . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
-
         $result = sendHttpRequest( $url );
         if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
             return jsonRes(3004);
