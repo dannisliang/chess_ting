@@ -462,7 +462,7 @@ class Club extends Base
                 'club_type' => $clubInfo['club_type'], //0:A模式 1：B模式
                 'gameinfos' => [],
                 'area_id'   => $clubInfo['area_id'],
-                'area_name' => $area['area_name'],
+                'area_name' => isset($area['area_name']) ? $area['area_name'] : '',
 
             ];
 
@@ -505,7 +505,7 @@ class Club extends Base
         //获取游戏的游戏信息
         foreach ($playOptions as $val){
             //查找合适的服务器
-            if($club_id == 999999 || $club_id == 555555 || $club_id == 888888 || $club_id == 777777){
+            if(false == Env::get('is_online') && in_array($club_id, [555555, 999999, 888888, 777777])){
                 $socket = $club_socket->getClubSocketInfo($club_id);
                 $back_list['socket_url'] = $socket['socket_url'];
                 $socket_h5 = $socket['socket_h5'];
@@ -540,7 +540,7 @@ class Club extends Base
             'club_name' => base64_decode($clubInfo['club_name']),
             'club_type' => $clubInfo['club_type'], //0:A模式 1：B模式
             'area_id'   => $clubInfo['area_id'],  //俱乐部地区id
-            'area_name' => $area['area_name'],    //俱乐部地区名称
+            'area_name' => isset($area['area_name']) ? $area['area_name'] : '',//俱乐部地区名称
         ];
 
         return $list;
