@@ -1587,7 +1587,7 @@ class Room extends Base
                                 'room_type_id' => $roomHashInfo['roomOptionsId'],
                                 'room_type_name' => $roomHashInfo['roomTypeName'],
                                 'token_name' => 'money',
-                                'token_num' => bcmul($generalRebateData[0]['change_num'], 100, 0),
+                                'token_num' => $generalRebateData[0]['change_num'],
                                 'pay_mode' => $roomHashInfo['payMode'],
                             ];
                             $beeSender->send('club_rebate', $bigData);
@@ -1628,7 +1628,7 @@ class Room extends Base
                                 'do_rebate_user_id' => $roomHashInfo['presidentId'],
                                 'do_rebate_user_name' => $roomHashInfo['presidentNickName'],
                                 'token_name' => 'money',
-                                'token_num' => bcmul($seniorRebateData[0]['change_num'], 100, 0),
+                                'token_num' => $seniorRebateData[0]['change_num'],
                             ];
                             $beeSender->send('highlevel_club_rebate', $bigData);
                         }
@@ -1663,7 +1663,7 @@ class Room extends Base
                                 'do_rebate_user_id' => $roomHashInfo['seniorPresidentId'],
                                 'do_rebate_user_name' => $roomHashInfo['seniorPresidentNickName'],
                                 'token_name' => 'money',
-                                'token_num' => bcmul($businessRebateData[0]['change_num'], 100, 0),
+                                'token_num' => $businessRebateData[0]['change_num'],
                             ];
                             $beeSender->send('business_club_rebate', $bigData);
                         }
