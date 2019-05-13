@@ -157,13 +157,13 @@ class Vip extends Base{
             'ip' => $userSessionInfo['ip'],
 
             'club_id' => $this->opt['club_id'],
-            'club_name' => $clubInfo['club_name'],
+            'club_name' => base64_decode($clubInfo['club_name']),
             'club_region_id' => $clubInfo['area_id'],
             'club_region_name' => $areaInfo['area_name'],
             'club_mode' => $clubMode,
             'reason' => '-',
             'props_id' => $this->opt['vid'],
-            'props_name' => '会员卡',
+            'props_name' => $vipCardInfo['name'],
             'props_num' => 1,
         ];
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
