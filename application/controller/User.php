@@ -33,7 +33,6 @@ class User
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
-//        $user_id = 506422;
         if(!$user_id){
             return jsonRes(9999);
         }
