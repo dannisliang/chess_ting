@@ -569,8 +569,8 @@ function getBeeBaseInfo($uuid = '-',$senior_id = null){
         'client_id' => $uuid,  //设备的UUID（可传-号）
         'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
 
-        'system_type'=> $session_info['app_type'], //操作系统
-        'client_type'=> $session_info['client_type'], //设备端应用类型
+        'system_type'=> $session_info['client_type'], //操作系统
+        'client_type'=> $session_info['app_type'], //设备端应用类型
     ];
     return $content;
 }
