@@ -539,13 +539,13 @@ function getRoomIdFromService($user_id){
 function getBeeBaseInfo($uuid = '-',$senior_id = null){
     $session_info = Session::get(RedisKey::$USER_SESSION_INFO);
     if(!$session_info){
-        return false;
+        return [];
     }
     //判断是否是高级会长
     if($senior_id){
         $user_info = getUserBaseInfo($senior_id);
         if (!$user_info){
-            return false;
+            return [];
         }
         //基础事件
         $content = [

@@ -41,6 +41,7 @@ class PaySuccessCallBack
         //验证签名是否合法
         $key_sign = $this ->get_sign($sign_data,Env::get('sign'));
         if($key_sign != $sign){
+            Log::write($key_sign . '----' . $sign ,'sign_error');
             return json(['result'=>3]); //签名不合法
         }
 
@@ -160,7 +161,7 @@ class PaySuccessCallBack
                 return -4;
             }
             //报送大数据(修改成功)
-//            $this ->buyDiamondSendBeeSend($order , $pay_type , $buyDiamond + $freeDiamond,'success');
+            $this ->buyDiamondSendBeeSend($order , $pay_type , $buyDiamond + $freeDiamond,'success');
             Db::commit();
         }catch (\Exception $e){
             Db::rollback();
@@ -188,6 +189,7 @@ class PaySuccessCallBack
         ];
         $clubInfo = getClubNameAndAreaName($order['club_id']);
         $baseInfo = getBeeBaseInfo();
+        Log::write($baseInfo , 'Base_info_error');
         $contents = array_merge($content,$clubInfo,$baseInfo);
         $this -> beeSend('recharge_finish' , $contents);
     }
