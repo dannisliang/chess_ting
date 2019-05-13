@@ -1080,6 +1080,12 @@ class Room extends Base
                     $isWin = 'win';
                     $winType = json_encode($this->opt['faanNames']);
                 }
+                $score = 0;
+                foreach ($this->opt['score'] as $kkk => $vvv){
+                    if($vvv['playerId'] == $userInfo['userId']){
+                        $score = $vvv['score'];
+                    }
+                }
                 $bigData = [
                     'server_id' => '-',
                     'user_id' => $userInfo['userId'],
@@ -1102,7 +1108,7 @@ class Room extends Base
                     'win_type' => $winType,
                     'token_name' => 'score',
                     'token_num' => $userScore[$userInfo['userId']],
-                    'current_token' => 'score',
+                    'current_token' => $score,
                     'keep_time' => $this->opt['duration'],
                     'club_id' => $roomHashInfo['clubId'],
                     'club_name' => $roomHashInfo['clubName'],
@@ -1481,6 +1487,40 @@ class Room extends Base
                         $users[$userInfo['userId']] = $userInfo;
                     }
 
+                    $currentToken = [];
+                    foreach ($operateDataFor as $kk =>$vv){
+                        if(isset($userDiamondInfos[$kk]['code']) && ($userDiamondInfos[$kk]['code'] == 0)){
+                            $noBindDiamond = 0;
+                            $bindDiamond = 0;
+                            $gold = 0;
+
+                            foreach ($userDiamondInfos[$kk]['data'] as $k => $v){
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
+                                    $noBindDiamond = $v['property_num'];
+                                }
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
+                                    $bindDiamond = $v['property_num'];
+                                }
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_GOLD){
+                                    $gold = $v['property_num'];
+                                }
+                            }
+                            $user_diamond = $noBindDiamond + $bindDiamond;
+                            $currentToken[$kk] = bcsub($user_diamond, $vv, 0);
+                            $send_data = array();
+                            $send_user[0] = $kk;
+                            $send_data['content']['gold'] = (int)$gold;
+                            $send_data['content']['diamond'] = (int)bcsub($user_diamond, $vv, 0);
+                            $send_data['type'] = 1029;
+                            $send_data['sender'] = 0;
+                            $send_data['reciver'] = $send_user;
+                            $send_data['appid'] = Env::get('app_id');
+                            $send_url = Env::get('inform_url') . 'api/send.php';
+                            $client = new Client();
+                            $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
+                        }
+                    }
+
                     foreach ($operateData as $k => $v){
                         $bigData = [
                             'server_id' => '-',
@@ -1506,43 +1546,10 @@ class Room extends Base
                             'token_name' => 'diamond',
                             'token_num' => $v['change_num'],
                             'token_type' => $v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING ? 'pay' : 'free',
-                            'current_token' => '-',
+                            'current_token' => isset($currentToken[$v['uid']]) ? isset($currentToken[$v['uid']]) : 0,
                             'player_list' => json_encode($userIds),
                         ];
                         $beeSender->add_batch('room_token_reduce', $bigData);
-                    }
-
-                    foreach ($operateDataFor as $kk =>$vv){
-                        if(isset($userDiamondInfos[$kk]['code']) && ($userDiamondInfos[$kk]['code'] == 0)){
-                            $noBindDiamond = 0;
-                            $bindDiamond = 0;
-                            $gold = 0;
-
-                            foreach ($userDiamondInfos[$kk]['data'] as $k => $v){
-                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
-                                    $noBindDiamond = $v['property_num'];
-                                }
-                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
-                                    $bindDiamond = $v['property_num'];
-                                }
-                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_GOLD){
-                                    $gold = $v['property_num'];
-                                }
-                            }
-                            
-                            $user_diamond = $noBindDiamond + $bindDiamond;
-                            $send_data = array();
-                            $send_user[0] = $kk;
-                            $send_data['content']['gold'] = $gold;
-                            $send_data['content']['diamond'] = bcsub($user_diamond, $vv, 0);
-                            $send_data['type'] = 1029;
-                            $send_data['sender'] = 0;
-                            $send_data['reciver'] = $send_user;
-                            $send_data['appid'] = Env::get('app_id');
-                            $send_url = Env::get('inform_url') . 'api/send.php';
-                            $client = new Client();
-                            $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
-                        }
                     }
                 }
             }
