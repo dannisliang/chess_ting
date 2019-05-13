@@ -970,7 +970,7 @@ class Room extends Base
     }
     # 牌局游戏开始回调完成
     public function roundStartGameCallBack(){
-        if(!isset($this->opt['set']) || !is_numeric($this->opt['set']) || !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId'])){
+        if(!isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId'])){
             return jsonRes(0);
         }
         $redis = new Redis();
@@ -1001,7 +1001,7 @@ class Room extends Base
                     'room_type_id' => $roomHashInfo['roomOptionsId'],
                     'room_type_name' => $roomHashInfo['roomTypeName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
-                    'table_id' => $this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+                    'table_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 1).'_'.$this->opt['round'],
                     'rule_detail' => '',
                     'bet_num' => $roomHashInfo['betNums'],
                     'user_num' => $roomHashInfo['needUserNum'],
@@ -1011,16 +1011,15 @@ class Room extends Base
                     'club_region_name' => $roomHashInfo['clubRegionName'],
                     'club_mode' => $roomHashInfo['clubMode'],
                 ];
-                $beeSender->add_batch('table_start', $bigData);
+                $beeSender->send('table_start', $bigData);
             }
         }
-        $beeSender->batch_send();
         # 报送大数据完成
         return jsonRes(0);
     }
     # 牌局游戏结束回调完成
     public function roundEndGameCallBack(){
-        if(!isset($this->opt['faanNames']) || !isset($this->opt['score']) || !isset($this->opt['roomId']) || !isset($this->opt['set']) || !isset($this->opt['round']) || !isset($this->opt['winnerIds']) || !isset($this->opt['duration']) || !isset($this->opt['playBack'])){
+        if(!isset($this->opt['faanNames']) || !isset($this->opt['score']) || !isset($this->opt['roomId']) || !isset($this->opt['round']) || !isset($this->opt['winnerIds']) || !isset($this->opt['duration']) || !isset($this->opt['playBack'])){
             return jsonRes(0);
         }
         if(!is_numeric($this->opt['set']) || !is_numeric($this->opt['round']) || !is_numeric($this->opt['roomId'])){
@@ -1040,7 +1039,7 @@ class Room extends Base
             'endpoint' => Env::get('obs.endpoint')
         ]);
 
-        $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'];
+        $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
         $obsClient -> putObject([
             'Bucket' => Env::get('obs.chess_record'),
             'Key' => $roundId,
@@ -1075,7 +1074,7 @@ class Room extends Base
 
             foreach ($playerInfo as $k => $userInfo){
                 $isWin = 'lose';
-                $winType = '';
+                $winType = '-';
                 if(in_array($userInfo['userId'], $this->opt['winnerIds'])){
                     $isWin = 'win';
                     $winType = json_encode($this->opt['faanNames']);
@@ -1100,7 +1099,7 @@ class Room extends Base
                     'room_type_id' => $roomHashInfo['roomOptionsId'],
                     'room_type_name' => $roomHashInfo['roomTypeName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
-                    'table_id' => $this->opt['roomId'].'_'.$this->opt['set'].'_'.$this->opt['round'],
+                    'table_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'],
                     'rule_detail' => '-',
                     'bet_num' => $roomHashInfo['betNums'],
                     'user_num' => $roomHashInfo['needUserNum'],
@@ -1116,10 +1115,9 @@ class Room extends Base
                     'club_region_name' => $roomHashInfo['clubRegionName'],
                     'club_mode' => $roomHashInfo['clubMode'],
                 ];
-                $beeSender->add_batch('table_finish', $bigData);
+                $beeSender->send('table_finish', $bigData);
             }
         }
-        $beeSender->batch_send();
         # 报送大数据完成
         return jsonRes(0);
     }
@@ -1290,7 +1288,7 @@ class Room extends Base
                     'table_type' => $roomHashInfo['tableType'],
                     'table_num' => $roomHashInfo['tableNum'],
                     'table_true_num' => $this->opt['round'],
-                    'close_reason' => $this->opt['round'] >= $roomHashInfo['tableNum'] ? '完成' : '中断',
+                    'close_reason' => ($this->opt['round'] >= $roomHashInfo['tableNum']) ? 'finish' : 'out',
                     'keep_time' => bcsub(strtotime($roomHashInfo['gameEndTime']), strtotime($roomHashInfo['gameStartTime']), 0),
                     'club_id' => $roomHashInfo['clubId'],
                     'club_name' => $roomHashInfo['clubName'],
@@ -1299,7 +1297,7 @@ class Room extends Base
                     'club_mode' => $roomHashInfo['clubMode'],
                 ];
 
-                $beeSender->add_batch('room_close', $bigData);
+                $beeSender->send('room_close', $bigData);
             }
         }
         # 报送完成
@@ -1381,7 +1379,7 @@ class Room extends Base
                 'current_token' => '-',
                 'player_list' => json_encode($userIds)
             ];
-            $beeSender->add_batch('room_token_reduce', $bigData);
+            $beeSender->send('room_token_reduce', $bigData);
         }
         # 会长模式报送完成
 
@@ -1546,10 +1544,10 @@ class Room extends Base
                             'token_name' => 'diamond',
                             'token_num' => $v['change_num'],
                             'token_type' => $v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING ? 'pay' : 'free',
-                            'current_token' => isset($currentToken[$v['uid']]) ? isset($currentToken[$v['uid']]) : 0,
+                            'current_token' => isset($currentToken[$v['uid']]) ? $currentToken[$v['uid']] : 0,
                             'player_list' => json_encode($userIds),
                         ];
-                        $beeSender->add_batch('room_token_reduce', $bigData);
+                        $beeSender->send('room_token_reduce', $bigData);
                     }
                 }
             }
@@ -1592,7 +1590,7 @@ class Room extends Base
                                 'token_num' => bcmul($generalRebateData[0]['change_num'], 100, 0),
                                 'pay_mode' => $roomHashInfo['payMode'],
                             ];
-                            $beeSender->add_batch('club_rebate', $bigData);
+                            $beeSender->send('club_rebate', $bigData);
                         }
                     }
                 }
@@ -1632,7 +1630,7 @@ class Room extends Base
                                 'token_name' => 'money',
                                 'token_num' => bcmul($seniorRebateData[0]['change_num'], 100, 0),
                             ];
-                            $beeSender->add_batch('highlevel_club_rebate', $bigData);
+                            $beeSender->send('highlevel_club_rebate', $bigData);
                         }
                     }
                 }
@@ -1667,13 +1665,12 @@ class Room extends Base
                                 'token_name' => 'money',
                                 'token_num' => bcmul($businessRebateData[0]['change_num'], 100, 0),
                             ];
-                            $beeSender->add_batch('business_club_rebate', $bigData);
+                            $beeSender->send('business_club_rebate', $bigData);
                         }
                     }
                 }
             }
         }
-        $beeSender->batch_send();
         # 玩家扣钻模式完成
         return jsonRes(0);
     }
