@@ -279,6 +279,10 @@ class Shop extends Base
         if(!has_keys($opt , $this->opt)){
             return jsonRes(3006);
         }
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        $client_type= $user_session_info['client_type'];
+        $app_type   = $user_session_info['app_type'];
+        Log::write($client_type,'client_type_error');
         Log::write($this->opt,'opt_error');
         $clubShopModel = new ClubShopModel();
         $clubVipModel  = new ClubVipModel();
@@ -356,19 +360,17 @@ class Shop extends Base
             'ret_url' => $ret_url,
         ];
         //获取签名
-//        $sign = $this -> get_sign($sign_data , Env::get('sign'));
-//        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Env::get('app_id') . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
-//        Log::write($url , 'url_error');
-//        $result = sendHttpRequest( $url );
-//        Log::write($result,'result_error');
-//        if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
-//            return jsonRes(3004);
-//        }
+        $sign = $this -> get_sign($sign_data , Env::get('sign'));
+        $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Env::get('app_id') . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
+        $result = sendHttpRequest( $url );
+        Log::write($result,'result_error');
+        if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
+            return jsonRes(3004);
+        }
         //获取机型 和 类型
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         $client_type= $user_session_info['client_type'];
         $app_type   = $user_session_info['app_type'];
-        var_dump($client_type,$app_type);die;
         $data = [
             'id'            => $order_num,
             'fee'           => $price,
