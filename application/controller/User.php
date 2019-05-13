@@ -57,7 +57,7 @@ class User
             $club_name = $this -> getClubName($lastClub['club_id']);
         }
 
-//        //检测玩家是否存在于房间中
+        //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
         //返回房间信息
