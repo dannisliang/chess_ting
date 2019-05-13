@@ -51,7 +51,10 @@ class PaySuccessCallBack
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
-
+        //订单状态已经改变
+        if($order['order_status'] == 1 || $order['order_status'] == 2){
+            return json(['result' => 3]);
+        }
         //判断订单类型 是买卡的还是买钻石的
         if(!empty($order['vip_id'])){
             //获取会员卡信息(会长返利)
