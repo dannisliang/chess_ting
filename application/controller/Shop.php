@@ -279,12 +279,12 @@ class Shop extends Base
         if(!has_keys($opt , $this->opt)){
             return jsonRes(3006);
         }
-
+        Log::write($this->opt,'opt_error');
         $clubShopModel = new ClubShopModel();
         $clubVipModel  = new ClubVipModel();
         $vipCardModel  = new VipCardModel();
 
-        $ret_url = Definition::$TJMAHJONG_CHESSVANS; //支付返回页面
+        $ret_url = Env::get('ret_url'); //支付返回页面
         if($this->opt['url_id']){
             $ret_url = Definition::$TJMAHJONG_CHESSVANS . $this -> opt['url_id'];
         }
@@ -326,7 +326,7 @@ class Shop extends Base
         $time = date('Y-m-d H:i:s');
         $ret_url = urlencode($ret_url);
 
-        $notify_url = Definition::$ASYNC_CALLBACK_URL;//异步回调地址
+        $notify_url = Env::get('async_callback_url');//异步回调地址
         $notify_url = urlencode($notify_url);
 
         switch ($type){
@@ -355,11 +355,12 @@ class Shop extends Base
             'notify_url' => $notify_url,
             'ret_url' => $ret_url,
         ];
-        //获取签名？应该
-        $sign = $this -> get_sign($sign_data , 'c80b7d337dc57d5d');
+        //获取签名
+        $sign = $this -> get_sign($sign_data , Env::get('sign'));
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Env::get('app_id') . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
-
+        Log::write($url , 'url_error');
         $result = sendHttpRequest( $url );
+        Log::write($result,'result_error');
         if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
             return jsonRes(3004);
         }

@@ -35,10 +35,12 @@ class PaySuccessCallBack
         if(!has_keys($opt,$sign_data)){
             return json(['result'=>3]); //缺少参数
         }
+        $sign = $_GET['sign'];
         $pay_type = $_GET['pay_type'];
+        unset($sign_data['sign']);
         //验证签名是否合法
-        $key_sign = $this ->get_sign($sign_data,'c80b7d337dc57d5d');
-        if($key_sign != $sign_data['sign']){
+        $key_sign = $this ->get_sign($sign_data,Env::get('sign'));
+        if($key_sign != $sign){
             return json(['result'=>3]); //签名不合法
         }
 
@@ -135,7 +137,7 @@ class PaySuccessCallBack
         }
         //给客户端发送一条数据
         $content = [
-            'vip_card' => $buyDiamond + $freeDiamond,
+            'diamond' => $buyDiamond + $freeDiamond,
             'gold'    => $gold,
         ];
         $reciver = [ $order['player_id']];
@@ -158,7 +160,7 @@ class PaySuccessCallBack
                 return -4;
             }
             //报送大数据(修改成功)
-            $this ->buyDiamondSendBeeSend($order , $pay_type , $buyDiamond + $freeDiamond,'success');
+//            $this ->buyDiamondSendBeeSend($order , $pay_type , $buyDiamond + $freeDiamond,'success');
             Db::commit();
         }catch (\Exception $e){
             Db::rollback();
