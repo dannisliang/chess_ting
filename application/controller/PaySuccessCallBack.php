@@ -35,10 +35,13 @@ class PaySuccessCallBack
         if(!has_keys($opt,$sign_data)){
             return json(['result'=>3]); //缺少参数
         }
+        $sign = $_GET['sign'];
         $pay_type = $_GET['pay_type'];
+        unset($sign_data['sign']);
         //验证签名是否合法
-        $key_sign = $this ->get_sign($sign_data,'c80b7d337dc57d5d');
-        if($key_sign != $sign_data['sign']){
+        $key_sign = $this ->get_sign($sign_data,Env::get('sign'));
+        if($key_sign != $sign){
+            Log::write($key_sign . '----' . $sign ,'sign_error');
             return json(['result'=>3]); //签名不合法
         }
 
@@ -135,7 +138,7 @@ class PaySuccessCallBack
         }
         //给客户端发送一条数据
         $content = [
-            'vip_card' => $buyDiamond + $freeDiamond,
+            'diamond' => $buyDiamond + $freeDiamond,
             'gold'    => $gold,
         ];
         $reciver = [ $order['player_id']];
@@ -186,6 +189,7 @@ class PaySuccessCallBack
         ];
         $clubInfo = getClubNameAndAreaName($order['club_id']);
         $baseInfo = getBeeBaseInfo();
+        Log::write($baseInfo , 'Base_info_error');
         $contents = array_merge($content,$clubInfo,$baseInfo);
         $this -> beeSend('recharge_finish' , $contents);
     }
