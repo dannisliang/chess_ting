@@ -33,6 +33,7 @@ class User
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
+//        $user_id = 506422;
         if(!$user_id){
             return jsonRes(9999);
         }
@@ -191,34 +192,35 @@ class User
      * @return array
      */
     private function getRoomInfo($user_room_info){
+        if (!$user_room_info){
+            return $res = [
+                'room_id'  => '',
+                'socket_url'=>'',
+                'socket_h5'=> '',
+                'check'    => '',
+                'options'  => ''
+            ];
+        }
         $roomOptionModel = new RoomOptionsModel();
         $playModel = new PlayModel();
-        //返回的房间信息
-        $check      = '';
-        $options    = '';
-        $room_id    = '';
-        $socket_h5  = '';
-        $socket_url = '';
-        if($user_room_info){
-            $room_id    = $user_room_info['room_id'];
-            $socket_h5  = $user_room_info['socket_h5'];
-            $socket_url = $user_room_info['socket_url'];
-            $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
-            if (!$roomOption){
-                $check = [];
-                $options = [];
-            }else{
-                $options = [];
-                if(isset($roomOption['options'])){
-                    $options = json_decode($roomOption['options'],true);
-                }
-                //获取play中的玩法
-                $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
-                $check = [];
-                if(!empty($play['play'])){
-                    //获取check
-                    $check = json_decode($play['play'],true)['checks'];
-                }
+        $room_id    = $user_room_info['room_id'];
+        $socket_h5  = $user_room_info['socket_h5'];
+        $socket_url = $user_room_info['socket_url'];
+        $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
+        if (!$roomOption){
+            $check = [];
+            $options = [];
+        }else{
+            $options = [];
+            if(isset($roomOption['options'])){
+                $options = json_decode($roomOption['options'],true);
+            }
+            //获取play中的玩法
+            $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
+            $check = [];
+            if(!empty($play['play'])){
+                //获取check
+                $check = json_decode($play['play'],true)['checks'];
             }
         }
 
@@ -238,7 +240,6 @@ class User
     private function checkPlayer($user_id){
         //从逻辑服获取房间id
         $room_id = getRoomIdFromService($user_id);
-
         //不存在房间
         if(!$room_id){
             return false;
