@@ -1458,8 +1458,18 @@ class Room extends Base
             }
             if(isset($operateData)){
                 # 获取用户资产
+                $operateDataFor = [];
                 foreach ($operateData as $kk =>$vv){
-                    $userDiamondInfos[$vv['uid']] = getUserProperty($vv['uid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
+                    if(isset($operateDataFor[$vv['uid']])){
+                        $operateDataFor[$vv['uid']] = bcadd($operateDataFor[$vv['uid']], $vv['change_num'], 0);
+                    }else{
+                        $operateDataFor[$vv['uid']] = $vv['change_num'];
+                    }
+                }
+
+                $userDiamondInfos = [];
+                foreach ($operateDataFor as $kk => $vv){
+                    $userDiamondInfos[$kk] = getUserProperty($kk, [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
                 }
 
                 $res = operatePlayerProperty($operateData);
@@ -1502,13 +1512,13 @@ class Room extends Base
                         $beeSender->add_batch('room_token_reduce', $bigData);
                     }
 
-                    foreach ($operateData as $kk =>$vv){
-                        if(isset($userDiamondInfos[$vv['uid']]) && isset($userDiamondInfos[$vv['uid']]['code']) && ($userDiamondInfos[$vv['uid']]['code'] == 0)){
+                    foreach ($operateDataFor as $kk =>$vv){
+                        if(isset($userDiamondInfos[$kk]['code']) && ($userDiamondInfos[$kk]['code'] == 0)){
                             $noBindDiamond = 0;
                             $bindDiamond = 0;
                             $gold = 0;
 
-                            foreach ($userDiamondInfos[$vv['uid']]['data'] as $k => $v){
+                            foreach ($userDiamondInfos[$kk]['data'] as $k => $v){
                                 if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
                                     $noBindDiamond = $v['property_num'];
                                 }
@@ -1519,11 +1529,12 @@ class Room extends Base
                                     $gold = $v['property_num'];
                                 }
                             }
+                            
                             $user_diamond = $noBindDiamond + $bindDiamond;
                             $send_data = array();
-                            $send_user[0] = $vv['uid'];
+                            $send_user[0] = $kk;
                             $send_data['content']['gold'] = $gold;
-                            $send_data['content']['diamond'] = bcsub($user_diamond, $vv['change_num'], 0);
+                            $send_data['content']['diamond'] = bcsub($user_diamond, $vv, 0);
                             $send_data['type'] = 1029;
                             $send_data['sender'] = 0;
                             $send_data['reciver'] = $send_user;
