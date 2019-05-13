@@ -47,7 +47,7 @@ class PaySuccessCallBack
 
         //查出订单的详细信息
         $orderModel = new OrderModel();
-        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
+        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,order_status,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
@@ -210,7 +210,6 @@ class PaySuccessCallBack
                 'role_name' => backNickname($order['player_id']),  //昵称
                 'client_id' => '-',  //设备的UUID（可传-号）
                 'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
-
                 'system_type'=> $order['system_type'], //操作系统
                 'client_type'=> $order['client_type'], //设备端应用类型
             ];
