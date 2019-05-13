@@ -36,4 +36,8 @@ class UserClubRoomRecordModel extends Model
     public function getUsedRoomNum(){
         return $this->column('room_id');
     }
+
+    public function getOneRecord($userId, $roomId){
+        return $this->where('user_id', '=', $userId)->where('room_id', '=', $roomId)->find();
+    }
 }

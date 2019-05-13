@@ -67,7 +67,7 @@ class Record extends Base{
             $return['name'] = $body['roomName'];
             $return['player_infos'] = $roomUserInfo;
             $return['time'] = strtotime($body['gameEndTime']);
-            $return['room_id'] = $v['add_time'].$v['room_id'];
+            $return['room_id'] = $v['room_id'];
             $return['options'] = json_decode($body['roomOptions'], true);
             $return['room_code'] = $body['roomCode'];
             $returnData[] = $return;
@@ -80,6 +80,18 @@ class Record extends Base{
         if(!isset($this->opt['room_id'])){
             return jsonRes(3006);
         }
+
+        $sessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!$sessionInfo){
+            return jsonRes(3006);
+        }
+        $userClubRoomRecord = new UserClubRoomRecordModel();
+        $record = $userClubRoomRecord->getOneRecord($sessionInfo['userid'], $this->opt['room_id']);
+        if(!$record){
+            return jsonRes(3006);
+        }
+
+        $this->opt['room_id'] = $record['add_time'].$this->opt['room_id'];
 
         $obsClient = new ObsClient([
             'key' => Env::get('obs.key'),
