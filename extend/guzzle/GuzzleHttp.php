@@ -35,6 +35,7 @@ class GuzzleHttp
         try{
             $requestStartTime = microtime();
             //请求接口信息
+
             $response = self::$client -> request( $method , $pathInfo , ['json'=>$data , 'timeout' => 1] );
 
             $requestEndTime      = microtime();
