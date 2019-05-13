@@ -279,11 +279,6 @@ class Shop extends Base
         if(!has_keys($opt , $this->opt)){
             return jsonRes(3006);
         }
-        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
-        $client_type= $user_session_info['client_type'];
-        $app_type   = $user_session_info['app_type'];
-        Log::write($client_type,'client_type_error');
-        Log::write($this->opt,'opt_error');
         $clubShopModel = new ClubShopModel();
         $clubVipModel  = new ClubVipModel();
         $vipCardModel  = new VipCardModel();
