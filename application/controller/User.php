@@ -33,7 +33,6 @@ class User
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
-//        $user_id = 506422;
         if(!$user_id){
             return jsonRes(9999);
         }
@@ -58,7 +57,7 @@ class User
             $club_name = $this -> getClubName($lastClub['club_id']);
         }
 
-        //检测玩家是否存在于房间中
+//        //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
         //返回房间信息
