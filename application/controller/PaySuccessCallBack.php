@@ -214,7 +214,7 @@ class PaySuccessCallBack
                 'client_type'=> $order['client_type'], //设备端应用类型
             ];
         }
-        Log::write($baseInfo , 'Base_info_error');
+//        Log::write($baseInfo , 'Base_info_error');
         $contents = array_merge($content,$clubInfo,$baseInfo);
         $this -> beeSend('recharge_finish' , $contents);
     }
