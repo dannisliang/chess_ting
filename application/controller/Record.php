@@ -87,7 +87,7 @@ class Record extends Base{
         }
 
         $userClubRoomRecord = new UserClubRoomRecordModel();
-        $record = $userClubRoomRecord->getUserClubRoomRecord($sessionInfo['userId'], $this->opt['room_id']);
+        $record = $userClubRoomRecord->getUserClubRoomRecord($sessionInfo['userid'], $this->opt['room_id']);
         if(!$record){
             return jsonRes(3006);
         }
