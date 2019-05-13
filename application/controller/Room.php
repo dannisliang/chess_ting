@@ -858,7 +858,7 @@ class Room extends Base
 
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
             ['playerInfos', 'roomOptionsId', 'roomTypeName', 'clubName', 'roomChannel', 'clubMode',
-                'tableType', 'tableNum', 'betNums', 'clubId', 'clubRegionId', 'clubRegionName']);
+                'tableType', 'tableNum', 'betNums', 'clubId', 'clubRegionId', 'clubRegionName', 'createTime']);
         # 报送大数据
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
         if($playerInfo){
@@ -874,7 +874,7 @@ class Room extends Base
                         'system_type' => $userInfo['systemType'],
                         'ip' => $userInfo['ipAddr'],
 
-                        'room_id' => $this->opt['roomId'],
+                        'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                         'room_type_id' => $roomHashInfo['roomOptionsId'],
                         'room_type_name' => $roomHashInfo['roomTypeName'],
                         'room_channel' => $roomHashInfo['roomChannel'],
@@ -980,7 +980,7 @@ class Room extends Base
         }
 
         # 报送大数据
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['createTime', 'clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
 
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
@@ -997,7 +997,7 @@ class Room extends Base
                     'system_type' => $userInfo['systemType'],
                     'ip' => $userInfo['ipAddr'],
 
-                    'room_id' => $this->opt['roomId'],
+                    'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                     'room_type_id' => $roomHashInfo['roomOptionsId'],
                     'room_type_name' => $roomHashInfo['roomTypeName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
@@ -1059,7 +1059,7 @@ class Room extends Base
 
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos']);
+            ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
 
         # 算用户积分和用户积分
         $userIds = [];
@@ -1090,7 +1090,7 @@ class Room extends Base
                     'system_type' => $userInfo['systemType'],
                     'ip' => $userInfo['ipAddr'],
 
-                    'room_id' => $this->opt['roomId'],
+                    'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                     'room_type_id' => $roomHashInfo['roomOptionsId'],
                     'room_type_name' => $roomHashInfo['roomTypeName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
@@ -1276,7 +1276,7 @@ class Room extends Base
                     'system_type' => $userInfo['systemType'],
                     'ip' => $userInfo['ipAddr'],
 
-                    'room_id' => $this->opt['roomId'],
+                    'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                     'room_type_id' => $roomHashInfo['roomOptionsId'],
                     'room_type_name' => $roomHashInfo['roomTypeName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
@@ -1364,7 +1364,7 @@ class Room extends Base
                 'club_region_name' => $roomHashInfo['clubRegionName'],
                 'club_mode' => $roomHashInfo['clubMode'],
                 'pay_mode' => $roomHashInfo['payMode'],
-                'room_id' => $this->opt['roomId'],
+                'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                 'room_type_id' => $roomHashInfo['roomOptionsId'],
                 'room_type_name' => $roomHashInfo['roomTypeName'],
                 'room_channel' => $roomHashInfo['roomChannel'],
@@ -1457,6 +1457,21 @@ class Room extends Base
                 }
             }
             if(isset($operateData)){
+                # 获取用户资产
+                $operateDataFor = [];
+                foreach ($operateData as $kk =>$vv){
+                    if(isset($operateDataFor[$vv['uid']])){
+                        $operateDataFor[$vv['uid']] = bcadd($operateDataFor[$vv['uid']], $vv['change_num'], 0);
+                    }else{
+                        $operateDataFor[$vv['uid']] = $vv['change_num'];
+                    }
+                }
+
+                $userDiamondInfos = [];
+                foreach ($operateDataFor as $kk => $vv){
+                    $userDiamondInfos[$kk] = getUserProperty($kk, [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
+                }
+
                 $res = operatePlayerProperty($operateData);
                 if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
                     Log::write(json_encode($operateData), 'operateError');
@@ -1483,7 +1498,7 @@ class Room extends Base
                             'club_region_name' => $roomHashInfo['clubRegionName'],
                             'club_mode' => $roomHashInfo['clubMode'],
                             'pay_mode' => $roomHashInfo['payMode'],
-                            'room_id' => $this->opt['roomId'],
+                            'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                             'room_type_id' => $roomHashInfo['roomOptionsId'],
                             'room_type_name' => $roomHashInfo['roomTypeName'],
                             'room_channel' => $roomHashInfo['roomChannel'],
@@ -1497,29 +1512,29 @@ class Room extends Base
                         $beeSender->add_batch('room_token_reduce', $bigData);
                     }
 
-                    foreach ($operateData as $kk =>$vv){
-                        $userDiamondInfo = getUserProperty($vv['uid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, 10000]);
-                        if(isset($userDiamondInfo['code']) && ($userDiamondInfo['code'] == 0)){
+                    foreach ($operateDataFor as $kk =>$vv){
+                        if(isset($userDiamondInfos[$kk]['code']) && ($userDiamondInfos[$kk]['code'] == 0)){
                             $noBindDiamond = 0;
                             $bindDiamond = 0;
                             $gold = 0;
-                            foreach ($userDiamondInfo['data'] as $k => $v){
+
+                            foreach ($userDiamondInfos[$kk]['data'] as $k => $v){
                                 if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_NOT_BINDING){
                                     $noBindDiamond = $v['property_num'];
                                 }
                                 if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_BINDING){
                                     $bindDiamond = $v['property_num'];
                                 }
-                                if($v['property_type'] == 10000){
+                                if($v['property_type'] == Definition::$USER_PROPERTY_TYPE_GOLD){
                                     $gold = $v['property_num'];
                                 }
                             }
-
+                            
                             $user_diamond = $noBindDiamond + $bindDiamond;
                             $send_data = array();
-                            $send_user[0] = $vv['uid'];
-                            $send_data['content']['gold'] = (int)$gold;
-                            $send_data['content']['diamond'] = (int)$user_diamond;
+                            $send_user[0] = $kk;
+                            $send_data['content']['gold'] = $gold;
+                            $send_data['content']['diamond'] = bcsub($user_diamond, $vv, 0);
                             $send_data['type'] = 1029;
                             $send_data['sender'] = 0;
                             $send_data['reciver'] = $send_user;
@@ -1563,7 +1578,7 @@ class Room extends Base
                                 'club_region_id' => $roomHashInfo['clubRegionId'],
                                 'club_region_name' => $roomHashInfo['clubRegionName'],
                                 'club_mode' => $roomHashInfo['clubMode'],
-                                'room_id' => $this->opt['roomId'],
+                                'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
                                 'room_type_id' => $roomHashInfo['roomOptionsId'],
                                 'room_type_name' => $roomHashInfo['roomTypeName'],
                                 'token_name' => 'money',
