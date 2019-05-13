@@ -1533,8 +1533,8 @@ class Room extends Base
                             $user_diamond = $noBindDiamond + $bindDiamond;
                             $send_data = array();
                             $send_user[0] = $kk;
-                            $send_data['content']['gold'] = $gold;
-                            $send_data['content']['diamond'] = bcsub($user_diamond, $vv, 0);
+                            $send_data['content']['gold'] = (int)$gold;
+                            $send_data['content']['diamond'] = (int)bcsub($user_diamond, $vv, 0);
                             $send_data['type'] = 1029;
                             $send_data['sender'] = 0;
                             $send_data['reciver'] = $send_user;
