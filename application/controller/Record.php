@@ -85,9 +85,9 @@ class Record extends Base{
         if(!$sessionInfo){
             return jsonRes(3006);
         }
-
+        Log::write($this->opt['room_id'], 'rror');
         $userClubRoomRecord = new UserClubRoomRecordModel();
-        $record = $userClubRoomRecord->getUserClubRoomRecord($sessionInfo['userid'], $this->opt['room_id']);
+        $record = $userClubRoomRecord->getOneRecord($sessionInfo['userid'], $this->opt['room_id']);
         if(!$record){
             return jsonRes(3006);
         }
