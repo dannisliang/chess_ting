@@ -200,7 +200,7 @@ class PaySuccessCallBack
      * @param $content
      */
     private function beeSend($event_name , $content){
-        $beeSend = new BeeSender();
+        $beeSend = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip') ,Env::get('app_debug'));
         $result = $beeSend ->send($event_name , $content);
         if(!$result){
             Log::write($result , 'paySuccessCallBackBeeSenderError');
