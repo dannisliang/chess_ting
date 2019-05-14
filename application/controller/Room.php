@@ -275,7 +275,7 @@ class Room extends Base
                 'uid' => $clubInfo['president_id'],
                 'event_type' => '-',
                 'reason_id' => 7,
-                'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
+                'property_type' => $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT,
                 'property_name' => '赠送蓝钻',
                 'change_num' => $needDiamond
             ];
@@ -302,7 +302,7 @@ class Room extends Base
                     'uid' => $clubInfo['president_id'],
                     'event_type' => '+',
                     'reason_id' => 8,
-                    'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
+                    'property_type' => $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT,
                     'property_name' => '赠送蓝钻',
                     'change_num' => $needDiamond
                 ];
@@ -320,7 +320,7 @@ class Room extends Base
                         'uid' => $clubInfo['president_id'],
                         'event_type' => '+',
                         'reason_id' => 8,
-                        'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
+                        'property_type' => $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT,
                         'property_name' => '赠送蓝钻',
                         'change_num' => $needDiamond
                     ];
@@ -1331,7 +1331,7 @@ class Room extends Base
                 'uid' => $roomHashInfo['presidentId'],
                 'event_type' => '+',
                 'reason_id' => 8,
-                'property_type' => Definition::$USER_PROPERTY_PRESIDENT,
+                'property_type' => $roomHashInfo['clubId'].'_'.$roomHashInfo['presidentId'].'_'.Definition::$USER_PROPERTY_PRESIDENT,
                 'property_name' => '赠送蓝钻',
                 'change_num' => $roomHashInfo['diamond']
             ];
