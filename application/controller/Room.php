@@ -160,7 +160,7 @@ class Room extends Base
             $serviceIds[] = $v['id'];
         }
         $rand = rand(0, count($serviceIds)-1);
-        $serviceId = $serviceInfos[$rand]['id'];
+        $serviceId = $serviceInfos[$rand]['service_id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
@@ -261,13 +261,6 @@ class Room extends Base
             }
         }
 
-        # 生成房间号
-        $roomNumber = $this->getRoomNum($redisHandle);
-        if(!$roomNumber){
-            return jsonRes(3517);
-        }
-        $roomNumber = (string)$roomNumber;
-
         # 扣会长资产 判断会长资产是否充足 充足直接结算
         if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 直接扣钻
             $payMode = 'free';
@@ -287,6 +280,13 @@ class Room extends Base
                 return jsonRes(3516, $returnData);
             }
         }
+
+        # 生成房间号
+        $roomNumber = $this->getRoomNum($redisHandle);
+        if(!$roomNumber){
+            return jsonRes(3517);
+        }
+        $roomNumber = (string)$roomNumber;
 
         # 请求逻辑服创建房间
         $data['roomId'] = $roomNumber;
@@ -631,39 +631,29 @@ class Room extends Base
             return jsonRes(0, ['roominfo' => []]);
         }
 
-        # 和逻辑服同步
-        $gameServiceNew = new GameServiceNewModel();
-        $serviceInfos = $gameServiceNew->getGameService();
-
-        $serviceIds = [];
-        foreach ($serviceInfos as $k => $v){
-            $serviceIds[] = $v['service_id'];
-        }
-
         $client = new Client();
         $promises = [];
         foreach ($sMembers as $k => $roomNumber){
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
-            if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
-                Log::write('房间所在服务没开启， 移除房间'.$this->opt['club_id'].'_'.$roomNumber, "log");
-                $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
-                if($res){
-                    $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
-                }
-            }else{
-                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
-            }
+            $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, 'roomUrl');
+            $promises[$roomNumber] = $client->postAsync($roomUrl.Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
         }
-
         // 忽略某些请求的异常，保证所有请求都发送出去
         $results = Promise\settle($promises)->wait();
         $newNumbers = [];
         foreach ($results as $roomNumber => $v){
-            $roomCheckInfo = json_decode($results[$roomNumber]['value']->getBody()->getContents(), true);
-            if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
-                $newNumbers[] = $roomNumber;
+            if(isset($results[$roomNumber]['value'])){
+                $roomCheckInfo = json_decode($results[$roomNumber]['value']->getBody()->getContents(), true);
+                if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
+                    $newNumbers[] = $roomNumber;
+                }else{
+                    Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                    $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                    if($res){
+                        $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                    }
+                }
             }else{
-                Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                Log::write('服务不可用'.$this->opt['club_id'].'_'.$roomNumber, "log");
                 $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                 if($res){
                     $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
