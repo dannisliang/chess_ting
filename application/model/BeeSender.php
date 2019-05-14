@@ -1,5 +1,6 @@
 <?php
 namespace app\model;
+use think\Env;
 use think\Log;
 
 date_default_timezone_set ( 'PRC' );
@@ -16,10 +17,7 @@ class BeeSender{
 	 */
 	function __construct($app_id,$identity,$ip,$is_debug){
         
-		$mode = Bee::MODE_PRODUCTION;
-		if($is_debug){
-			$mode = Bee::MODE_DEBUG;
-		}
+		$mode = !Env::get('is_online');
 		$this->bee = new Bee($mode);
 		$this->bee->data = new BeeData($identity,$ip);
 		$this->bee->data->product = $app_id;
