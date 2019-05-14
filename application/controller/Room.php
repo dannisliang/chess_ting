@@ -281,6 +281,7 @@ class Room extends Base
             ];
             $operaRes = operatePlayerProperty($operateData);
             if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
+                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
                 $returnData = [
                     'need_diamond' => $needDiamond
                 ];
