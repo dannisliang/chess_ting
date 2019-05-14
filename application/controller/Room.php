@@ -656,10 +656,10 @@ class Room extends Base
         }
 
         // 忽略某些请求的异常，保证所有请求都发送出去
-        $results = Promise\unwrap($promises);
+        $results = Promise\settle($promises)->wait();
         $newNumbers = [];
         foreach ($results as $roomNumber => $v){
-            $roomCheckInfo = json_decode($results[$roomNumber]->getBody()->getContents(), true);
+            $roomCheckInfo = json_decode($results[$roomNumber]['value']->getBody()->getContents(), true);
             if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                 $newNumbers[] = $roomNumber;
             }else{
