@@ -261,6 +261,13 @@ class Room extends Base
             }
         }
 
+        # 生成房间号
+        $roomNumber = $this->getRoomNum($redisHandle);
+        if(!$roomNumber){
+            return jsonRes(3517);
+        }
+        $roomNumber = (string)$roomNumber;
+
         # 扣会长资产 判断会长资产是否充足 充足直接结算
         if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 直接扣钻
             $payMode = 'free';
@@ -274,19 +281,13 @@ class Room extends Base
             ];
             $operaRes = operatePlayerProperty($operateData);
             if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
+                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
                 $returnData = [
                     'need_diamond' => $needDiamond
                 ];
                 return jsonRes(3516, $returnData);
             }
         }
-
-        # 生成房间号
-        $roomNumber = $this->getRoomNum($redisHandle);
-        if(!$roomNumber){
-            return jsonRes(3517);
-        }
-        $roomNumber = (string)$roomNumber;
 
         # 请求逻辑服创建房间
         $data['roomId'] = $roomNumber;
