@@ -160,7 +160,7 @@ class Room extends Base
             $serviceIds[] = $v['id'];
         }
         $rand = rand(0, count($serviceIds)-1);
-        $serviceId = $serviceInfos[$rand]['id'];
+        $serviceId = $serviceInfos[$rand]['service_id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
