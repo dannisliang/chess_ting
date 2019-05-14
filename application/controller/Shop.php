@@ -283,9 +283,9 @@ class Shop extends Base
         $clubVipModel  = new ClubVipModel();
         $vipCardModel  = new VipCardModel();
 
-        $ret_url = Env::get('ret_url'); //支付返回页面
+        $ret_url = Env::get('mahjong_chessvans'); //支付返回页面
         if($this->opt['url_id']){
-            $ret_url = Definition::$TJMAHJONG_CHESSVANS . $this -> opt['url_id'];
+            $ret_url = Env::get('mahjong_chessvans') . $this -> opt['url_id'];
         }
         $user_name = backNickname($user_id);
 
@@ -362,6 +362,7 @@ class Shop extends Base
         if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
             return jsonRes(3004);
         }
+        $url = $result['URL'];
         //获取机型 和 类型
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         $client_type= $user_session_info['client_type'];
@@ -386,7 +387,7 @@ class Shop extends Base
         if(!$result){
             return jsonRes(3004);
         }
-        return jsonRes(0,$order_num);
+        return jsonRes(0,$url);
     }
 
     /**

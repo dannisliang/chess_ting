@@ -20,6 +20,7 @@ class Notice
         $url = Env::get('web_user_url');//运营中心的域名
         $url_area = Definition::$NOTICE_LIST;//公告列表
         $data['appid'] = Env::get('app_id');//该地区的APPid
+        $data['status'] = 1;
         $list = sendHttpRequest($url.$url_area, $data);
         if(!isset($list['data'])){
             return jsonRes(3004);
