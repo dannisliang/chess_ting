@@ -631,30 +631,12 @@ class Room extends Base
             return jsonRes(0, ['roominfo' => []]);
         }
 
-        # 和逻辑服同步
-        $gameServiceNew = new GameServiceNewModel();
-        $serviceInfos = $gameServiceNew->getGameService();
-
-        $serviceIds = [];
-        foreach ($serviceInfos as $k => $v){
-            $serviceIds[] = $v['service_id'];
-        }
-
         $client = new Client();
         $promises = [];
         foreach ($sMembers as $k => $roomNumber){
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, ['serviceId', 'roomUrl']);
-            if(!in_array($roomHashInfo['serviceId'], $serviceIds)){
-                Log::write('房间所在服务没开启， 移除房间'.$this->opt['club_id'].'_'.$roomNumber, "log");
-                $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
-                if($res){
-                    $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
-                }
-            }else{
-                $promises[$roomNumber] = $client->postAsync($roomHashInfo['roomUrl'].Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
-            }
+            $roomUrl = $redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, 'roomUrl');
+            $promises[$roomNumber] = $client->postAsync($roomUrl.Definition::$CHECK_ROOM, ['json' => ['roomId' => $roomNumber], 'connect_timeout' => 1]);
         }
-
         // 忽略某些请求的异常，保证所有请求都发送出去
         $results = Promise\settle($promises)->wait();
         $newNumbers = [];
