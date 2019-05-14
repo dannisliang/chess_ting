@@ -659,11 +659,19 @@ class Room extends Base
         $results = Promise\settle($promises)->wait();
         $newNumbers = [];
         foreach ($results as $roomNumber => $v){
-            $roomCheckInfo = json_decode($results[$roomNumber]['value']->getBody()->getContents(), true);
-            if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
-                $newNumbers[] = $roomNumber;
+            if(isset($results[$roomNumber]['value'])){
+                $roomCheckInfo = json_decode($results[$roomNumber]['value']->getBody()->getContents(), true);
+                if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
+                    $newNumbers[] = $roomNumber;
+                }else{
+                    Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                    $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+                    if($res){
+                        $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                    }
+                }
             }else{
-                Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                Log::write('服务不可用'.$this->opt['club_id'].'_'.$roomNumber, "log");
                 $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                 if($res){
                     $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
