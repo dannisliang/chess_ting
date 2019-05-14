@@ -539,13 +539,13 @@ function getRoomIdFromService($user_id){
 function getBeeBaseInfo($uuid = '-',$senior_id = null){
     $session_info = Session::get(RedisKey::$USER_SESSION_INFO);
     if(!$session_info){
-        return false;
+        return [];
     }
     //判断是否是高级会长
     if($senior_id){
         $user_info = getUserBaseInfo($senior_id);
         if (!$user_info){
-            return false;
+            return [];
         }
         //基础事件
         $content = [
@@ -555,8 +555,8 @@ function getBeeBaseInfo($uuid = '-',$senior_id = null){
             'role_name' => $user_info['nickname'],  //昵称
             'client_id' => $uuid,  //设备的UUID（可传-号）
             'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
-            'system_type'=> $session_info['app_type'], //操作系统
-            'client_type'=> $session_info['client_type'], //设备端应用类型
+            'system_type'=> $session_info['client_type'], //操作系统
+            'client_type'=> $session_info['app_type'], //设备端应用类型
         ];
         return $content;
     }
@@ -569,8 +569,8 @@ function getBeeBaseInfo($uuid = '-',$senior_id = null){
         'client_id' => $uuid,  //设备的UUID（可传-号）
         'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
 
-        'system_type'=> $session_info['app_type'], //操作系统
-        'client_type'=> $session_info['client_type'], //设备端应用类型
+        'system_type'=> $session_info['client_type'], //操作系统
+        'client_type'=> $session_info['app_type'], //设备端应用类型
     ];
     return $content;
 }

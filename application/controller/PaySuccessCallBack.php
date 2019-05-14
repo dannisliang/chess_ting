@@ -35,20 +35,26 @@ class PaySuccessCallBack
         if(!has_keys($opt,$sign_data)){
             return json(['result'=>3]); //缺少参数
         }
+        $sign = $_GET['sign'];
         $pay_type = $_GET['pay_type'];
+        unset($sign_data['sign']);
         //验证签名是否合法
-        $key_sign = $this ->get_sign($sign_data,'c80b7d337dc57d5d');
-        if($key_sign != $sign_data['sign']){
+        $key_sign = $this ->get_sign($sign_data,Env::get('sign'));
+        if($key_sign != $sign){
+            Log::write($key_sign . '----' . $sign ,'sign_error');
             return json(['result'=>3]); //签名不合法
         }
 
         //查出订单的详细信息
         $orderModel = new OrderModel();
-        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
+        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,order_status,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
-
+        //订单状态已经改变
+        if($order['order_status'] == 1 || $order['order_status'] == 2){
+            return json(['result' => 3]);
+        }
         //判断订单类型 是买卡的还是买钻石的
         if(!empty($order['vip_id'])){
             //获取会员卡信息(会长返利)
@@ -135,7 +141,7 @@ class PaySuccessCallBack
         }
         //给客户端发送一条数据
         $content = [
-            'vip_card' => $buyDiamond + $freeDiamond,
+            'diamond' => $buyDiamond + $freeDiamond,
             'gold'    => $gold,
         ];
         $reciver = [ $order['player_id']];
@@ -186,6 +192,29 @@ class PaySuccessCallBack
         ];
         $clubInfo = getClubNameAndAreaName($order['club_id']);
         $baseInfo = getBeeBaseInfo();
+        //获取ip
+        $unknown = 'unknown';
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] && strcasecmp($_SERVER['HTTP_X_FORWARDED_FOR'], $unknown)) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } elseif (isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] && strcasecmp($_SERVER['REMOTE_ADDR'], $unknown)) {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        if (false !== strpos($ip, ',')) {
+            $ip = reset(explode(',', $ip));
+        }
+        if(!$baseInfo){
+            $baseInfo = [
+                'ip '       => $ip,  //事件发生端iP
+                'user_id'   => $order['player_id'],  //用户id
+                'role_id'   => '-' . '_' . $order['player_id'],  //角色id，若没有即为serverid_userid
+                'role_name' => backNickname($order['player_id']),  //昵称
+                'client_id' => '-',  //设备的UUID（可传-号）
+                'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
+                'system_type'=> $order['system_type'], //操作系统
+                'client_type'=> $order['client_type'], //设备端应用类型
+            ];
+        }
+//        Log::write($baseInfo , 'Base_info_error');
         $contents = array_merge($content,$clubInfo,$baseInfo);
         $this -> beeSend('recharge_finish' , $contents);
     }
@@ -196,7 +225,7 @@ class PaySuccessCallBack
      * @param $content
      */
     private function beeSend($event_name , $content){
-        $beeSend = new BeeSender();
+        $beeSend = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip') ,Env::get('app_debug'));
         $result = $beeSend ->send($event_name , $content);
         if(!$result){
             Log::write($result , 'paySuccessCallBackBeeSenderError');
