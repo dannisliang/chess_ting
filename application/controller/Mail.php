@@ -149,7 +149,7 @@ class Mail extends Base
                                 $vip_icon = $vip_opt[0]['icon'];
                             }
 
-                            $new_goods[$i]['vip_icon'] = "https://tjmahjong.chessvans.com//GMBackstage/public/"."$vip_icon";
+                            $new_goods[$i]['vip_icon'] = "https://obs.cn-north-1.myhuaweicloud.com"."$vip_icon";
                         }
                     }else{
                         $new_goods[$i]['good_name'] = $goods_name[$i];
