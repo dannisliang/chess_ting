@@ -281,7 +281,7 @@ class Club extends Base
         try{
             $userClubModel -> delByWhere(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id]);
             $userLastClubModel -> delByWhere(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id]);
-            $goAwayModel -> insert(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id,'reason'=>'主动退出','out_time'=>date('Y-m-d H:i:s',time())]);
+            $goAwayModel -> insert(['club_id'=>$this->opt['club_id'],'player_id'=>$user_id,'reason'=>0,'out_time'=>date('Y-m-d H:i:s',time())]);
             Db::commit();
         }catch(\Exception $e){
             Db::rollback();
