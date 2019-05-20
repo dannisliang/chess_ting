@@ -34,11 +34,28 @@ class DisBandCallBack extends Base
             return jsonRes(0);
         }
 
-        $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
-        if($remRes){
-            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
+        // 等待牌局回调2秒钟， 确保记录存储成功
+        if($this->opt['round']){
+            $timeOut = bcadd(time(), 2, 0);
+            $isRecord = false;
+            while (true){
+                if(time() > $timeOut){
+                    break;
+                }
+                $recordLen = count(json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true));
+                if($recordLen == $this->opt['round']){
+                    $isRecord = true;
+                }
+                if($isRecord){
+                    break;
+                }
+            }
+            if(!$isRecord){
+                Log::write(json_encode($this->opt), "roundLenError");
+            }
         }
+
+        $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         // 牌局记录
@@ -57,7 +74,6 @@ class DisBandCallBack extends Base
                 'Key' => $addTime.$this->opt['roomId'],
                 'Body' => json_encode($roomHashInfo)
             ]);
-            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
 
             $insertAll = [];
             foreach ($playerInfo as $k => $userInfo){
@@ -75,9 +91,29 @@ class DisBandCallBack extends Base
             }
         }
 
-        if(!$this->opt['round']){
-            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
+        // 删房间
+        $getLock = false;
+        $timeOut = bcadd(time(), 2, 0);
+        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
+        while(!$getLock){
+            if(time() > $timeOut){
+                break;
+            }
+            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
+            if($getLock){
+                break;
+            }
         }
+        if($getLock){
+            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
+            $redisHandle->del($lockKey);
+        }
+
+        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
+        if($remRes){
+            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
+        }
+
         // 牌局记录完成
 
         // Todo 报送
