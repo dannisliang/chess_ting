@@ -175,21 +175,18 @@ class JoinRoom extends Base
                 $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
             }
             $redisHandle->del($lockKey); # 解锁
-        }else{
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['socketUrl', 'socketH5', 'playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
+            $returnData = [
+                'need_gold' => $needDiamond, # 需要的钻石
+                'room_num' => $this->opt['room_id'], # 房间号
+                'check' => json_decode($roomHashInfo['playChecks'], true), #
+                'options' => json_decode($roomHashInfo['roomOptions'], true), # 规则
+                'socket_h5' => $roomHashInfo['socketH5'], # H5链接地址
+                'socket_url' => $roomHashInfo['socketUrl'], # app链接地址
+                'socket_ssl' => $roomHashInfo['socketSsl'], # 证书
+                'club_id' => $roomHashInfo['clubId'],
+                'club_name' => $roomHashInfo['clubName'],
+            ];
+            return jsonRes(0, $returnData);
         }
-
-        $returnData = [
-            'need_gold' => $needDiamond, # 需要的钻石
-            'room_num' => $this->opt['room_id'], # 房间号
-            'check' => json_decode($roomHashInfo['playChecks'], true), #
-            'options' => json_decode($roomHashInfo['roomOptions'], true), # 规则
-            'socket_h5' => $roomHashInfo['socketH5'], # H5链接地址
-            'socket_url' => $roomHashInfo['socketUrl'], # app链接地址
-            'socket_ssl' => $roomHashInfo['socketSsl'], # 证书
-            'club_id' => $roomHashInfo['clubId'],
-            'club_name' => $roomHashInfo['clubName'],
-        ];
-        return jsonRes(0, $returnData);
     }
 }
