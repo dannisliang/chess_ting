@@ -22,10 +22,6 @@ class RoundStartCallBack extends Base
         }
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-            return jsonRes(0);
-        }
-
         # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['createTime', 'clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
 
