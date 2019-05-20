@@ -48,7 +48,6 @@ class RoomStartCallBack extends Base
                 $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
             }
             $redisHandle->del($lockKey);
-            return jsonRes(0);
         }
         return jsonRes(0);
     }
