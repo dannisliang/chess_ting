@@ -24,17 +24,31 @@ class RoomStartCallBack extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-            return jsonRes(0);
+        # 使用redis加锁重写房间用户
+        $getLock = false;
+        $timeOut = bcadd(time(), 2, 0);
+        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
+        while(!$getLock){
+            if(time() > $timeOut){
+                break;
+            }
+            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
+            if($getLock){
+                break;
+            }
         }
-
-        $changeRoomInfo = [
-            'joinStatus' => 2, # 游戏中
-            'gameStartTime' => date('Y-m-d H:i:s', time()),
-            'founderId' => $this->opt['founderId'],
-            'players' => json_encode($this->opt['players'])
-        ];
-        $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
+        if($getLock){
+            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+                $changeRoomInfo = [
+                    'joinStatus' => 2, # 游戏中
+                    'gameStartTime' => date('Y-m-d H:i:s', time()),
+                    'founderId' => $this->opt['founderId'],
+                    'players' => json_encode($this->opt['players'])
+                ];
+                $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
+            }
+            $redisHandle->del($lockKey);
+        }
         return jsonRes(0);
     }
 }
