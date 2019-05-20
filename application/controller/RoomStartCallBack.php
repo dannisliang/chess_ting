@@ -38,13 +38,15 @@ class RoomStartCallBack extends Base
             }
         }
         if($getLock){
-            $changeRoomInfo = [
-                'joinStatus' => 2, # 游戏中
-                'gameStartTime' => date('Y-m-d H:i:s', time()),
-                'founderId' => $this->opt['founderId'],
-                'players' => json_encode($this->opt['players'])
-            ];
-            $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
+            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+                $changeRoomInfo = [
+                    'joinStatus' => 2, # 游戏中
+                    'gameStartTime' => date('Y-m-d H:i:s', time()),
+                    'founderId' => $this->opt['founderId'],
+                    'players' => json_encode($this->opt['players'])
+                ];
+                $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $changeRoomInfo);
+            }
             $redisHandle->del($lockKey);
             return jsonRes(0);
         }
