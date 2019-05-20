@@ -182,7 +182,7 @@ class DisBandCallBack extends Base
                 'filter_presidentid' => $roomHashInfo['presidentId'],
             ];
             $client = new Client();
-            $client->postAsync(Env::get('zhushou_url'), ['json' => $zhushou, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false,]);
+            $client->postAsync(Env::get('zhushou_url'), ['json' => $zhushou, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
         }
         // 助手报送结束
 
@@ -367,7 +367,7 @@ class DisBandCallBack extends Base
                             $send_data['appid'] = Env::get('app_id');
                             $send_url = Env::get('inform_url') . 'api/send.php';
                             $client = new Client();
-                            $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
+                            $client->postAsync($send_url, ['json' => $send_data, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
                         }
                     }
 
