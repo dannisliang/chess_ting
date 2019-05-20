@@ -10,6 +10,7 @@ namespace app\controller;
 
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
+use think\Log;
 
 
 class OutRoomCallBack extends Base
@@ -21,11 +22,7 @@ class OutRoomCallBack extends Base
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
-
-        if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-            return jsonRes(0);
-        }
-        # 使用redis加锁重写roomHash
+        # 使用redis加锁重写房间用户
         $getLock = false;
         $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
@@ -38,7 +35,8 @@ class OutRoomCallBack extends Base
                 break;
             }
         }
-        if($getLock){ # 重写hash中的用户数据
+
+        if($getLock){
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'needUserNum']);
             $roomUserInfo = json_decode($roomHashInfo['playerInfos'], true);
 
