@@ -11,6 +11,7 @@ namespace app\controller;
 use think\Log;
 use think\Env;
 use Obs\ObsClient;
+use Obs\ObsException;
 use GuzzleHttp\Client;
 use app\model\BeeSender;
 use app\definition\RedisKey;
@@ -34,7 +35,7 @@ class DisBandCallBack extends Base
             return jsonRes(0);
         }
 
-        // 等待牌局回调2秒钟， 确保记录存储成功
+        // Todo 等待牌局回调2秒钟， 确保记录存储成功
         if($this->opt['round']){
             $timeOut = bcadd(time(), 2, 0);
             $isRecord = false;
@@ -54,44 +55,46 @@ class DisBandCallBack extends Base
                 Log::write(json_encode($this->opt), "roundLenError");
             }
         }
+        // 等待牌局记录回调结束
 
         $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
-        // 牌局记录
-        if($this->opt['round']){
+        // Todo 牌局记录
+        if($this->opt['round'] && $playerInfo){
             $addTime = date("Y-m-d H:i:s", time());
-
-            # 上传游戏记录到华为云
-            $obsClient = new ObsClient([
-                'key' => Env::get('obs.key'),
-                'secret' => Env::get('obs.secret'),
-                'endpoint' => Env::get('obs.endpoint')
-            ]);
-
-            $obsClient -> putObject([
-                'Bucket' => Env::get('obs.chess_record'),
-                'Key' => $addTime.$this->opt['roomId'],
-                'Body' => json_encode($roomHashInfo)
-            ]);
-
-            $insertAll = [];
-            foreach ($playerInfo as $k => $userInfo){
-                $insert = [
-                    'room_id' => $this->opt['roomId'],
-                    'user_id' => $userInfo['userId'],
-                    'club_id' => $roomHashInfo['clubId'],
-                    'add_time' => $addTime,
-                ];
-                $insertAll[] = $insert;
-            }
-            if($insertAll){
-                $userClubRoomRecord = new UserClubRoomRecordModel();
-                $userClubRoomRecord->insertAllUserRecord($insertAll);
+            try{
+                $obsClient = new ObsClient([
+                    'key' => Env::get('obs.key'),
+                    'secret' => Env::get('obs.secret'),
+                    'endpoint' => Env::get('obs.endpoint')
+                ]);
+                $obsClient -> putObject([
+                    'Bucket' => Env::get('obs.chess_record'),
+                    'Key' => $addTime.$this->opt['roomId'],
+                    'Body' => json_encode($roomHashInfo)
+                ]);
+                $insertAll = [];
+                foreach ($playerInfo as $k => $userInfo){
+                    $insert = [
+                        'room_id' => $this->opt['roomId'],
+                        'user_id' => $userInfo['userId'],
+                        'club_id' => $roomHashInfo['clubId'],
+                        'add_time' => $addTime,
+                    ];
+                    $insertAll[] = $insert;
+                }
+                if($insertAll){
+                    $userClubRoomRecord = new UserClubRoomRecordModel();
+                    $userClubRoomRecord->insertAllUserRecord($insertAll);
+                }
+            }catch (ObsException $obsException){
+                Log::write(json_encode($roomHashInfo), "obsPutError");
             }
         }
+        // 牌局记录结束
 
-        // 删房间
+        // Todo 删房间
         $getLock = false;
         $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
@@ -113,12 +116,10 @@ class DisBandCallBack extends Base
         if($remRes){
             $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
         }
-
-        // 牌局记录完成
+        // 删房间结束
 
         // Todo 报送
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
-
         if($playerInfo){
             foreach ($playerInfo as $k => $userInfo){
                 $bigData = [
@@ -151,15 +152,15 @@ class DisBandCallBack extends Base
                 $beeSender->send('room_close', $bigData);
             }
         }
-        # 报送完成
+        // 报送结束
 
+        // Todo 助手报送
         $userIds = [];
         $userScore = [];
         foreach ($this->opt['statistics'] as $k => $v){
             $userScore[$v['playerId']] = $v['totalScore'];
             $userIds[] = $v['playerId'];
         }
-
         $baoSong = [];
         foreach ($roomHashInfo as $k => $v){
             if(in_array($k, ['playChecks', 'roomOptions', 'playerInfos', 'roomOptions', 'roundEndInfo', 'gameEndInfo'])){
@@ -169,9 +170,7 @@ class DisBandCallBack extends Base
             }
         }
         $baoSong['opt'] = $this->opt;
-
         if($userIds){
-            # 报送助手
             $zhushou = [
                 'type' => 'common',
                 'timestamp' => time(),
@@ -182,10 +181,12 @@ class DisBandCallBack extends Base
                 'filter_roomid' => $this->opt['roomId'],
                 'filter_presidentid' => $roomHashInfo['presidentId'],
             ];
-            sendHttpRequest(Env::get('zhushou_url'), $zhushou, 'POST', [], ['connect_timeout' => 3]);
+            $client = new Client();
+            $client->postAsync(Env::get('zhushou_url'), ['json' => $zhushou, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
         }
+        // 助手报送结束
 
-        # 会长模式还钻
+        // Todo 会长模式未开局还钻
         if(($roomHashInfo['clubType'] == 1) && !$this->opt['round']){
             $operateData[] = [
                 'uid' => $roomHashInfo['presidentId'],
@@ -200,9 +201,9 @@ class DisBandCallBack extends Base
                 Log::write(json_encode($operateData), 'operateError');
             }
         }
-        # 会长模式还钻完成
+        // 会长模式还钻结束
 
-        # 会长模式报送
+        // Todo 会长模式开局钻石消耗报送
         if(($roomHashInfo['clubType'] == 1) && $this->opt['round']){
             $bigData = [
                 'server_id' => '-',
@@ -232,12 +233,12 @@ class DisBandCallBack extends Base
             ];
             $beeSender->send('room_token_reduce', $bigData);
         }
-        # 会长模式报送完成
+        // 会长模式报送结束
 
-        # 玩家模式扣钻
+        // Todo 玩家模式开局需要扣钻和报送
         if(($roomHashInfo['clubType'] == 0) && $playerInfo && $this->opt['round']){
-            $rebate = 0; # 返利基数
-            if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
+            $rebate = 0; // 返利基数
+            if($roomHashInfo['roomRate'] == 1){ // 大赢家模式
                 $userScore = [];
                 foreach ($this->opt['statistics'] as $k => $v){
                     $userScore[$v['playerId']] = $v['totalScore'];
@@ -282,7 +283,7 @@ class DisBandCallBack extends Base
                 }
             }
 
-            if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
+            if($roomHashInfo['roomRate'] == 0){ // 平均扣钻
                 foreach ($playerInfo as $k => $userInfo){
                     if(isset($userInfo['needDiamond'])){
                         foreach ($userInfo['needDiamond'] as $diamondType => $diamondValue){
@@ -312,7 +313,7 @@ class DisBandCallBack extends Base
                 }
             }
             if(isset($operateData)){
-                # 获取用户资产
+                // 获取用户资产
                 $operateDataFor = [];
                 foreach ($operateData as $kk =>$vv){
                     if(isset($operateDataFor[$vv['uid']])){
@@ -328,9 +329,9 @@ class DisBandCallBack extends Base
                 }
 
                 $res = operatePlayerProperty($operateData);
-                if(!isset($res['code']) || ($res['code'] != 0)){ # 扣钻失败 记录日志
+                if(!isset($res['code']) || ($res['code'] != 0)){ // 扣钻失败 记录日志
                     Log::write(json_encode($operateData), 'operateError');
-                }else{ # 报送大数据
+                }else{ // 报送大数据
                     $users = [];
                     foreach ($playerInfo as $k => $userInfo){
                         $users[$userInfo['userId']] = $userInfo;
@@ -366,7 +367,7 @@ class DisBandCallBack extends Base
                             $send_data['appid'] = Env::get('app_id');
                             $send_url = Env::get('inform_url') . 'api/send.php';
                             $client = new Client();
-                            $res = $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 1]);
+                            $client->postAsync($send_url, ['json' => $send_data, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
                         }
                     }
 
@@ -402,127 +403,129 @@ class DisBandCallBack extends Base
                     }
                 }
             }
+        }
+        // 玩家模式开局需要扣钻和报送结束
 
-            if($rebate){ # 需要返利
-                if($roomHashInfo['presidentId']){
-                    $generalChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['generalRebate'], 0), 100, 0);
-                    if($generalChangeNum > 0){
-                        $generalRebateData[] = [
-                            'uid' => $roomHashInfo['presidentId'],
-                            'event_type' => '+',
-                            'reason_id' => 5,
-                            'property_type' => Definition::$PRESIDENT_REBATE,
-                            'property_name' => '赠送蓝钻',
-                            'change_num' =>  $generalChangeNum# 普通会长返利,
+        // Todo 会长返利和返利报送
+        if(isset($rebate) && $rebate){ // 需要返利
+            if($roomHashInfo['presidentId']){
+                $generalChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['generalRebate'], 0), 100, 0);
+                if($generalChangeNum > 0){
+                    $generalRebateData[] = [
+                        'uid' => $roomHashInfo['presidentId'],
+                        'event_type' => '+',
+                        'reason_id' => 5,
+                        'property_type' => Definition::$PRESIDENT_REBATE,
+                        'property_name' => '赠送蓝钻',
+                        'change_num' =>  $generalChangeNum // 普通会长返利,
+                    ];
+                    $res = operatePlayerProperty($generalRebateData);
+                    if(!isset($res['code']) || ($res['code'] != 0)){ //  失败 记录日志
+                        Log::write(json_encode($generalRebateData), 'operateError');
+                    }else{
+                        $bigData = [
+                            'server_id' => '-',
+                            'user_id' => $generalRebateData[0]['uid'],
+                            'role_id' => '-'.'_'.$generalRebateData[0]['uid'],
+                            'role_name' => '-',
+                            'client_id' => '-',
+                            'client_type' => '-',
+                            'system_type' => '-',
+                            'ip' => '-',
+
+                            'club_id' => $roomHashInfo['clubId'],
+                            'club_name' => $roomHashInfo['clubName'],
+                            'club_region_id' => $roomHashInfo['clubRegionId'],
+                            'club_region_name' => $roomHashInfo['clubRegionName'],
+                            'club_mode' => $roomHashInfo['clubMode'],
+                            'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
+                            'room_type_id' => $roomHashInfo['roomOptionsId'],
+                            'room_type_name' => $roomHashInfo['roomTypeName'],
+                            'token_name' => 'money',
+                            'token_num' => $generalRebateData[0]['change_num'],
+                            'pay_mode' => $roomHashInfo['payMode'],
                         ];
-                        $res = operatePlayerProperty($generalRebateData);
-                        if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write(json_encode($generalRebateData), 'operateError');
-                        }else{
-                            $bigData = [
-                                'server_id' => '-',
-                                'user_id' => $generalRebateData[0]['uid'],
-                                'role_id' => '-'.'_'.$generalRebateData[0]['uid'],
-                                'role_name' => '-',
-                                'client_id' => '-',
-                                'client_type' => '-',
-                                'system_type' => '-',
-                                'ip' => '-',
-
-                                'club_id' => $roomHashInfo['clubId'],
-                                'club_name' => $roomHashInfo['clubName'],
-                                'club_region_id' => $roomHashInfo['clubRegionId'],
-                                'club_region_name' => $roomHashInfo['clubRegionName'],
-                                'club_mode' => $roomHashInfo['clubMode'],
-                                'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                                'room_type_id' => $roomHashInfo['roomOptionsId'],
-                                'room_type_name' => $roomHashInfo['roomTypeName'],
-                                'token_name' => 'money',
-                                'token_num' => $generalRebateData[0]['change_num'],
-                                'pay_mode' => $roomHashInfo['payMode'],
-                            ];
-                            $beeSender->send('club_rebate', $bigData);
-                        }
+                        $beeSender->send('club_rebate', $bigData);
                     }
                 }
+            }
 
-                if($roomHashInfo['seniorPresidentId']){
-                    $seniorChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['seniorRebate'], 0), 100, 0);
-                    if($seniorChangeNum > 0){
-                        $seniorRebateData[] = [
-                            'uid' => $roomHashInfo['seniorPresidentId'],
-                            'event_type' => '+',
-                            'reason_id' => 5,
-                            'property_type' => Definition::$PRESIDENT_REBATE,
-                            'property_name' => '赠送蓝钻',
-                            'change_num' => $seniorChangeNum, # 高级会长返利
+            if($roomHashInfo['seniorPresidentId']){
+                $seniorChangeNum = bcdiv(bcmul($rebate, $roomHashInfo['seniorRebate'], 0), 100, 0);
+                if($seniorChangeNum > 0){
+                    $seniorRebateData[] = [
+                        'uid' => $roomHashInfo['seniorPresidentId'],
+                        'event_type' => '+',
+                        'reason_id' => 5,
+                        'property_type' => Definition::$PRESIDENT_REBATE,
+                        'property_name' => '赠送蓝钻',
+                        'change_num' => $seniorChangeNum, # 高级会长返利
+                    ];
+                    $res = operatePlayerProperty($seniorRebateData);
+                    if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
+                        Log::write(json_encode($seniorRebateData), 'operateError');
+                    }else{
+                        $bigData = [
+                            'server_id' => '-',
+                            'user_id' => $seniorRebateData[0]['uid'],
+                            'role_id' => '-'.'_'.$seniorRebateData[0]['uid'],
+                            'role_name' => '-',
+                            'client_id' => '-',
+                            'client_type' => '-',
+                            'system_type' => '-',
+                            'ip' => '-',
+
+                            'club_id' => $roomHashInfo['clubId'],
+                            'club_name' => $roomHashInfo['clubName'],
+                            'club_region_id' => $roomHashInfo['clubRegionId'],
+                            'club_region_name' => $roomHashInfo['clubRegionName'],
+                            'club_mode' => $roomHashInfo['clubMode'],
+                            'do_rebate_user_id' => $roomHashInfo['presidentId'],
+                            'do_rebate_user_name' => $roomHashInfo['presidentNickName'],
+                            'token_name' => 'money',
+                            'token_num' => $seniorRebateData[0]['change_num'],
                         ];
-                        $res = operatePlayerProperty($seniorRebateData);
-                        if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write(json_encode($seniorRebateData), 'operateError');
-                        }else{
-                            $bigData = [
-                                'server_id' => '-',
-                                'user_id' => $seniorRebateData[0]['uid'],
-                                'role_id' => '-'.'_'.$seniorRebateData[0]['uid'],
-                                'role_name' => '-',
-                                'client_id' => '-',
-                                'client_type' => '-',
-                                'system_type' => '-',
-                                'ip' => '-',
-
-                                'club_id' => $roomHashInfo['clubId'],
-                                'club_name' => $roomHashInfo['clubName'],
-                                'club_region_id' => $roomHashInfo['clubRegionId'],
-                                'club_region_name' => $roomHashInfo['clubRegionName'],
-                                'club_mode' => $roomHashInfo['clubMode'],
-                                'do_rebate_user_id' => $roomHashInfo['presidentId'],
-                                'do_rebate_user_name' => $roomHashInfo['presidentNickName'],
-                                'token_name' => 'money',
-                                'token_num' => $seniorRebateData[0]['change_num'],
-                            ];
-                            $beeSender->send('highlevel_club_rebate', $bigData);
-                        }
+                        $beeSender->send('highlevel_club_rebate', $bigData);
                     }
                 }
+            }
 
-                if($roomHashInfo['commerceId']){ # 商务会长
-                    $businessNum = bcdiv(bcmul($rebate, $roomHashInfo['businessRebate'], 0), 100, 0);
-                    if($businessNum > 0){
-                        $businessRebateData[] = [
-                            'uid' => $roomHashInfo['commerceId'],
-                            'event_type' => '+',
-                            'reason_id' => 5,
-                            'property_type' => Definition::$PRESIDENT_REBATE,
-                            'property_name' => '赠送蓝钻',
-                            'change_num' => $businessNum, # 高级会长返利
+            if($roomHashInfo['commerceId']){ # 商务会长
+                $businessNum = bcdiv(bcmul($rebate, $roomHashInfo['businessRebate'], 0), 100, 0);
+                if($businessNum > 0){
+                    $businessRebateData[] = [
+                        'uid' => $roomHashInfo['commerceId'],
+                        'event_type' => '+',
+                        'reason_id' => 5,
+                        'property_type' => Definition::$PRESIDENT_REBATE,
+                        'property_name' => '赠送蓝钻',
+                        'change_num' => $businessNum, # 高级会长返利
+                    ];
+                    $res = operatePlayerProperty($businessRebateData);
+                    if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
+                        Log::write(json_encode($businessRebateData), 'operateError');
+                    }else{
+                        $bigData = [
+                            'server_id' => '-',
+                            'user_id' => $businessRebateData[0]['uid'],
+                            'role_id' => '-'.'_'.$businessRebateData[0]['uid'],
+                            'role_name' => '-',
+                            'client_id' => '-',
+                            'client_type' => '-',
+                            'system_type' => '-',
+                            'ip' => '-',
+
+                            'do_rebate_user_id' => $roomHashInfo['seniorPresidentId'],
+                            'do_rebate_user_name' => $roomHashInfo['seniorPresidentNickName'],
+                            'token_name' => 'money',
+                            'token_num' => $businessRebateData[0]['change_num'],
                         ];
-                        $res = operatePlayerProperty($businessRebateData);
-                        if(!isset($res['code']) || ($res['code'] != 0)){ # 失败 记录日志
-                            Log::write(json_encode($businessRebateData), 'operateError');
-                        }else{
-                            $bigData = [
-                                'server_id' => '-',
-                                'user_id' => $businessRebateData[0]['uid'],
-                                'role_id' => '-'.'_'.$businessRebateData[0]['uid'],
-                                'role_name' => '-',
-                                'client_id' => '-',
-                                'client_type' => '-',
-                                'system_type' => '-',
-                                'ip' => '-',
-
-                                'do_rebate_user_id' => $roomHashInfo['seniorPresidentId'],
-                                'do_rebate_user_name' => $roomHashInfo['seniorPresidentNickName'],
-                                'token_name' => 'money',
-                                'token_num' => $businessRebateData[0]['change_num'],
-                            ];
-                            $beeSender->send('business_club_rebate', $bigData);
-                        }
+                        $beeSender->send('business_club_rebate', $bigData);
                     }
                 }
             }
         }
-        # 玩家扣钻模式完成
+        // 会长返利和返利报送结束
         return jsonRes(0);
     }
 }
