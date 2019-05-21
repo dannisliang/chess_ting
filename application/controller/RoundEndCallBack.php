@@ -44,6 +44,10 @@ class RoundEndCallBack extends Base
 
         if($getLock){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+                # 报送大数据
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
+                    ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
+
                 $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
                 $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
                 $roundEndInfo[] = [
@@ -76,10 +80,6 @@ class RoundEndCallBack extends Base
             }
         }
 
-        # 报送大数据
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
-
         # 算用户积分和用户积分
         $userIds = [];
         $userScore = [];
@@ -89,7 +89,11 @@ class RoundEndCallBack extends Base
         }
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
 
-        $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
+        $playerInfo = [];
+        if(isset($roomHashInfo['playerInfos'])){
+            $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
+        }
+
         if($playerInfo){
 
             foreach ($playerInfo as $k => $userInfo){
