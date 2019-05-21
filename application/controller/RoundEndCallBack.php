@@ -44,10 +44,6 @@ class RoundEndCallBack extends Base
 
         if($getLock){
             if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-                # 报送大数据
-                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-                    ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
-
                 $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
                 $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
                 $roundEndInfo[] = [
@@ -58,6 +54,9 @@ class RoundEndCallBack extends Base
                     'roundEndTime' => date("Y-m-d H:i:s", time())
                 ];
                 $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
+                # 报送大数据
+                $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
+                    ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
                 $redisHandle->del($lockKey); // 先解锁再上传， 否则锁开销很大
 
                 # 上传牌局记录到华为云
