@@ -28,4 +28,6 @@ class RedisKey{
     public static $OPEN_SERVICE_CACHE = 'open_service_cache'; // 开启的服务的缓存
 
     public static $USED_ROOM_NUM = 'used_room_num'; // 开启的服务的缓存
+
+    public static $USER_INFO = 'user_info_'; // 用户的资料
 }

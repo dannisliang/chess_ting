@@ -8,10 +8,11 @@
 
 namespace app\controller;
 
-use think\Config;
+use app\definition\RedisKey;
+use think\cache\driver\Redis;
 use think\Controller;
-use think\Log;
 use think\Request;
+use think\Session;
 
 
 class Base extends Controller
@@ -21,6 +22,12 @@ class Base extends Controller
     # 自测通过
     public function _initialize()
     {
+        $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
+        if($userSessionInfo){
+            $redis = new Redis();
+            $redisHandle = $redis->handler();
+            $redisHandle->set(RedisKey::$USER_INFO.$userSessionInfo['userid'], json_encode($userSessionInfo));
+        }
         # 拒绝一切非post请求
         $method = Request::instance()->method();
         if($method !== 'POST'){
