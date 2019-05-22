@@ -201,28 +201,11 @@ class User
                 'options'  => ''
             ];
         }
-        $roomOptionModel = new RoomOptionsModel();
-        $playModel = new PlayModel();
         $room_id    = $user_room_info['room_id'];
         $socket_h5  = $user_room_info['socket_h5'];
         $socket_url = $user_room_info['socket_url'];
-        $roomOption = $roomOptionModel ->getOneByWhere(['id' => $user_room_info['match_id']]);
-        if (!$roomOption){
-            $check = [];
-            $options = [];
-        }else{
-            $options = [];
-            if(isset($roomOption['options'])){
-                $options = json_decode($roomOption['options'],true);
-            }
-            //获取play中的玩法
-            $play = $playModel -> getOneByWhere(['id' => $roomOption['room_type']]);
-            $check = [];
-            if(!empty($play['play'])){
-                //获取check
-                $check = json_decode($play['play'],true)['checks'];
-            }
-        }
+        $check      = json_decode($user_room_info['playChecks'],true);
+        $options    = json_decode($user_room_info['roomOptions'],true);
 
         return $res = [
             'room_id'  => $room_id,
@@ -247,9 +230,8 @@ class User
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','roomOptionsId']);
-
-        if(!$user_room_info || !$user_room_info['socketH5'] || !$user_room_info['socketUrl'] || !$user_room_info['roomOptionsId']){
+        $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','isRedCouponRoom','roomOptions','playChecks']);
+        if(!$user_room_info || !$user_room_info['socketH5'] || !$user_room_info['socketUrl']){
             //逻辑服存在，redis里面没有房间解散房间
             $this -> disBandRoom($user_id);
             return false;
@@ -262,8 +244,11 @@ class User
             'room_id'   => $room_id,
             'socket_h5' => $socket_h5,
             'socket_url'=> $socket_url,
-//            'room_num'  => $user_room_info['clubId'] . '_' . $user_room_info['roomCode'], //
             'match_id'  => $user_room_info['roomOptionsId'],
+            'is_red_coupon_room' => $user_room_info['isRedCouponRoom'],
+            'playChecks' => $user_room_info['playChecks'],
+            'roomOptions'=> $user_room_info['roomOptions'],
+
         ];
 
         return $back_room_info;
