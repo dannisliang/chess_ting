@@ -217,7 +217,7 @@ return [
         'host' => Env::get('redis.host'),
         'port' => Env::get('redis.port'),
         'password' => Env::get('redis.password'),
-        'select' => Env::get('redis.database'),
+        'select'        => 8,
         //设置session过期时间1天
         'expire' => 60*60*24,
     ],
