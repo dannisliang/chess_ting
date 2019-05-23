@@ -129,20 +129,18 @@ class CreateRoom extends Base
             return jsonRes(3521);
         }
 
-        $serviceIds = [];
-        foreach ($serviceInfos as $v){
-            $serviceIds[] = $v['id'];
-        }
-        $rand = rand(0, count($serviceIds)-1);
+        $rand = rand(0, count($serviceInfos)-1);
         $serviceId = $serviceInfos[$rand]['service_id'];
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
             return jsonRes(3517);
         }
-        $httpUrl = $serviceGatewayNewInfo['service'];
-        $socketH5 = $serviceGatewayNewInfo['gateway_h5'];
-        $socketUrl = $serviceGatewayNewInfo['gateway_app'];
+
+        $rand = rand(0, count($serviceGatewayNewInfo)-1);
+        $httpUrl = $serviceGatewayNewInfo[$rand]['service'];
+        $socketH5 = $serviceGatewayNewInfo[$rand]['gateway_h5'];
+        $socketUrl = $serviceGatewayNewInfo[$rand]['gateway_app'];
 
         if(Env::get('is_online') == false && in_array($this->opt['club_id'], [555555, 999999, 888888, 777777])){
             $clubSocket = new ClubSocketModel();
