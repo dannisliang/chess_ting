@@ -74,74 +74,75 @@ class RoundEndCallBack extends Base
                 }catch (ObsException $obsException){
                     Log::write(json_encode($this->opt), "obsPutError");
                 }
+
+                # 算用户积分和用户积分
+                $userIds = [];
+                $userScore = [];
+                foreach ($this->opt['score'] as $k => $v){
+                    $userScore[$v['playerId']] = $v['score'];
+                    $userIds[] = $v['playerId'];
+                }
+                $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
+
+                $playerInfo = [];
+                if(isset($roomHashInfo['playerInfos'])){
+                    $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
+                }
+
+                if($playerInfo){
+
+                    foreach ($playerInfo as $k => $userInfo){
+                        $isWin = 'lose';
+                        $winType = '-';
+                        if(in_array($userInfo['userId'], $this->opt['winnerIds'])){
+                            $isWin = 'win';
+                            $winType = json_encode($this->opt['faanNames']);
+                        }
+                        $score = 0;
+                        foreach ($this->opt['score'] as $kkk => $vvv){
+                            if($vvv['playerId'] == $userInfo['userId']){
+                                $score = $vvv['score'];
+                            }
+                        }
+                        $bigData = [
+                            'server_id' => '-',
+                            'user_id' => $userInfo['userId'],
+                            'role_id' => '-'.'_'.$userInfo['userId'],
+                            'role_name' => $userInfo['nickName'],
+                            'client_id' => '-',
+                            'client_type' => $userInfo['clientType'],
+                            'system_type' => $userInfo['systemType'],
+                            'ip' => $userInfo['ipAddr'],
+
+                            'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
+                            'room_type_id' => $roomHashInfo['roomOptionsId'],
+                            'room_type_name' => $roomHashInfo['roomTypeName'],
+                            'room_channel' => $roomHashInfo['roomChannel'],
+                            'table_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'],
+                            'rule_detail' => '-',
+                            'bet_num' => $roomHashInfo['betNums'],
+                            'user_num' => $roomHashInfo['needUserNum'],
+                            'win_lose' => $isWin,
+                            'win_type' => $winType,
+                            'token_name' => 'score',
+                            'token_num' => $userScore[$userInfo['userId']],
+                            'current_token' => $score,
+                            'keep_time' => $this->opt['duration'],
+                            'club_id' => $roomHashInfo['clubId'],
+                            'club_name' => $roomHashInfo['clubName'],
+                            'club_region_id' => $roomHashInfo['clubRegionId'],
+                            'club_region_name' => $roomHashInfo['clubRegionName'],
+                            'club_mode' => $roomHashInfo['clubMode'],
+                        ];
+                        $beeSender->send('table_finish', $bigData);
+                    }
+                }
+                # 报送大数据完成
             }else{
                 $redisHandle->del($lockKey);
             }
         }
 
-        # 算用户积分和用户积分
-        $userIds = [];
-        $userScore = [];
-        foreach ($this->opt['score'] as $k => $v){
-            $userScore[$v['playerId']] = $v['score'];
-            $userIds[] = $v['playerId'];
-        }
-        $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
-
-        $playerInfo = [];
-        if(isset($roomHashInfo['playerInfos'])){
-            $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
-        }
-
-        if($playerInfo){
-
-            foreach ($playerInfo as $k => $userInfo){
-                $isWin = 'lose';
-                $winType = '-';
-                if(in_array($userInfo['userId'], $this->opt['winnerIds'])){
-                    $isWin = 'win';
-                    $winType = json_encode($this->opt['faanNames']);
-                }
-                $score = 0;
-                foreach ($this->opt['score'] as $kkk => $vvv){
-                    if($vvv['playerId'] == $userInfo['userId']){
-                        $score = $vvv['score'];
-                    }
-                }
-                $bigData = [
-                    'server_id' => '-',
-                    'user_id' => $userInfo['userId'],
-                    'role_id' => '-'.'_'.$userInfo['userId'],
-                    'role_name' => $userInfo['nickName'],
-                    'client_id' => '-',
-                    'client_type' => $userInfo['clientType'],
-                    'system_type' => $userInfo['systemType'],
-                    'ip' => $userInfo['ipAddr'],
-
-                    'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                    'room_type_id' => $roomHashInfo['roomOptionsId'],
-                    'room_type_name' => $roomHashInfo['roomTypeName'],
-                    'room_channel' => $roomHashInfo['roomChannel'],
-                    'table_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'],
-                    'rule_detail' => '-',
-                    'bet_num' => $roomHashInfo['betNums'],
-                    'user_num' => $roomHashInfo['needUserNum'],
-                    'win_lose' => $isWin,
-                    'win_type' => $winType,
-                    'token_name' => 'score',
-                    'token_num' => $userScore[$userInfo['userId']],
-                    'current_token' => $score,
-                    'keep_time' => $this->opt['duration'],
-                    'club_id' => $roomHashInfo['clubId'],
-                    'club_name' => $roomHashInfo['clubName'],
-                    'club_region_id' => $roomHashInfo['clubRegionId'],
-                    'club_region_name' => $roomHashInfo['clubRegionName'],
-                    'club_mode' => $roomHashInfo['clubMode'],
-                ];
-                $beeSender->send('table_finish', $bigData);
-            }
-        }
-        # 报送大数据完成
         return jsonRes(0);
     }
 }
