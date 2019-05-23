@@ -28,7 +28,12 @@ class JoinRoom extends Base
         # 获取session数据
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
         if(!$userSessionInfo){
-            return jsonRes(3006);
+            return jsonRes(9999);
+        }
+
+        $checkTokenRes = checkUserToken($userSessionInfo);
+        if(!isset($checkTokenRes['result']) || ($checkTokenRes['result'] == false)){
+            return jsonRes(9999);
         }
 
         $redis = new Redis();
