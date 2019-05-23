@@ -244,7 +244,7 @@ class User
             'room_id'   => $room_id,
             'socket_h5' => $socket_h5,
             'socket_url'=> $socket_url,
-            'match_id'  => $user_room_info['roomOptionsId'],
+//            'match_id'  => $user_room_info['roomOptionsId'],
             'is_red_coupon_room' => $user_room_info['isRedCouponRoom'],
             'playChecks' => $user_room_info['playChecks'],
             'roomOptions'=> $user_room_info['roomOptions'],
