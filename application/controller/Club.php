@@ -10,6 +10,7 @@ namespace app\controller;
 
 
 use app\definition\Definition;
+use app\definition\RedisKey;
 use app\model\AreaModel;
 use app\model\BeeSender;
 use app\model\ClubModel;
@@ -26,6 +27,7 @@ use app\model\UserVipModel;
 use think\Db;
 use think\Env;
 use think\Log;
+use think\Session;
 
 class Club extends Base
 {
@@ -35,10 +37,19 @@ class Club extends Base
      * @return \think\response\Json\
      */
     public function getClubInfo(){
-        $user_id = getUserIdFromSession();
-        if(!$user_id){
+        //验证token
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        $user_id = $user_session_info['userid'];
+        $data = [
+            'ip'    => $user_session_info['ip'],
+            'token' => $user_session_info['token'],
+            'uid'   => $user_id,
+        ];
+        $result = checkToken( $data );
+        if(!isset($result['result']) || $result['result'] === false || !$user_id){
             return jsonRes(9999);
         }
+
         $opt = ['club_id'];
         if (!has_keys($opt,$this->opt,true)){
             return jsonRes(3006);
