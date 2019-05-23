@@ -46,7 +46,7 @@ class Token extends Base
         $result = checkToken( $data );
 
         if(!isset($result['result']) || $result['result'] === false){
-            return jsonRes(3002);
+            return jsonRes(9999);
         }
         $user_info = getUserBaseInfo($this->opt['player_id']);
         //没有查到用户信息验证不通过
