@@ -230,7 +230,7 @@ class User
 
         $redis = new Redis();
         $redisHandler = $redis -> handler();
-        $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','isRedCouponRoom','roomOptions','playChecks']);
+        $user_room_info = $redisHandler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $room_id ,['socketH5','socketUrl','roomOptions','playChecks']);
         if(!$user_room_info || !$user_room_info['socketH5'] || !$user_room_info['socketUrl']){
             //逻辑服存在，redis里面没有房间解散房间
             $this -> disBandRoom($user_id);
@@ -245,7 +245,6 @@ class User
             'socket_h5' => $socket_h5,
             'socket_url'=> $socket_url,
 //            'match_id'  => $user_room_info['roomOptionsId'],
-            'is_red_coupon_room' => $user_room_info['isRedCouponRoom'],
             'playChecks' => $user_room_info['playChecks'],
             'roomOptions'=> $user_room_info['roomOptions'],
 
