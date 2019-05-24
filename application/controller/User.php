@@ -77,7 +77,7 @@ class User
             'nickname' => $user_info['nickname'],
             'head_img' => $user_info['headimgurl'],
             'ismark'   => $user_info['ismark'], //是否绑定手机
-//            'is_tag'    => $user_info['istag'], // 是否绑定微信或者吹牛
+            'is_tag'   => isset($user_info['istag']) ? $user_info['istag'] : 0, // 是否绑定微信或者吹牛
             'club_name'=> $club_name,
             'club_id'  => $club_id,
             'room_id'  => $roomInfo['room_id'],
