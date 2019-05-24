@@ -42,7 +42,7 @@ Route::rule('service/api/roundStartGame','RoundStartCallBack/roundStartCallBack'
 Route::rule('service/api/roundEndGame','RoundEndCallBack/roundEndCallBack'); # 牌局游戏结束回调
 Route::rule('service/api/roomDisband','DisBandCallBack/disBandCallBack'); # 房间解散回调
 
-Route::rule('service/room/cheatRoom','Room/getRoomGpsInfo'); # 获取房间的gps相关数据
+Route::rule('service/room/cheatRoom','CheatRoom/cheatRoom'); # 获取房间的gps相关数据
 Route::rule('service/disband/getroom_list','Room/getUserRoom'); # 获取玩家房间
 Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散房间
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息

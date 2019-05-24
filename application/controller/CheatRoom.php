@@ -18,7 +18,7 @@ class CheatRoom extends Base {
      * 客户端
      */
     // 获取gps相关信息完成
-    public function getRoomGpsInfo(){
+    public function cheatRoom(){
         # 根据房间ID获取
         if(isset($this->opt['room_id']) && is_numeric($this->opt['room_id'])){
             $redis = new Redis();
