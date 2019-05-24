@@ -55,7 +55,7 @@ class Token extends Base
         }
         //配置默认的头像地址
         if(empty($user_info['headimgurl'])){
-            $user_info['headimgurl'] = 'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56v...avHiaiceqxibJxCfHe/0';
+            $user_info['headimgurl'] = 'http://wx.qlogo.cn/mmopen/g3MonUZtNHkdmzicIlibx6iaFqAc56vxLSUfpb6n5WKSYVY0ChQKkiaJSgQ1dZuTOgvLLrhJbERQQ4eMsv84eavHiaiceqxibJxCfHe/0';
         }
         //验证完成的信息存入session
         $user_data = [
