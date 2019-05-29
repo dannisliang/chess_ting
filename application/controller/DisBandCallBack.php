@@ -63,7 +63,7 @@ class DisBandCallBack extends Base
         // Todo 牌局记录
         if($this->opt['round'] && $playerInfo){
             foreach ($playerInfo as $k => $userInfo){
-                $redisHandle->sAdd(RedisKey::$USER_ROOM_RECORD.$userInfo['userId'], $this->opt['roomId']);
+                $redisHandle->zAdd(RedisKey::$USER_ROOM_RECORD.$userInfo['userId'], time(), $this->opt['roomId']);
             }
         }
         // 牌局记录结束

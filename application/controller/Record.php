@@ -32,7 +32,8 @@ class Record extends Base{
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
-        $userRoomRecord = $redisHandle->sMembers(RedisKey::$USER_ROOM_RECORD.$userSessionInfo['userid']);
+        $rangeStart = time()-3600*24*3;
+        $userRoomRecord = $redisHandle->zRangeByScore(RedisKey::$USER_ROOM_RECORD.$userSessionInfo['userid'], $rangeStart, time());
         if(!$userRoomRecord){
             return jsonRes(0, []);
         }

@@ -59,7 +59,7 @@ class CreateRoom extends Base
         else
             return 0
         end
-SCRIPT; 
+SCRIPT;
 
         $roomNum = $redisHandle->eval($lua, array(RedisKey::$USED_ROOM_NUM, 100000, 999999, time().mt_rand(1, 9), 0), 1);
         return $roomNum;
@@ -275,7 +275,7 @@ SCRIPT;
             ];
             $operaRes = operatePlayerProperty($operateData);
             if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
-                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
                 $returnData = [
                     'need_diamond' => $needDiamond
                 ];
@@ -290,7 +290,7 @@ SCRIPT;
         $createRoomInfo = sendHttpRequest($httpUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result'])){ # 创建房间失败
-            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+            $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
                 $operateData[] = [
                     'uid' => $clubInfo['president_id'],
@@ -308,7 +308,7 @@ SCRIPT;
             return jsonRes(3517);
         }else{
             if($createRoomInfo['content']['result'] != 0){
-                $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
                 if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 还钻
                     $operateData[] = [
                         'uid' => $clubInfo['president_id'],
