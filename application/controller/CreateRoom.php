@@ -44,7 +44,7 @@ class CreateRoom extends Base
         local v3 = tonumber(ARGV[3])
         local v4 = tonumber(ARGV[4])
         
-        math.randomseed(k3)
+        math.randomseed(v3)
         for i = v1, v2, 1 do
             rand = math.random(v1, v2)
             res = redis.call('zrank', k1, rand)
