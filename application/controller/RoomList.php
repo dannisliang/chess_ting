@@ -49,14 +49,14 @@ class RoomList extends Base
                     Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
                     $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                     if($res){
-                        $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                        $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $roomNumber); // 迭代占用的房间号
                     }
                 }
             }else{
                 Log::write('服务不可用'.$this->opt['club_id'].'_'.$roomNumber, "log");
                 $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                 if($res){
-                    $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                    $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $roomNumber); // 迭代占用的房间号
                 }
             }
         }
