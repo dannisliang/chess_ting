@@ -60,6 +60,18 @@ class DisBandCallBack extends Base
         $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
+        // Todo 牌局记录
+        if($this->opt['round'] && $playerInfo){
+            foreach ($playerInfo as $k => $userInfo){
+                $redisHandle->sAdd(RedisKey::$USER_ROOM_RECORD.$userInfo['userId'], $this->opt['roomId']);
+            }
+        }
+        // 牌局记录结束
+        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
+        if($remRes){
+            $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $this->opt['roomId']); // 迭代占用的房间号
+        }
+
 
         // Todo 报送
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
@@ -470,64 +482,6 @@ class DisBandCallBack extends Base
         }
         // 会长返利和返利报送结束
 
-        // Todo 牌局记录
-        $roomHashInfo = $redisHandle->hGetAll(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-        $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
-        if($this->opt['round'] && $playerInfo){
-            $addTime = date("Y-m-d H:i:s", time());
-            try{
-                $obsClient = new ObsClient([
-                    'key' => Env::get('obs.key'),
-                    'secret' => Env::get('obs.secret'),
-                    'endpoint' => Env::get('obs.endpoint')
-                ]);
-                $obsClient -> putObject([
-                    'Bucket' => Env::get('obs.chess_record'),
-                    'Key' => $addTime.$this->opt['roomId'],
-                    'Body' => json_encode($roomHashInfo)
-                ]);
-                $insertAll = [];
-                foreach ($playerInfo as $k => $userInfo){
-                    $insert = [
-                        'room_id' => $this->opt['roomId'],
-                        'user_id' => $userInfo['userId'],
-                        'club_id' => $roomHashInfo['clubId'],
-                        'add_time' => $addTime,
-                    ];
-                    $insertAll[] = $insert;
-                }
-                if($insertAll){
-                    $userClubRoomRecord = new UserClubRoomRecordModel();
-                    $userClubRoomRecord->insertAllUserRecord($insertAll);
-                }
-            }catch (ObsException $obsException){
-                Log::write(json_encode($roomHashInfo), "obsPutError");
-            }
-        }
-        // 牌局记录结束
-
-        // Todo 删房间
-        $getLock = false;
-        $timeOut = bcadd(time(), 2, 0);
-        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
-        while(!$getLock){
-            if(time() > $timeOut){
-                break;
-            }
-            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-            if($getLock){
-                break;
-            }
-        }
-        if($getLock){
-            $redisHandle->del(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId']);
-            $redisHandle->del($lockKey);
-        }
-
-        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
-        if($remRes){
-            $redisHandle->sRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 移除占用的房间号
-        }
         // 删房间结束
         return jsonRes(0);
     }

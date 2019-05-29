@@ -30,21 +30,38 @@ use app\model\ServiceGatewayNewModel;
 
 class CreateRoom extends Base
 {
-    private function getRoomNum($redisHandle){
-        $roomNum = '';
+    public function getRoomNum(){
+        $redis = new Redis(); // 实例化redis类
+        $redisHandle = $redis->handler();
 
-        $timeout = bcadd(time(), 2, 0);
-        while (true){
-            if(time() > $timeout){
-                break;
-            }
-            $rand = mt_rand(100000, 999999);
-            $res = $redisHandle->sAdd(RedisKey::$USED_ROOM_NUM, $rand);
-            if($res){
-                $roomNum = $rand;
-                break;
-            }
-        }
+        $lua = <<<SCRIPT
+        local rand
+        local res
+        
+        local k1 = KEYS[1]
+        local v1 = tonumber(ARGV[1])
+        local v2 = tonumber(ARGV[2])
+        local v3 = tonumber(ARGV[3])
+        local v4 = tonumber(ARGV[4])
+        
+        math.randomseed(k3)
+        for i = v1, v2, 1 do
+            rand = math.random(v1, v2)
+            res = redis.call('zrank', k1, rand)
+            if res == false then
+                break
+            end
+        end
+    
+        if res == false then
+            redis.call('zadd', k1, v4, rand)
+            return rand
+        else
+            return 0
+        end
+SCRIPT; 
+
+        $roomNum = $redisHandle->eval($lua, array(RedisKey::$USED_ROOM_NUM, 100000, 999999, time().mt_rand(1, 9), 0), 1);
         return $roomNum;
     }
 
@@ -239,7 +256,7 @@ class CreateRoom extends Base
         }
 
         # 生成房间号
-        $roomNumber = $this->getRoomNum($redisHandle);
+        $roomNumber = $this->getRoomNum();
         if(!$roomNumber){
             return jsonRes(3517);
         }
