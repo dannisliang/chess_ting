@@ -29,50 +29,32 @@ class RoundEndCallBack extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
-        $getLock = false;
-        $timeOut = bcadd(time(), 2, 0);
-        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
-        while(!$getLock){
-            if(time() > $timeOut){
-                break;
-            }
-            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-            if($getLock){
-                break;
-            }
-        }
-
-        if($getLock){
-            $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
-            $roundEndInfo = json_decode($redisHandle->hGet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo'), true);
-            $roundEndInfo[] = [
-                'score' => $this->opt['score'],
-                'faanNames' => $this->opt['faanNames'],
-                'duration' => $this->opt['duration'],
-                'roundId' => $roundId,
-                'roundEndTime' => date("Y-m-d H:i:s", time())
-            ];
-            $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
-            # 报送大数据
-            $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-                ['roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
-            $redisHandle->del($lockKey); // 先解锁再上传， 否则锁开销很大
-
-            # 上传牌局记录到华为云
-            try{
-                $obsClient = new ObsClient([
-                    'key' => Env::get('obs.key'),
-                    'secret' => Env::get('obs.secret'),
-                    'endpoint' => Env::get('obs.endpoint')
-                ]);
-                $obsClient -> putObject([
-                    'Bucket' => Env::get('obs.chess_record'),
-                    'Key' => $roundId,
-                    'Body' => $this->opt['playBack']
-                ]);
-            }catch (ObsException $obsException){
-                Log::write(json_encode($this->opt), "obsPutError");
-            }
+        $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
+            ['roundEndInfo', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
+        $roundEndInfo = json_decode($roomHashInfo['roundEndInfo'], true);
+        $roundEndInfo[] = [
+            'score' => $this->opt['score'],
+            'faanNames' => $this->opt['faanNames'],
+            'duration' => $this->opt['duration'],
+            'roundId' => $roundId,
+            'roundEndTime' => date("Y-m-d H:i:s", time())
+        ];
+        $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
+        # 上传牌局记录到华为云
+        try{
+            $obsClient = new ObsClient([
+                'key' => Env::get('obs.key'),
+                'secret' => Env::get('obs.secret'),
+                'endpoint' => Env::get('obs.endpoint')
+            ]);
+            $obsClient -> putObject([
+                'Bucket' => Env::get('obs.chess_record'),
+                'Key' => $roundId,
+                'Body' => $this->opt['playBack']
+            ]);
+        }catch (ObsException $obsException){
+            Log::write(json_encode($this->opt), "obsPutError");
         }
 
         # 算用户积分和用户积分
@@ -90,7 +72,6 @@ class RoundEndCallBack extends Base
         }
 
         if($playerInfo) {
-
             foreach ($playerInfo as $k => $userInfo) {
                 $isWin = 'lose';
                 $winType = '-';
