@@ -18,6 +18,7 @@ use app\model\RoomOptionsModel;
 use app\model\ServiceGatewayNewModel;
 use app\model\UserEvaluateModel;
 use app\model\UserLastClubModel;
+use GuzzleHttp\Client;
 use think\cache\driver\Redis;
 use think\Log;
 use think\Env;
@@ -59,6 +60,14 @@ class User
 
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
+
+        if(!$user_room_info){
+            $data = sendHttpRequest(Env::get('allcome'), ['userId' => $user_id]);
+            Log::write($data, "rror");
+            if(isset($data['code']) && $data['code'] == 0){
+                $user_room_info = $data['data'];
+            }
+        }
 
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
