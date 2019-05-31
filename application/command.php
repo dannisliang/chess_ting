@@ -10,8 +10,6 @@
 // +----------------------------------------------------------------------
 
 return [
-    'app\command\RoomNumPush',
-    'app\command\DelUserClubRecord',
-    'app\command\SynchronizedClubRoom',
     'app\command\Test',
+    'app\command\ClearUsedRoomNum', // 在使用
 ];

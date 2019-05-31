@@ -31,5 +31,5 @@ class RedisKey{
 
     public static $USER_INFO = 'user_info_'; // 用户的资料
 
-    public static $USER_ROOM_RECORD = 'user_room_record'; // 用户房间记录
+    public static $USER_ROOM_RECORD = 'user_room_record:'; // 用户房间记录
 }
