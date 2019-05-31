@@ -23,31 +23,13 @@ class RoomEndCallBack extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
-        $getLock = false;
-        $timeOut = bcadd(time(), 2, 0);
-        $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
-        while(!$getLock){
-            if(time() > $timeOut){
-                break;
-            }
-            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-            if($getLock){
-                break;
-            }
+        if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
+            $setData = [
+                'gameEndTime' => date('Y-m-d H:i:s', time()),
+                'gameEndInfo' => json_encode($this->opt['statistics'])
+            ];
+            $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $setData);
         }
-
-        if($getLock){
-            if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-                $setData = [
-                    'gameEndTime' => date('Y-m-d H:i:s', time()),
-                    'gameEndInfo' => json_encode($this->opt['statistics'])
-                ];
-                $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $setData);
-            }
-            $redisHandle->del($lockKey);
-        }
-
-
 
         # 牌局正常结束 返回逻辑服扣钻相关数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'clubType', 'roomRate']);
