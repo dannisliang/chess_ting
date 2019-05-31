@@ -29,7 +29,7 @@ class ClearUsedRoomNum extends Command{
 
     protected function execute(Input $input, Output $output)
     {
-        $endTime = bcsub(time(), 3600*24*3, 0);
+        $endTime = bcsub(time(), bcmul(bcmul(3600, 24, 0), 3, 0), 0);
         $redis = new Redis();
         $redisHandle = $redis->handler();
         $redisHandle->zRemRangeByScore(RedisKey::$USED_ROOM_NUM, 1, $endTime);
