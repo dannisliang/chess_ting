@@ -39,6 +39,9 @@ class Club extends Base
     public function getClubInfo(){
         //验证token
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!isset($user_session_info['userid']) || !isset($user_session_info['ip']) || !isset($user_session_info['token'])){
+            return jsonRes(9999);
+        }
         $user_id = $user_session_info['userid'];
         $data = [
             'ip'    => $user_session_info['ip'],

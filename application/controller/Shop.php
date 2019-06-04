@@ -335,10 +335,10 @@ class Shop extends Base
         //生成订单号 保证13位数字输出
         $order_num  = str_pad(substr(time(),-7) . $user_id,13,'0',STR_PAD_RIGHT);
         $time = date('Y-m-d H:i:s');
-        $ret_url = urlencode($ret_url);
+//        $ret_url = urlencode($ret_url);
 
         $notify_url = Env::get('async_callback_url');//异步回调地址
-        $notify_url = urlencode($notify_url);
+//        $notify_url = urlencode($notify_url);
 
         switch ($type){
             case 10001:
