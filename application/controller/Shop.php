@@ -370,7 +370,7 @@ class Shop extends Base
         $sign = $this -> get_sign($sign_data , Env::get('sign'));
         $url = 'https://payment.chessvans.com/umf_pay/service/wechat_mp.php?app_id=' . Env::get('app_id') . '&&cp_order_id=' . $order_num . '&&fee=' . $price . '&&goods_inf=' . $goods_info . '&&notify_url=' . $notify_url . '&&ret_url=' . $ret_url . '&&sign=' . $sign;
         $result = sendHttpRequest( $url );
-        Log::write($result,'result_error');
+        // Log::write($result,'result_error');
         if(!$result || !isset($result['ErrCode']) || $result['ErrCode']!= 0){
             return jsonRes(3004);
         }
