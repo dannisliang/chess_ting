@@ -69,7 +69,11 @@ class DisBandCallBack extends Base
         // 牌局记录结束
         $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
         if($remRes){
-            $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $this->opt['roomId']); // 迭代占用的房间号
+            if($this->opt['round'] && $playerInfo){
+                $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $this->opt['roomId']); // 迭代占用的房间号
+            }else{
+                $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $this->opt['roomId']); // 删除占用的房间号
+            }
         }
 
 
