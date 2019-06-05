@@ -47,7 +47,7 @@ class PaySuccessCallBack
 
         //查出订单的详细信息
         $orderModel = new OrderModel();
-        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,order_status,fee,product_id,product_amount,player_id,club_id,system_type,client_type');
+        $order = $orderModel -> getOneByWhere(['id' => $sign_data['cp_order_id']] , 'id,vip_id,order_status,fee,product_id,product_amount,player_id,club_id,system_type,client_type,type');
         if(!$order){
             return json(['result' => 3]); //没有订单信息
         }
@@ -60,7 +60,7 @@ class PaySuccessCallBack
             //获取会员卡信息(会长返利)
             $result = $this -> buyVipCard($order,$pay_type);
 
-            if(!$result != 1){
+            if($result != 1){
                 Log::write($result , 'buy_vip_card_error'); //根据不同的返回码确认报错信息
                 return json(['result'=>3]);
             }
@@ -246,6 +246,7 @@ class PaySuccessCallBack
 
         $club_vip_info = $clubVip -> getOneByWhere(['club_id' => $order['club_id']]);
         if(!$club_vip_info){
+	    Log::write(1,'buyerr');
             return -1;
         }
         $price = $club_vip_info['pricing'];
@@ -253,6 +254,7 @@ class PaySuccessCallBack
         $vipCard = new VipCardModel();
         $vip_card_info = $vipCard -> getOneByWhere(['vip_id'=>$order['vip_id']]);
         if(!$vip_card_info){
+	    Log::write(2,'buyerr');
             return -1;
         }
 
@@ -271,10 +273,11 @@ class PaySuccessCallBack
         if($user_vip){
             $data = [
                 'card_number' => $user_vip['card_number'] +1, //vip卡数量
-                'vip_level'   => $club_vip_info['type'],
+                'vip_level'   => $vip_card_info['type'],
             ];
             $res = $userVipModel ->updateByWhere($where,$data);
             if(!$res){
+		Log::write(3,'buyerr');
                 return -1; //更新失败
             }
         }else{
@@ -284,16 +287,18 @@ class PaySuccessCallBack
                 'club_id' => $order['club_id'],
                 'vip_status' => 0,
                 'card_number' => 1,
-                'vip_level' => $order['type'],
+                'vip_level' => $vip_card_info['type'],
             ];
             $result = $userVipModel -> insertData($data);
             if(!$result){
+		Log::write(4,'buyerr');
                 return -1; //插入数据失败
             }
         }
         //会长和高级会长分成
         $wageResult = $this ->clubSeniorWage($order,$club_vip_info,$price);
         if($wageResult != 1){
+	    Log::write(5,'buyerr');
             return $wageResult;
         }
 
@@ -303,7 +308,7 @@ class PaySuccessCallBack
         Db::startTrans();
         try{
             //减少库存
-            $clubVipModel -> setDecByWhere(['vid'=>$order['vip_id'],'cid'=>$order['club_id']],'number');
+            $clubVipModel -> setDecByWhere(['vid'=>$order['vip_id'],'club_id'=>$order['club_id']],'number');
             //修改订单状态和支付类型
             $orderModel -> setFieldByWhere(['id'=>$order['id']],['order_status'=>1,'pay_type'=>$type_num]);
             //报送大数据（修改成功）
@@ -315,6 +320,7 @@ class PaySuccessCallBack
             if(!$orderRes){
                 Log::write('修改订单状态失败','update_order_status_error');
             }
+            Log::write($e->getMessage(),'update_order_error');
             return -1;
         }
         //给客户端发送一条数据
@@ -358,8 +364,8 @@ class PaySuccessCallBack
             //给俱乐部会长返利
             $user_data = [
                 [
-                    'player_id' => $club_vip_info['player_id'],
-                    'type' => 10009,
+                    'uid' => $club_vip_info['player_id'],
+                    'property_type' => 10009,
                     'change_num' => $price,
                     'event_type' => '+',
                     'reason_id' => 5,
@@ -374,16 +380,16 @@ class PaySuccessCallBack
             //给俱乐部会长和高级会长返利和商务会长返利
             $user_data = [
                 [
-                    'player_id' => $club_vip_info['player_id'],
-                    'type' => 10009,
+                    'uid' => $club_vip_info['player_id'],
+                    'property_type' => 10009,
                     'change_num' => round($price , 2),
                     'event_type' => '+',
                     'reason_id' => 5,
                     'property_name' => '玩家购买会员卡给会长返利'
                 ],
                 [
-                    'player_id' => $club['senior_president'],
-                    'type' => 10009,
+                    'uid' => $club['senior_president'],
+                    'property_type' => 10009,
                     'change_num' => round($price * $club['rebate'] * 0.01 * 0.6 , 2),
                     'event_type' => '+',
                     'reason_id' => 5,
@@ -397,8 +403,8 @@ class PaySuccessCallBack
             if($commerce){
                 $data = [
                     [
-                        'player_id' => $commerce['commerce_id'],
-                        'type' => 10009,
+                        'uid' => $commerce['commerce_id'],
+                        'property_type' => 10009,
                         'change_num' => round($price * $club['business_rebate'] * 0.01 * 0.6 , 2),
                         'event_type' => '+',
                         'reason_id' => 5,
@@ -480,14 +486,35 @@ class PaySuccessCallBack
             'pay_result'  => $pay_result, //支付结果
             'currency'    => 'cny', //币种
             'pay_type'    => $pay_type, //支付类型
-            'props_id'    => $order['product_id'], //道具id（获取道具id）
+            'props_id'    => $order['vip_id'], //道具id（获取道具id）
             'props_name'  => $vipcardName, //道具名称
             'props_num'   => $order['product_amount'], //道具数量
             'current_num' => $cardNum, //获取道具后所拥有的数量
         ];
         $clubInfo = getClubNameAndAreaName($order['club_id']);
         $baseInfo = getBeeBaseInfo();
-        $contents = array_merge($content,$clubInfo,$baseInfo);
+        $unknown = 'unknown';
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $_SERVER['HTTP_X_FORWARDED_FOR'] && strcasecmp($_SERVER['HTTP_X_FORWARDED_FOR'], $unknown)) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } elseif (isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] && strcasecmp($_SERVER['REMOTE_ADDR'], $unknown)) {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        if (false !== strpos($ip, ',')) {
+            $ip = reset(explode(',', $ip));
+        }
+        if(!$baseInfo){
+            $baseInfo = [
+                'ip '       => $ip,  //事件发生端iP
+                'user_id'   => $order['player_id'],  //用户id
+                'role_id'   => '-' . '_' . $order['player_id'],  //角色id，若没有即为serverid_userid
+                'role_name' => backNickname($order['player_id']),  //昵称
+                'client_id' => '-',  //设备的UUID（可传-号）
+                'server_id' => '-',  //区服id ，服务器为服务器的网元id（可传减号）
+                'system_type'=> $order['system_type'], //操作系统
+                'client_type'=> $order['client_type'], //设备端应用类型
+            ];
+        }
+	$contents = array_merge($content,$clubInfo,$baseInfo);
         $this -> beeSend('recharge_finish' , $contents);
     }
 
