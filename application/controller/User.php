@@ -61,6 +61,14 @@ class User
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
+        if(!$user_room_info){
+            $data = sendHttpRequest(Env::get('allcome'), ['userId' => $user_id]);
+            Log::write($data, "rror");
+            if(isset($data['code']) && $data['code'] == 0){
+                $user_room_info = $data['data'];
+            }
+        }
+
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
 
@@ -89,6 +97,8 @@ class User
             'socket_ssl'=> Env::get('socket_ssl'),
             'notification_h5'=> Env::get('notification_h5'),
             'notification_url'=> Env::get('notification_url'),
+            'notification_allcome_h5'=> Env::get('notification_allcome_h5'),
+            'notification_allcome_url'=> Env::get('notification_allcome_url'),
             'match_service' => Env::get('match_service'),
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
