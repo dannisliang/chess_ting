@@ -63,7 +63,7 @@ class HorseLamp extends Base
 //            'areaid' => $area_id,
 //            'type' => $this->opt['type'],
         ];
-        $bulletinLists = sendHttpRequest(Env::get('web_user_url'). Definition::$HORSE_LAMP, $data);
+        $bulletinLists = sendHttpRequest(Env::get('web_user_url') . Definition::$HORSE_LAMP, $data);
         if ($bulletinLists['code'] == 0) {
             $data = [];
             foreach ($bulletinLists['data'] as $bulletinlist){
