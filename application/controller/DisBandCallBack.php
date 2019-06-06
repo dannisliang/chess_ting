@@ -141,7 +141,7 @@ class DisBandCallBack extends Base
                 'filter_presidentid' => $roomHashInfo['presidentId'],
             ];
             $client = new Client();
-            $client->postAsync(Env::get('zhushou_url'), ['json' => $zhushou, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
+            $client->post(Env::get('zhushou_url'), ['json' => $zhushou, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
         }
         // 助手报送结束
 

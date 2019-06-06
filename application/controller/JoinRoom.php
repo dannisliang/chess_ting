@@ -84,7 +84,7 @@ class JoinRoom extends Base
                     $returnData = [
                         'need_diamond' => $needDiamond
                     ];
-                    return jsonRes(3516, $returnData);
+                    return jsonRes(40002, $returnData);
                 }
 
                 $noBindDiamond = 0;
@@ -114,7 +114,7 @@ class JoinRoom extends Base
                         $returnData = [
                             'need_diamond' => $needDiamond
                         ];
-                        return jsonRes(3516, $returnData);
+                        return jsonRes(40002, $returnData);
                     }
                 }
             }
@@ -129,9 +129,17 @@ class JoinRoom extends Base
             if($joinRoomInfo['content']['result'] != 0){
                 if($joinRoomInfo['content']['result'] == 10002){
                     return jsonRes(9999);
-                }else{
-                    return jsonRes(3506);
                 }
+
+                if($joinRoomInfo['content']['result'] == 10000){
+                    return jsonRes(23202);
+                }
+
+                if($joinRoomInfo['content']['result'] == 10001){
+                    return jsonRes(23204);
+                }
+
+                return jsonRes(3506);
             }
         }
 

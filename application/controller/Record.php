@@ -44,15 +44,20 @@ class Record extends Base{
             $roomUserInfo = json_decode($gameInfo['playerInfos'], true);
             $gameEndInfo = json_decode($gameInfo['gameEndInfo'], true);
             # 处理数据
-            $userScore = [];
-            foreach ($gameEndInfo as $kk => $scoreInfo){
-                $userScore[$scoreInfo['playerId']] = $scoreInfo['totalScore'];
+
+            $userInfos = [];
+            foreach ($roomUserInfo as $kkk => $vvv){
+                $userInfos[$vvv['userId']] = $vvv;
             }
-            foreach ($roomUserInfo as $kkk => $userInfo){
-                $roomUserInfo[$kkk]['head_img'] = $roomUserInfo[$kkk]['headImgUrl'];
-                $roomUserInfo[$kkk]['nickname'] = $roomUserInfo[$kkk]['nickName'];
-                $roomUserInfo[$kkk]['player_id'] = $roomUserInfo[$kkk]['userId'];
-                $roomUserInfo[$kkk]['total_score'] = $userScore[$userInfo['userId']];
+
+            $roomUserInfo = [];
+            foreach ($gameEndInfo as $kkkk => $scoreInfo){
+                $roomUserInfo[] = [
+                    'head_img' => $userInfos[$scoreInfo['playerId']]['headImgUrl'],
+                    'nickname' => $userInfos[$scoreInfo['playerId']]['nickName'],
+                    'player_id' => $userInfos[$scoreInfo['playerId']]['userId'],
+                    'total_score' => $scoreInfo['totalScore'],
+                ];
             }
 
             $return = [];
