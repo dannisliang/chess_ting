@@ -219,7 +219,7 @@ SCRIPT;
                     $returnData = [
                         'need_diamond' => $needDiamond
                     ];
-                    return jsonRes(3516, $returnData);
+                    return jsonRes(40002, $returnData);
                 }
 
                 $noBindDiamond = 0;
@@ -249,7 +249,7 @@ SCRIPT;
                         $returnData = [
                             'need_diamond' => $needDiamond
                         ];
-                        return jsonRes(3516, $returnData);
+                        return jsonRes(40002, $returnData);
                     }
                 }
             }
@@ -257,6 +257,7 @@ SCRIPT;
 
         # 生成房间号
         $roomNumber = $this->getRoomNum();
+        Log::write($roomNumber, 'Get');
         if(!$roomNumber){
             return jsonRes(3517);
         }
@@ -276,10 +277,11 @@ SCRIPT;
             $operaRes = operatePlayerProperty($operateData);
             if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
                 $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                Log::write($roomNumber, "Rem");
                 $returnData = [
                     'need_diamond' => $needDiamond
                 ];
-                return jsonRes(3516, $returnData);
+                return jsonRes(40002, $returnData);
             }
         }
 
@@ -291,6 +293,7 @@ SCRIPT;
 //        p($createRoomInfo);
         if(!isset($createRoomInfo['content']['result'])){ # 创建房间失败
             $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+            Log::write($roomNumber, "Rem");
             if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
                 $operateData[] = [
                     'uid' => $clubInfo['president_id'],
@@ -309,6 +312,7 @@ SCRIPT;
         }else{
             if($createRoomInfo['content']['result'] != 0){
                 $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
+                Log::write($roomNumber, "Rem");
                 if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 还钻
                     $operateData[] = [
                         'uid' => $clubInfo['president_id'],
