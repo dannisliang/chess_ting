@@ -22,6 +22,7 @@ use GuzzleHttp\Client;
 use think\cache\driver\Redis;
 use think\Log;
 use think\Env;
+use think\Session;
 
 class User
 {
@@ -31,6 +32,22 @@ class User
      */
     public function getUserInfo()
     {
+        //验证token
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!isset($user_session_info['userid']) || !isset($user_session_info['ip']) || !isset($user_session_info['token'])){
+            return jsonRes(9999);
+        }
+        $user_id = $user_session_info['userid'];
+        $data = [
+            'ip'    => $user_session_info['ip'],
+            'token' => $user_session_info['token'],
+            'uid'   => $user_id,
+        ];
+        $result = checkToken( $data );
+        if(!isset($result['result']) || $result['result'] === false || !$user_id){
+            return jsonRes(9999);
+        }
+
         //实例化model
         $lastClubModel = new UserLastClubModel();
         $user_id = getUserIdFromSession();
