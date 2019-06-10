@@ -44,16 +44,19 @@ class User
             'uid'   => $user_id,
         ];
         $result = checkToken( $data );
+        if(!$result){
+            Log::write('玩家' . $user_id . '验证token失败','user_checkToken_error');
+        }
         if(!isset($result['result']) || $result['result'] === false || !$user_id){
             return jsonRes(9999);
         }
 
         //实例化model
         $lastClubModel = new UserLastClubModel();
-        $user_id = getUserIdFromSession();
-        if(!$user_id){
-            return jsonRes(9999);
-        }
+//        $user_id = getUserIdFromSession();
+//        if(!$user_id){
+//            return jsonRes(9999);
+//        }
 
         //获取未读取邮件数量
         $email_num  = $this ->getEmailNum($user_id);
