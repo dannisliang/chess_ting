@@ -82,15 +82,6 @@ SCRIPT;
             return jsonRes(9999);
         }
 
-        # 使用redis锁写房间数据 失败写日志
-        $redis = new Redis();
-        $redisHandle = $redis->handler();
-        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
-        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 2));
-        if(!$getLock){
-            return jsonRes(3523);
-        }
-
         # 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
         $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $this->opt['club_id']);
@@ -255,6 +246,8 @@ SCRIPT;
             }
         }
 
+        $redis = new Redis();
+        $redisHandle = $redis->handler();
         # 生成房间号
         $roomNumber = $this->getRoomNum();
         Log::write($roomNumber, 'Get');

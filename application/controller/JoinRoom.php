@@ -38,11 +38,6 @@ class JoinRoom extends Base
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        $lockKey = RedisKey::$USER_ROOM_KEY.$userSessionInfo['userid'].'lock';
-        $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 1));
-        if(!$getLock){
-            return jsonRes(0);
-        }
 
         # 获取房间信息中的俱乐部ID
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['diamond', 'needUserNum', 'clubType', 'roomRate', 'clubId', 'roomUrl']);
