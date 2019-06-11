@@ -119,6 +119,7 @@ class User
             'notification_url'=> Env::get('notification_url'),
             'notification_allcome_h5'=> Env::get('notification_allcome_h5'),
             'notification_allcome_url'=> Env::get('notification_allcome_url'),
+            'match_allcome_url'=> Env::get('match_allcome_url'),
             'match_service' => Env::get('match_service'),
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
