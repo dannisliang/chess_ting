@@ -50,10 +50,10 @@ class User
 
         //实例化model
         $lastClubModel = new UserLastClubModel();
-        $user_id = getUserIdFromSession();
-        if(!$user_id){
-            return jsonRes(9999);
-        }
+//        $user_id = getUserIdFromSession();
+//        if(!$user_id){
+//            return jsonRes(9999);
+//        }
 
         //获取未读取邮件数量
         $email_num  = $this ->getEmailNum($user_id);
