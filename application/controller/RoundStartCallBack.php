@@ -23,7 +23,9 @@ class RoundStartCallBack extends Base
         $redis = new Redis();
         $redisHandle = $redis->handler();
         # 报送大数据
-        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['createTime', 'clubMode', 'playerInfos', 'clubType', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubType']);
+        $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['createTime', 'clubMode', 'playerInfos', 'clubType',
+            'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName',
+            'clubType', 'roomType', 'roomName']);
 
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
@@ -41,8 +43,8 @@ class RoundStartCallBack extends Base
                     'ip' => $userInfo['ipAddr'],
 
                     'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                    'room_type_id' => $roomHashInfo['roomOptionsId'],
-                    'room_type_name' => $roomHashInfo['roomTypeName'],
+                    'room_type_id' => $roomHashInfo['roomType'],
+                    'room_type_name' => $roomHashInfo['roomName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
                     'table_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 1).'_'.$this->opt['round'],
                     'rule_detail' => '',
