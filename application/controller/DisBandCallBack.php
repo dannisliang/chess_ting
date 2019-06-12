@@ -92,8 +92,8 @@ class DisBandCallBack extends Base
                     'ip' => $userInfo['ipAddr'],
 
                     'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                    'room_type_id' => $roomHashInfo['roomOptionsId'],
-                    'room_type_name' => $roomHashInfo['roomTypeName'],
+                    'room_type_id' => $roomHashInfo['roomType'],
+                    'room_type_name' => $roomHashInfo['roomName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
                     'rule_detail' => '-',
                     'table_type' => $roomHashInfo['tableType'],
@@ -114,6 +114,21 @@ class DisBandCallBack extends Base
         // 报送结束
 
         // Todo 助手报送
+        $winnerInfos = $this->opt['statistics'];
+        $gameEndScore = [];
+        foreach ($winnerInfos as $k => $v){
+            $gameEndScore[$v['playerId']] = $v['totalScore'];
+        }
+        $maxScore = max($gameEndScore);
+        foreach ($winnerInfos as $k => $v){
+            if($v['totalScore'] == $maxScore){
+                $winnerInfos[$k]['isWinner'] = 1;
+            }else{
+                $winnerInfos[$k]['isWinner'] = 0;
+            }
+        }
+
+
         $userIds = [];
         $userScore = [];
         foreach ($this->opt['statistics'] as $k => $v){
@@ -129,6 +144,7 @@ class DisBandCallBack extends Base
             }
         }
         $baoSong['opt'] = $this->opt;
+        $baoSong['winnerInfos'] = $winnerInfos;
         if($userIds){
             $zhushou = [
                 'type' => 'common',
@@ -180,8 +196,8 @@ class DisBandCallBack extends Base
                 'club_mode' => $roomHashInfo['clubMode'],
                 'pay_mode' => $roomHashInfo['payMode'],
                 'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                'room_type_id' => $roomHashInfo['roomOptionsId'],
-                'room_type_name' => $roomHashInfo['roomTypeName'],
+                'room_type_id' => $roomHashInfo['roomType'],
+                'room_type_name' => $roomHashInfo['roomName'],
                 'room_channel' => $roomHashInfo['roomChannel'],
                 'rule_detail' => '-',
                 'token_name' => 'diamond',
@@ -348,8 +364,8 @@ class DisBandCallBack extends Base
                             'club_mode' => $roomHashInfo['clubMode'],
                             'pay_mode' => $roomHashInfo['payMode'],
                             'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                            'room_type_id' => $roomHashInfo['roomOptionsId'],
-                            'room_type_name' => $roomHashInfo['roomTypeName'],
+                            'room_type_id' => $roomHashInfo['roomType'],
+                            'room_type_name' => $roomHashInfo['roomName'],
                             'room_channel' => $roomHashInfo['roomChannel'],
                             'rule_detail' => '-',
                             'token_name' => 'diamond',
@@ -398,8 +414,8 @@ class DisBandCallBack extends Base
                             'club_region_name' => $roomHashInfo['clubRegionName'],
                             'club_mode' => $roomHashInfo['clubMode'],
                             'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                            'room_type_id' => $roomHashInfo['roomOptionsId'],
-                            'room_type_name' => $roomHashInfo['roomTypeName'],
+                            'room_type_id' => $roomHashInfo['roomType'],
+                            'room_type_name' => $roomHashInfo['roomName'],
                             'token_name' => 'money',
                             'token_num' => $generalRebateData[0]['change_num'],
                             'pay_mode' => $roomHashInfo['payMode'],

@@ -28,7 +28,7 @@ class JoinRoomCallBack extends Base
 
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
             ['playerInfos', 'roomOptionsId', 'roomTypeName', 'clubName', 'roomChannel', 'clubMode',
-                'tableType', 'tableNum', 'betNums', 'clubId', 'clubRegionId', 'clubRegionName', 'createTime']);
+                'tableType', 'tableNum', 'betNums', 'clubId', 'clubRegionId', 'clubRegionName', 'createTime', 'roomType', 'roomName']);
         # 报送大数据
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
         if($playerInfo){
@@ -45,8 +45,8 @@ class JoinRoomCallBack extends Base
                         'ip' => $userInfo['ipAddr'],
 
                         'room_id' => strtotime($roomHashInfo['createTime']).'_'.$this->opt['roomId'],
-                        'room_type_id' => $roomHashInfo['roomOptionsId'],
-                        'room_type_name' => $roomHashInfo['roomTypeName'],
+                        'room_type_id' => $roomHashInfo['roomType'],
+                        'room_type_name' => $roomHashInfo['roomName'],
                         'room_channel' => $roomHashInfo['roomChannel'],
                         'rule_detail' => '-',
                         'table_type' => $roomHashInfo['tableType'],
