@@ -83,7 +83,6 @@ class User
 
         if(!$user_room_info){
             $data = sendHttpRequest(Env::get('allcome'), ['userId' => $user_id]);
-            Log::write($data, "rror");
             if(isset($data['code']) && $data['code'] == 0){
                 $user_room_info = $data['data'];
             }
