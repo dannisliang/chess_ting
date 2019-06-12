@@ -31,7 +31,9 @@ class RoundEndCallBack extends Base
 
         $roundId = date("Y-m-d", time()).'_'.$this->opt['roomId'].'_'.(isset($this->opt['set']) ? $this->opt['set'] : 0).'_'.$this->opt['round'];
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
-            ['roundEndInfo', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime']);
+            ['roundEndInfo', 'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName',
+                'clubRegionId', 'clubRegionName', 'clubMode', 'playerInfos', 'createTime',  'roomType', 'roomName']);
+
         $roundEndInfo = json_decode($roomHashInfo['roundEndInfo'], true);
         $roundEndInfo[] = [
             'score' => $this->opt['score'],
@@ -96,8 +98,8 @@ class RoundEndCallBack extends Base
                     'ip' => $userInfo['ipAddr'],
 
                     'room_id' => strtotime($roomHashInfo['createTime']) . '_' . $this->opt['roomId'],
-                    'room_type_id' => $roomHashInfo['roomOptionsId'],
-                    'room_type_name' => $roomHashInfo['roomTypeName'],
+                    'room_type_id' => $roomHashInfo['roomType'],
+                    'room_type_name' => $roomHashInfo['roomName'],
                     'room_channel' => $roomHashInfo['roomChannel'],
                     'table_id' => strtotime($roomHashInfo['createTime']) . '_' . $this->opt['roomId'] . '_' . (isset($this->opt['set']) ? $this->opt['set'] : 0) . '_' . $this->opt['round'],
                     'rule_detail' => '-',
