@@ -52,7 +52,7 @@ class Inform extends Base
                     'sender'  => $user_id,
                     'type'    => $this -> opt['type'],
                     'content' => [
-                        'status' => $this->opt[''],
+                        'status' => $this->opt['status'],
                         'club_id'=> $this->opt['club_id'],
                     ],
                     'reciver'=> $this -> opt['sender'],
