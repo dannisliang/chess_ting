@@ -185,6 +185,9 @@ class Shop extends Base
         $clubShopModel = new ClubShopModel();
         //获取商品内容
         $club_shop = $clubShopModel ->getOneByWhere(['id'=>$this->opt['item_id']]);
+        if(!$club_shop){
+            return jsonRes(23403);
+        }
         $userProperty = getUserProperty($user_id , [10001,10002]);
         $buyDiamond = 0; $freeDiamond = 0;
         foreach ($userProperty['data'] as $property){
@@ -205,52 +208,113 @@ class Shop extends Base
         }
         //先扣购买蓝钻
         if($buyDiamond >= $club_shop['price']){
-            $result = operateUserProperty($user_id,10001,$club_shop['price'], '-', 4,'购买蓝钻购买金币');
-            if($result['code'] != 0){
-                return jsonRes(23401);
-            }
-            //增加用户的金币
             $gold = $club_shop['goods_number'] + $club_shop['give'];
-            $results = operaUserProperty($user_id,10002 , $gold , '+' , 4,'蓝钻购买金币');
-            if($results['code'] != 0){
-                $res = operateUserProperty($user_id,10001,$club_shop['price'], '+', 4,'增加金币失败回滚');
-                if($res['code'] != 0){
-                    //回滚失败
-                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error1');
-                }
+            $data = [
+                [
+                    'uid' => $user_id,
+                    'property_type' => 10001,
+                    'change_num' => $club_shop['price'],
+                    'event_type' => '-',
+                    'reason_id' => 4,
+                    'property_name' => '购买蓝钻购买金币'
+                ],
+                [
+                    'uid' => $user_id,
+                    'property_type' => 10000,
+                    'change_num' => $gold,
+                    'event_type' => '+',
+                    'reason_id' => 4,
+                    'property_name' => '蓝钻购买金币'
+                ],
+            ];
+            $result = operatePlayerProperty($data);
+            if($result['code'] != 0){
+                Log::write('用户' . $user_id .'钻石购买金币失败','buy_gold_error1');
+                return jsonRes(23401);
             }
         }else{
-            //购买钻不够的话先扣完购买钻再扣赠送钻
-            $result = operateUserProperty($user_id,10001,1, '-', 4,'购买蓝钻购买金币');
-            if($result['code'] != 0){
-                return jsonRes(23401);
-            }
-            $result = operateUserProperty($user_id,10002,1 , '-' , 4,'赠送蓝钻购买金币');
-            if($result['code'] != 0){
-                return jsonRes(23401);
-            }
-            //增加用户的金币
+            // 金币的数量
             $gold = $club_shop['goods_number'] + $club_shop['give'];
-            $results = operaUserProperty($user_id,10000 , $gold , '+' , 4,'蓝钻购买金币');
-            if($results['code'] != 0){
-                $res = operateUserProperty($user_id,10002,$club_shop['price'] - $buyDiamond , '-' , 4,'赠送蓝钻购买金币');
-                if($res['code'] != 0 ){
-                    //回滚失败
-                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error2');
-                }
-                $result = operateUserProperty($user_id,10001,$buyDiamond, '-', 4,'购买蓝钻购买金币');
-                if($result['code'] != 0 ){
-                    //回滚失败
-                    Log::write(date('Y-m-d H:i:s') . '回滚操作失败', 'buyGold_error3');
+            // 购买钻不够的话先扣完购买钻再扣赠送钻
+            if($buyDiamond > 0){
+                $data = [
+                    [
+                        'uid' => $user_id,
+                        'property_type' => 10001,
+                        'change_num' => $buyDiamond,
+                        'event_type' => '-',
+                        'reason_id' => 4,
+                        'property_name' => '购买蓝钻购买金币'
+                    ],
+                    [
+                        'uid' => $user_id,
+                        'property_type' => 10002,
+                        'change_num' => $club_shop['price'] - $buyDiamond,
+                        'event_type' => '-',
+                        'reason_id' => 4,
+                        'property_name' => '赠送蓝钻购买金币'
+                    ],
+                    [
+                        'uid' => $user_id,
+                        'property_type' => 10000,
+                        'change_num' => $gold,
+                        'event_type' => '+',
+                        'reason_id' => 4,
+                        'property_name' => '蓝钻购买金币'
+                    ],
+                ];
+            }else{
+                $data = [
+                    [
+                        'uid' => $user_id,
+                        'property_type' => 10002,
+                        'change_num' => $club_shop['price'] - $buyDiamond,
+                        'event_type' => '-',
+                        'reason_id' => 4,
+                        'property_name' => '赠送蓝钻购买金币'
+                    ],
+                    [
+                        'uid' => $user_id,
+                        'property_type' => 10000,
+                        'change_num' => $gold,
+                        'event_type' => '+',
+                        'reason_id' => 4,
+                        'property_name' => '蓝钻购买金币'
+                    ],
+                ];
+            }
+
+            $result = operatePlayerProperty($data);
+            if($result['code'] != 0){
+                Log::write('用户' . $user_id .'钻石购买金币失败','buy_gold_error2');
+                return jsonRes(23401);
+            }
+        }
+        $propertys = getUserProperty($user_id,[10000,10001,10002]);
+        $diamond_num = 0; //钻石数量
+        $gold_num = 0; //金币数量
+        if(!empty($propertys['data'])){
+            foreach ($propertys['data'] as $val){
+                switch ($val['property_type']){
+                    case 10000: //金币
+                        $gold_num += $val['property_num'];
+                        break;
+                    case 10001: //购买钻
+                        $diamond_num += $val['property_num'];
+                        break;
+                    case 10002: //赠送钻
+                        $diamond_num += $val['property_num'];
+                        break;
+                    default:
+                        break;
                 }
             }
         }
-
-        //购买完成发送通知
+        // 购买完成发送通知
         $data = [
             'content' => [
-                'gold'    => $gold,
-                'diamond' => $buyDiamond + $freeDiamond - $club_shop['price'],
+                'gold'    => $gold_num,
+                'diamond' => $diamond_num,
             ],
             'type'   => 1092,
             'sender' => 0,
@@ -265,7 +329,6 @@ class Shop extends Base
         if($res['code'] != 0){
             Log::write($res,'buyGold_error');
         }
-
         return jsonRes(0);
     }
 
