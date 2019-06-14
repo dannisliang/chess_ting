@@ -344,7 +344,7 @@ class DisBandCallBack extends Base
                             $send_data['appid'] = Env::get('app_id');
                             $send_url = Env::get('inform_url') . 'api/send.php';
                             $client = new Client();
-                            $client->postAsync($send_url, ['json' => $send_data, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
+                            $client->post($send_url, ['json' => $send_data, 'connect_timeout' => 5, 'headers' => ['Accept-Encoding' => 'gzip'], 'decode_content' => 'gzip', 'http_errors' => false]);
                         }
                     }
 
