@@ -114,21 +114,6 @@ class DisBandCallBack extends Base
         // 报送结束
 
         // Todo 助手报送
-        $winnerInfos = $this->opt['statistics'];
-        $gameEndScore = [];
-        foreach ($winnerInfos as $k => $v){
-            $gameEndScore[$v['playerId']] = $v['totalScore'];
-        }
-        $maxScore = max($gameEndScore);
-        foreach ($winnerInfos as $k => $v){
-            if($v['totalScore'] == $maxScore){
-                $winnerInfos[$k]['isWinner'] = 1;
-            }else{
-                $winnerInfos[$k]['isWinner'] = 0;
-            }
-        }
-
-
         $userIds = [];
         $userScore = [];
         foreach ($this->opt['statistics'] as $k => $v){
@@ -144,7 +129,24 @@ class DisBandCallBack extends Base
             }
         }
         $baoSong['opt'] = $this->opt;
-        $baoSong['winnerInfos'] = $winnerInfos;
+
+        if($this->opt['round']){
+            $winnerInfos = $this->opt['statistics'];
+            $gameEndScore = [];
+            foreach ($winnerInfos as $k => $v){
+                $gameEndScore[$v['playerId']] = $v['totalScore'];
+            }
+            $maxScore = max($gameEndScore);
+            foreach ($winnerInfos as $k => $v){
+                if($v['totalScore'] == $maxScore){
+                    $winnerInfos[$k]['isWinner'] = 1;
+                }else{
+                    $winnerInfos[$k]['isWinner'] = 0;
+                }
+            }
+            $baoSong['winnerInfos'] = $winnerInfos;
+        }
+        
         if($userIds){
             $zhushou = [
                 'type' => 'common',
