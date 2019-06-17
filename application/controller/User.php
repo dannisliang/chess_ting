@@ -123,6 +123,16 @@ class User
     }
 
     /**
+     * 获取玩家重连房间记录
+     */
+    private function getUserRoomRecord($player_id){
+        $redis = new Redis();
+        $redis_handler = $redis ->handler();
+        $redis_handler -> get(RedisKey::$USER_ROOM_RECORD . $player_id);
+
+    }
+
+    /**
      * 解散房间
      * @param $user_id
      */
