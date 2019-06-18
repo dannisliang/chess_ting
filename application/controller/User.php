@@ -132,7 +132,7 @@ class User
         }
         $user_id = $user_session_info['userid'];
         $tooltip = $this->getUserRoomRecord($user_id);
-        jsonRes(0,$tooltip);
+        return jsonRes(0,$tooltip);
     }
 
     /**
