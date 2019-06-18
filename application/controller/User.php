@@ -82,6 +82,9 @@ class User
             }
         }
 
+        // 获取弹板信息
+        $tooltip = $this ->getUserRoomRecord($user_id);
+
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
 
@@ -117,7 +120,8 @@ class User
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
             'diamond_num'=> $assets['diamond_num'],
-            'gold_num' => $assets['gold_num']
+            'gold_num' => $assets['gold_num'],
+            'tooltip'  => $tooltip
         ];
         return jsonRes( 0 , $result);
     }
@@ -128,8 +132,28 @@ class User
     private function getUserRoomRecord($player_id){
         $redis = new Redis();
         $redis_handler = $redis ->handler();
-        $redis_handler -> get(RedisKey::$USER_ROOM_RECORD . $player_id);
-
+        $list = $redis_handler -> zRevRange(RedisKey::$USER_ROOM_RECORD . $player_id,0,-1);
+        if(!$list){
+            return [];
+        }
+        $score = $redis_handler -> zScore(RedisKey::$USER_ROOM_RECORD . $player_id,$list[0]); // 只取第一条
+        // 判断30秒内
+        if((int)($score + 1000) < time()){
+            return [];
+        }
+        $roomHashInfo = $redis_handler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $list[0],['gameEndTime','playerInfos','gameEndInfo','roomOptions','playChecks','founderId']);
+        if (!$roomHashInfo){
+            return [];
+        }
+        $data = [
+            'gameEndTime' => strtotime($roomHashInfo['gameEndTime']),
+            'playerInfos' => json_decode($roomHashInfo['playerInfos'],true),
+            'gameEndInfo' => json_decode($roomHashInfo['gameEndInfo'],true),
+            'roomOptions' => json_decode($roomHashInfo['roomOptions'],true),
+            'playChecks'  => json_decode($roomHashInfo['playChecks'],true),
+            'founderId'   => json_decode($roomHashInfo['founderId'],true),
+        ];
+        return $data;
     }
 
     /**
