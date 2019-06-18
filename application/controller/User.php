@@ -75,6 +75,10 @@ class User
         //检测玩家是否存在于房间中
         $user_room_info = $this -> checkPlayer($user_id);
 
+
+        // 获取弹板信息
+        $tooltip = $this ->getUserRoomRecord($user_id);
+
         //返回房间信息
         $roomInfo = $this -> getRoomInfo($user_room_info);
 
@@ -110,9 +114,48 @@ class User
             'good_nums'=> $evaluate['good_num'],
             'bad_nums' => $evaluate['bad_num'],
             'diamond_num'=> $assets['diamond_num'],
-            'gold_num' => $assets['gold_num']
+            'gold_num' => $assets['gold_num'],
+            'tooltip'  => $tooltip
         ];
         return jsonRes( 0 , $result);
+    }
+
+    /**
+     * 获取玩家重连房间记录
+     */
+    private function getUserRoomRecord($player_id){
+        $redis = new Redis();
+        $redis_handler = $redis ->handler();
+        $list = $redis_handler -> zRevRange(RedisKey::$USER_ROOM_RECORD . $player_id,0,-1);
+        if(!$list){
+            return [];
+        }
+        $score = $redis_handler -> zScore(RedisKey::$USER_ROOM_RECORD . $player_id,$list[0]); // 只取第一条
+        // 判断30秒内
+        if((int)($score + Env::get('tooltip_time')) < time()){
+            return [];
+        }
+        $roomHashInfo = $redis_handler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $list[0],['gameEndTime','playerInfos','gameEndInfo','roomOptions','playChecks','founderId']);
+        if (!$roomHashInfo){
+            return [];
+        }
+        $playerInfos = json_decode($roomHashInfo['playerInfos'],true);
+
+        foreach ($playerInfos as $playerInfo){
+            // 判断是否已经看过
+            if($player_id == $playerInfo['userId'] && isset($playerInfo['viewSign']) && $playerInfo['viewSign'] == 1){
+                return [];
+            }
+        }
+        $data = [
+            'playerInfos' => $playerInfos,
+            'gameEndTime' => strtotime($roomHashInfo['gameEndTime']),
+            'gameEndInfo' => json_decode($roomHashInfo['gameEndInfo'],true),
+            'roomOptions' => json_decode($roomHashInfo['roomOptions'],true),
+            'playChecks'  => json_decode($roomHashInfo['playChecks'],true),
+            'founderId'   => json_decode($roomHashInfo['founderId'],true),
+        ];
+        return $data;
     }
 
     /**
