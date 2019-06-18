@@ -49,6 +49,7 @@ Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获�
 Route::rule('service/room/getusergold','gamingRoomInfo/getUserProperty');  //获取房间用户资产
 
 Route::rule('service/room/addSign','AddUserViewScoreSign/addSign');  // 添加用户看战绩标识
+Route::rule('service/getTooltip','User/getTooltip');  // 查看弹板信息
 
 /**
  * 商城相关
