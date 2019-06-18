@@ -157,8 +157,8 @@ class RoomList extends Base
         }
 
         $returnData = [];
-        foreach ($newArr as $k => $v){
-            foreach ($v as $kk => $vv){
+        foreach ($kArr as $k => $v){
+            foreach ($newArr[$v] as $kk => $vv){
                 $returnData[] = $vv;
             }
         }
