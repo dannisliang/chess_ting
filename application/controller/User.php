@@ -125,7 +125,7 @@ class User
      * @return \think\response\Json\
      */
     public function getTooltip(){
-        //验证token
+        //获取session
         $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
         if(!isset($user_session_info['userid'])){
             return jsonRes(9999);

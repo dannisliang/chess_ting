@@ -55,8 +55,8 @@ class Mail extends Base
                 $result[$i]['mail_type'] = 2;
                 //获取俱乐部名字
                 $club_id = $list['data'][$i]['sender'];
-                $club_name = getCLubName($club_id);
-                $result[$i]['club_name'] = $club_name;
+                $club_name = getClubNameAndAreaName($club_id);
+                $result[$i]['club_name'] = $club_name['club_name'];
             }
             $result[$i]['title'] = $list['data'][$i]['title'];
             $result[$i]['date'] = strtotime($list['data'][$i]['send_time']);
