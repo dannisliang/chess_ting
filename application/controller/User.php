@@ -138,16 +138,24 @@ class User
         }
         $score = $redis_handler -> zScore(RedisKey::$USER_ROOM_RECORD . $player_id,$list[0]); // 只取第一条
         // 判断30秒内
-        if((int)($score + 1000) < time()){
+        if((int)($score + Env::get('tooltip_time')) < time()){
             return [];
         }
         $roomHashInfo = $redis_handler -> hMget(RedisKey::$USER_ROOM_KEY_HASH . $list[0],['gameEndTime','playerInfos','gameEndInfo','roomOptions','playChecks','founderId']);
         if (!$roomHashInfo){
             return [];
         }
+        $playerInfos = json_decode($roomHashInfo['playerInfos'],true);
+
+        foreach ($playerInfos as $playerInfo){
+            // 判断是否已经看过
+            if($player_id == $playerInfo['userId'] && isset($playerInfo['viewSign']) && $playerInfo['viewSign'] == 1){
+                return [];
+            }
+        }
         $data = [
+            'playerInfos' => $playerInfos,
             'gameEndTime' => strtotime($roomHashInfo['gameEndTime']),
-            'playerInfos' => json_decode($roomHashInfo['playerInfos'],true),
             'gameEndInfo' => json_decode($roomHashInfo['gameEndInfo'],true),
             'roomOptions' => json_decode($roomHashInfo['roomOptions'],true),
             'playChecks'  => json_decode($roomHashInfo['playChecks'],true),
