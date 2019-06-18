@@ -48,6 +48,9 @@ Route::rule('service/disband/disband_room','Room/disBandRoom'); # 强制解散�
 Route::rule('service/getTarUserInfo','gamingRoomInfo/getOtherUserInfo');  //获取房间内其他用户信息
 Route::rule('service/room/getusergold','gamingRoomInfo/getUserProperty');  //获取房间用户资产
 
+Route::rule('service/room/addSign','AddUserViewScoreSign/addSign');  // 添加用户看战绩标识
+Route::rule('service/getTooltip','User/getTooltip');  // 查看弹板信息
+
 /**
  * 商城相关
  */
