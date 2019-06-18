@@ -121,6 +121,21 @@ class User
     }
 
     /**
+     * 单独获取弹板信息
+     * @return \think\response\Json\
+     */
+    public function getTooltip(){
+        //验证token
+        $user_session_info = Session::get(RedisKey::$USER_SESSION_INFO);
+        if(!isset($user_session_info['userid'])){
+            return jsonRes(9999);
+        }
+        $user_id = $user_session_info['userid'];
+        $tooltip = $this->getUserRoomRecord($user_id);
+        jsonRes(0,$tooltip);
+    }
+
+    /**
      * 获取玩家重连房间记录
      */
     private function getUserRoomRecord($player_id){
