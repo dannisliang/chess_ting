@@ -10,14 +10,11 @@ namespace app\controller;
 
 use think\Log;
 use think\Env;
-use Obs\ObsClient;
-use Obs\ObsException;
 use GuzzleHttp\Client;
 use app\model\BeeSender;
 use app\definition\RedisKey;
 use think\cache\driver\Redis;
 use app\definition\Definition;
-use app\model\UserClubRoomRecordModel;
 
 
 
@@ -146,7 +143,7 @@ class DisBandCallBack extends Base
             }
             $baoSong['winnerInfos'] = $winnerInfos;
         }
-        
+
         if($userIds){
             $zhushou = [
                 'type' => 'common',
