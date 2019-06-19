@@ -41,11 +41,11 @@ class RoomStartCallBack extends Base
             $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
             if($playerInfo){
                 foreach ($playerInfo as $k => $userInfo){
-                    if($userInfo['userId'] == $this->opt['playerId']){
+                    if(in_array($userInfo['userId'], $this->opt['players'])){
                         $bigData = [
                             'server_id' => '-',
-                            'user_id' => $this->opt['playerId'],
-                            'role_id' => '-'.'_'.$this->opt['playerId'],
+                            'user_id' => $userInfo['userId'],
+                            'role_id' => '-'.'_'.$userInfo['userId'],
                             'role_name' => $userInfo['nickName'],
                             'client_id' => '-',
                             'client_type' => $userInfo['clientType'],
