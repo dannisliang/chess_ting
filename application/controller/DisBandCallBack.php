@@ -302,6 +302,7 @@ class DisBandCallBack extends Base
                     $userDiamondInfos[$kk] = getUserProperty($kk, [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
                 }
 
+                // 注册
                 $res = operatePlayerProperty($operateData);
                 if(!isset($res['code']) || ($res['code'] != 0)){ // 扣钻失败 记录日志
                     Log::write(json_encode($operateData), 'operateError');
