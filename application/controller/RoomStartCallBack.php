@@ -18,16 +18,16 @@ class RoomStartCallBack extends Base
 {
     public function roomStartCallBack(){
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['founderId']) || !is_numeric($this->opt['founderId']) || !isset($this->opt['players'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
 
-        # 修改房间的状态
+        // 修改房间的状态
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
         if($redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
             $changeRoomInfo = [
-                'joinStatus' => 2, # 游戏中
+                'joinStatus' => 2, // 游戏中
                 'gameStartTime' => date('Y-m-d H:i:s', time()),
                 'founderId' => $this->opt['founderId'],
                 'players' => json_encode($this->opt['players'])
@@ -37,7 +37,7 @@ class RoomStartCallBack extends Base
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'],
                 ['playerInfos', 'roomOptionsId', 'roomTypeName', 'clubName', 'roomChannel', 'clubMode',
                     'tableType', 'tableNum', 'betNums', 'clubId', 'clubRegionId', 'clubRegionName', 'createTime', 'roomType', 'roomName']);
-            # 报送大数据
+            //Todo 报送大数据
             $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
             if($playerInfo){
                 foreach ($playerInfo as $k => $userInfo){
@@ -67,7 +67,6 @@ class RoomStartCallBack extends Base
                             'club_mode' => $roomHashInfo['clubMode'],
                         ];
 
-                        // Todo 报送
                         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
                         $beeSender->send('room_join', $bigData);
                         break;
@@ -76,6 +75,6 @@ class RoomStartCallBack extends Base
             }
         }
 
-        return jsonRes(0);
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }

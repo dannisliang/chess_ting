@@ -23,13 +23,13 @@ class DisBandCallBack extends Base
     public function disBandCallBack(){
         if(!isset($this->opt['statistics']) || !is_array($this->opt['statistics']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) ||
             !isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['set']) || !is_numeric($this->opt['set'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
         if(!$redisHandle->exists(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
 
 //        // Todo 等待牌局回调2秒钟， 确保记录存储成功
@@ -64,7 +64,7 @@ class DisBandCallBack extends Base
             }
         }
         // 牌局记录结束
-        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 俱乐部移除房间   两步移除顺序不可变
+        $remRes = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$roomHashInfo['clubId'], $this->opt['roomId']); // 先俱乐部移除房间   两步顺序不可变
         if($remRes){
             if($this->opt['round'] && $playerInfo){
                 $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $this->opt['roomId']); // 迭代占用的房间号
@@ -172,7 +172,7 @@ class DisBandCallBack extends Base
             ];
             $res = operatePlayerProperty($operateData);
             if(!isset($res['code']) || ($res['code'] != 0)){ # 还钻失败 记录日志
-                Log::write(json_encode($operateData), 'operateError');
+                Log::write(json_encode($operateData), '还钻失败');
             }
         }
         // 会长模式还钻结束
@@ -302,6 +302,7 @@ class DisBandCallBack extends Base
                     $userDiamondInfos[$kk] = getUserProperty($kk, [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING, Definition::$USER_PROPERTY_TYPE_GOLD]);
                 }
 
+                // 注册
                 $res = operatePlayerProperty($operateData);
                 if(!isset($res['code']) || ($res['code'] != 0)){ // 扣钻失败 记录日志
                     Log::write(json_encode($operateData), 'operateError');
@@ -502,6 +503,6 @@ class DisBandCallBack extends Base
         // 会长返利和返利报送结束
 
         // 删房间结束
-        return jsonRes(0);
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }

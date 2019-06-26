@@ -29,7 +29,7 @@ class CheatRoom extends Base {
                     'room_cheat' => $roomHashInfo['isGps'],
                     'gps_range' => $roomHashInfo['gpsRange']
                 ];
-                return jsonRes(0, $returnData);
+                return json(['code' => 0, 'mess' => '成功', 'data' => $returnData]);
             }
         }
 
@@ -45,9 +45,10 @@ class CheatRoom extends Base {
                         'room_cheat' => $roomOptionsInfo['cheat'],
                         'gps_range' => $clubInfo['gps']
                     ];
-                    return jsonRes(0, $returnData);
+                    return json(['code' => 0, 'mess' => '成功', 'data' => $returnData]);
                 }
             }
         }
+        return json(['code' => -10000, 'mess' => '系统繁忙']);
     }
 }

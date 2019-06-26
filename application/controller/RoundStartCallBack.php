@@ -18,18 +18,17 @@ class RoundStartCallBack extends Base
 {
     public function roundStartCallBack(){
         if(!isset($this->opt['round']) || !is_numeric($this->opt['round']) || !isset($this->opt['roomId']) || !is_numeric($this->opt['roomId'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
+
+        // Todo 报送大数据
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        # 报送大数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['createTime', 'clubMode', 'playerInfos', 'clubType',
             'roomOptionsId', 'roomTypeName', 'roomChannel', 'betNums', 'needUserNum', 'clubId', 'clubName', 'clubRegionId', 'clubRegionName',
             'clubType', 'roomType', 'roomName']);
-
         $beeSender = new BeeSender(Env::get('app_id'), Env::get('app_name'), Env::get('service_ip'), config('app_debug'));
         $playerInfos = json_decode($roomHashInfo['playerInfos'], true);
-        // Todo 报送
         if($playerInfos){
             foreach ($playerInfos as $k => $userInfo){
                 $bigData = [
@@ -59,7 +58,7 @@ class RoundStartCallBack extends Base
                 $beeSender->send('table_start', $bigData);
             }
         }
-        # 报送大数据完成
-        return jsonRes(0);
+        // 报送大数据完成
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }

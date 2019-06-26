@@ -17,24 +17,13 @@ class OutRoomCallBack extends Base
 {
     public function outRoomCallBack(){
         if(!isset($this->opt['roomId']) || !isset($this->opt['playerId']) || !is_numeric($this->opt['roomId']) || !is_numeric($this->opt['playerId'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        # 使用redis加锁重写房间用户
-        $getLock = false;
-        $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'].'lock';
-        while(!$getLock){
-            if(time() > $timeOut){
-                break;
-            }
-            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-            if($getLock){
-                break;
-            }
-        }
+        $getLock = $this->getLock($redisHandle, $lockKey);
 
         if($getLock){
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'needUserNum']);
@@ -55,7 +44,13 @@ class OutRoomCallBack extends Base
                 }
             }
             $redisHandle->del($lockKey); # 解锁
+        }else{
+            $logData = [
+                $this->opt['roomId'],
+                $this->opt['playerId']
+            ];
+            Log::write(json_encode($logData), '用户退出房间获取锁超时');
         }
-        return jsonRes(0);
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }
