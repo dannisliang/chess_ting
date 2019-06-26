@@ -14,16 +14,17 @@ use app\model\ServiceGatewayNewModel;
 
 
 class Room extends Base {
+
     /**
-     * 后台
+     * 查询玩家锁在房间
+     * @return \think\response\Json\
      */
-# 查询玩家所在的房间完成
     public function getUserRoom(){
         if(!isset($this->opt['uid']) || !$this->opt['uid'] || !is_numeric($this->opt['uid'])){
             return jsonRes(3006);
         }
 
-        # 去逻辑服获取玩家所在房间
+        // 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
         $gameServiceNewInfos = $gameServiceNew->getGameService();
         $gameServiceNewArr = [];
@@ -44,13 +45,18 @@ class Room extends Base {
         }
         return jsonRes(3509);
     }
-# 强制解散玩家房间完成
+
+
+    /**
+     * 强制解散玩家房间
+     * @return \think\response\Json\
+     */
     public function disBandRoom(){
         if(!isset($this->opt['uid']) || !is_numeric($this->opt['uid'])){
             return jsonRes(3006);
         }
 
-        # 去逻辑服获取玩家所在房间
+        // 去逻辑服获取玩家所在房间
         $gameServiceNew = new GameServiceNewModel();
         $gameServiceNewInfos = $gameServiceNew->getGameService();
         $gameServiceNewArr = [];
@@ -73,7 +79,6 @@ class Room extends Base {
                 }
             }
         }
-//
         return jsonRes(3508);
     }
 }

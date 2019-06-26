@@ -18,8 +18,8 @@ function p($info){
 
 /**
  * 接口json返回
- * @param $code 状态码
- * @param $data 返回值
+ * @param $code int 状态码
+ * @param $data array 返回值
  * @return \think\response\Json\
  */
 function jsonRes($code, $data = []){
@@ -47,8 +47,8 @@ function checkUserToken($userSessionInfo){
 
 /**
  * 获取用户资产
- * @param $userIds 用户ID或用户ID集
- * @param $propertyType 请求类型固定值可以为数组
+ * @param $userIds array 用户ID或用户ID集
+ * @param $propertyType array 请求类型固定值可以为数组
  * @return mixed
  */
 function getUserProperty($userIds, $propertyType){
@@ -62,8 +62,8 @@ function getUserProperty($userIds, $propertyType){
 
 /**
  * 发送http请求  并记录错误请求/超时请求的日志
- * @param $url 完整请求地址
- * @param $data 请求数组 无需json
+ * @param $url string 完整请求地址
+ * @param $data array 请求数组 无需json
  * @param string $type 请求方式GET/POST等
  * @param array $headers 请求头
  * @return mixed|\Psr\Http\Message\StreamInterface 记录超时日志 记录状态码非200日志 请求正确返回array
@@ -71,8 +71,8 @@ function getUserProperty($userIds, $propertyType){
 function sendHttpRequest($url, $data = [], $type = 'POST', $headers = [], $config = []){
     $requestConfig = [
         'json' => $data,
-        'connect_timeout' => 1, # 最长握手时间
-//        'timeout' => 1, # 最长等待时间
+        'connect_timeout' => 5, # 最长握手时间
+        'timeout' => 5, # 最长等待时间
         'headers' => ['Accept-Encoding' => 'gzip'],
         'decode_content' => 'gzip',
         'http_errors' => false, # 非200状态码不抛出异常

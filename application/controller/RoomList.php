@@ -21,14 +21,14 @@ class RoomList extends Base
 {
     public function getRoomList(){
         if(!isset($this->opt['club_id']) || !is_numeric($this->opt['club_id'])){
-            return jsonRes(3006);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
         $redis = new Redis();
         $redisHandle = $redis->handler();
         $sMembers = $redisHandle->sMembers(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id']);
         if(!$sMembers){
-            return jsonRes(0, ['roominfo' => []]);
+            return json(['code' => 0, 'mess' => '成功', 'data' => ['roominfo' => []]]);
         }
 
         $client = new Client();
@@ -46,21 +46,21 @@ class RoomList extends Base
                 if(isset($roomCheckInfo['content']['exist']) && $roomCheckInfo['content']['exist']){
                     $newNumbers[] = $roomNumber;
                 }else{
-                    Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                    Log::write('房间不存在'.$this->opt['club_id'].'_'.$roomNumber, '检测房间不存在');
                     $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                     if($res){
                         $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $roomNumber); // 迭代占用的房间号
                     }
                 }
             }else{
-                Log::write('服务不可用'.$this->opt['club_id'].'_'.$roomNumber, "log");
+                Log::write('服务不可用'.$this->opt['club_id'].'_'.$roomNumber, '检测房间不存在');
                 $res = $redisHandle->sRem(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
                 if($res){
                     $redisHandle->zAdd(RedisKey::$USED_ROOM_NUM, time(), $roomNumber); // 迭代占用的房间号
                 }
             }
         }
-        # 和逻辑服同步
+        // 和逻辑服同步
 
         $i = 0;
         $clubRoomReturn = [];
@@ -164,6 +164,6 @@ class RoomList extends Base
         }
 
         $return['roominfo'] = $returnData;
-        return jsonRes(0, $return);
+        return json(['code' => 0, 'mess' => '成功', 'data' => $return]);
     }
 }

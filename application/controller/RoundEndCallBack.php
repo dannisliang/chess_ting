@@ -21,10 +21,10 @@ class RoundEndCallBack extends Base
 {
     public function roundEndCallBack(){
         if(!isset($this->opt['faanNames']) || !isset($this->opt['score']) || !isset($this->opt['roomId']) || !isset($this->opt['round']) || !isset($this->opt['winnerIds']) || !isset($this->opt['duration']) || !isset($this->opt['playBack'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
         if(!is_numeric($this->opt['set']) || !is_numeric($this->opt['round']) || !is_numeric($this->opt['roomId'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
         $redis = new Redis();
         $redisHandle = $redis->handler();
@@ -43,7 +43,7 @@ class RoundEndCallBack extends Base
             'roundEndTime' => date("Y-m-d H:i:s", time())
         ];
         $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], 'roundEndInfo', json_encode($roundEndInfo));
-        # 上传牌局记录到华为云
+        // 上传牌局记录到华为云
         try{
             $obsClient = new ObsClient([
                 'key' => Env::get('obs.key'),
@@ -56,10 +56,10 @@ class RoundEndCallBack extends Base
                 'Body' => $this->opt['playBack']
             ]);
         }catch (ObsException $obsException){
-            Log::write(json_encode($this->opt), "obsPutError");
+            Log::write(json_encode($this->opt), '牌局记录上传华为云失败');
         }
 
-        # 算用户积分和用户积分
+        // 算用户积分和用户积分
         $userIds = [];
         $userScore = [];
         foreach ($this->opt['score'] as $k => $v){
@@ -121,6 +121,6 @@ class RoundEndCallBack extends Base
             }
         }
 
-        return jsonRes(0);
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }

@@ -30,73 +30,72 @@ use app\model\ServiceGatewayNewModel;
 
 class CreateRoom extends Base
 {
-    public function getRoomNum(){
-        $redis = new Redis(); // 实例化redis类
-        $redisHandle = $redis->handler();
-
+    /**
+     * 获取房间号
+     * @param $redisHandle object redis实例
+     * @return int
+     */
+    public function getRoomNum($redisHandle){
+        $roomNum = 0;
         $lua = <<<SCRIPT
-        local rand
-        local res
-        
         local k1 = KEYS[1]
         local v1 = tonumber(ARGV[1])
-        local v2 = tonumber(ARGV[2])
-        local v3 = tonumber(ARGV[3])
-        local v4 = tonumber(ARGV[4])
-        
-        math.randomseed(v3)
-        for i = v1, v2, 1 do
-            rand = math.random(v1, v2)
-            res = redis.call('zrank', k1, rand)
-            if res == false then
-                break
-            end
-        end
-    
-        if res == false then
-            redis.call('zadd', k1, v4, rand)
-            return rand
-        else
-            return 0
-        end
+        local v2 = ARGV[2]
+        return redis.call('zadd', k1, 'NX', v1, v2);
 SCRIPT;
 
-        $roomNum = $redisHandle->eval($lua, array(RedisKey::$USED_ROOM_NUM, 100000, 999999, time().mt_rand(1, 9), 0), 1);
+        $timeOut = bcadd(time(), 2, 0);
+        while (true){
+            if(time() > $timeOut){
+                break;
+            }
+            $rand = mt_rand(100000, 999999);
+            $res = $redisHandle->eval($lua, array(RedisKey::$USED_ROOM_NUM, 0, $rand), 1);
+            if($res){
+                $roomNum = $rand;
+                break;
+            }
+            usleep(1000);
+        }
         return $roomNum;
     }
 
+    /**
+     * 创建房间
+     * @return \think\response\Json\
+     */
     public function createRoom(){
-        # 判断传参是否有效
+        // 判断传参是否有效
         if(!isset($this->opt['match_id']) || !isset($this->opt['club_id']) || !is_numeric($this->opt['match_id']) || !is_numeric($this->opt['club_id'])){
-            return jsonRes(3006);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        # 获取用户的session数据
+        // 获取用户的session数据
         $userSessionInfo = Session::get(RedisKey::$USER_SESSION_INFO);
         if(!$userSessionInfo){
-            return jsonRes(9999);
+            return json(['code' => 9999, 'mess' => '请重新登录']);
         }
 
         $checkTokenRes = checkUserToken($userSessionInfo);
         if(!isset($checkTokenRes['result']) || ($checkTokenRes['result'] == false)){
-            return jsonRes(9999);
+            return json(['code' => 9999, 'mess' => '请重新登录']);
         }
 
-        # 查询玩家是否加入此俱乐部
+        // 查询玩家是否加入此俱乐部
         $userClub = new UserClubModel();
         $userClubInfo = $userClub->getUserClubInfo($userSessionInfo['userid'], $this->opt['club_id']);
         if(!$userClubInfo){
-            return jsonRes(3511);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        # 根据俱乐部ID获取俱乐部相关数据
+        // 根据俱乐部ID获取俱乐部相关数据
         $club = new ClubModel();
         $clubInfo = $club->getClubInfo($this->opt['club_id']);
         if(!$clubInfo){
-            return jsonRes(3500);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        # 获取会长昵称
+        // 获取会长昵称
         if($clubInfo['president_id']){
             $presidentInfo = getUserBaseInfo($clubInfo['president_id']);
             if(isset($presidentInfo['nickname'])){
@@ -104,7 +103,7 @@ SCRIPT;
             }
         }
 
-        # 获取高级会长昵称
+        // 获取高级会长昵称
         if($clubInfo['senior_president']){
             $seniorPresidentInfo = getUserBaseInfo($clubInfo['senior_president']);
             if(isset($seniorPresidentInfo['nickname'])){
@@ -112,34 +111,25 @@ SCRIPT;
             }
         }
 
-        # 计费模式有问题
-        if(($clubInfo['club_type'] != 0) && ($clubInfo['club_type'] != 1)){
-            return jsonRes(3504);
-        }
-
-        # 根据玩法规则ID获取规则
+        // 根据玩法规则ID获取规则
         $roomOptions = new RoomOptionsModel();
         $roomOptionsInfo = $roomOptions->getRoomOptionInfo($this->opt['match_id']);
         if(!$roomOptionsInfo){
-            return jsonRes(3501);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        if(!in_array($roomOptionsInfo['room_type'], explode(',', $clubInfo['play_id']))){
-            return jsonRes(3502);
-        }
-
-        # 根据房间类型ID获取房间玩法相关数据（大json）
+        // 根据房间类型ID获取房间玩法相关数据（大json）
         $play = new PlayModel();
         $playInfo = $play->getPlayInfo($roomOptionsInfo['room_type']);
         if(!$playInfo){
-            return jsonRes(3501);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        # 根据玩法的类型去查找玩法启动的服务
+        // 根据玩法的类型去查找玩法启动的服务
         $gameServiceNew = new GameServiceNewModel();
         $serviceInfos = $gameServiceNew->getService($playInfo['play_type']);
         if(!$serviceInfos) {
-            return jsonRes(3521);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
         $rand = rand(0, count($serviceInfos)-1);
@@ -147,7 +137,7 @@ SCRIPT;
         $serviceGatewayNew = new ServiceGatewayNewModel();
         $serviceGatewayNewInfo = $serviceGatewayNew->getServiceGatewayNewInfo($serviceId);
         if(!$serviceGatewayNewInfo){
-            return jsonRes(3517);
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
         $rand = rand(0, count($serviceGatewayNewInfo)-1);
@@ -164,29 +154,33 @@ SCRIPT;
             $socketUrl = $clubSocketInfo['socket_url'];
         }
 
-        # 玩法规则json解码
+        // 玩法规则json解码
         $playInfoPlayJsonDecode = json_decode($playInfo['play'], true);
 
-        # 房间规则json解码
+        // 房间规则json解码
         $roomOptionsInfoOptionsJsonDecode = json_decode($roomOptionsInfo['options'], true);
 
-        # 获取房间开始需要的玩家数
+        // 获取房间开始需要的玩家数
         $needUserNum = getRoomNeedUserNum($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode);
-        if(!$needUserNum){ # 解析不出人数
-            return jsonRes(3503);
+        if(!$needUserNum){ // 解析不出人数
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
 
-        //查找商务会长，给商务会长返利
+        // 查找商务会长，给商务会长返利
         $commerceModel = new CommerceModel();
         $commerce = $commerceModel -> getOneByWhere(['senior_president' => $clubInfo['senior_president']]);
 
-        # 获取玩家vip
+        // 获取玩家vip
         $userVip = new UserVipModel();
         $userVipInfo = $userVip->getUserVipInfo($userSessionInfo['userid'], $this->opt['club_id']);
-        # 计算房费
+        // 计算房费
         $needDiamond = $roomOptionsInfo['diamond'];
+        $diamondInfo = [
+            'bind' => 0,
+             'noBind' => 0,
+        ];
         if($clubInfo['club_type'] == 0){
-            # 是否均分
+            // 是否均分
             if($roomOptionsInfo['room_rate'] == 0){
                 $payMode = 'aa';
                 $needDiamond  = bcdiv($needDiamond, $needUserNum, 0);
@@ -195,7 +189,7 @@ SCRIPT;
                 $payMode = 'winer';
             }
 
-            # 获取折扣
+            // 获取折扣
             if($userVipInfo){
                 $vipCard = new VipCardModel();
                 $vipCardInfo = $vipCard->getVipCardInfo($userVipInfo['vid']);
@@ -204,13 +198,13 @@ SCRIPT;
                 }
             }
 
-            if($needDiamond > 0){ # 需要扣钻
+            if($needDiamond > 0){ // 需要扣钻
                 $userDiamondInfo = getUserProperty($userSessionInfo['userid'], [Definition::$USER_PROPERTY_TYPE_NOT_BINDING, Definition::$USER_PROPERTY_TYPE_BINDING]);
                 if(!isset($userDiamondInfo['code']) || ($userDiamondInfo['code'] != 0)){
                     $returnData = [
                         'need_diamond' => $needDiamond
                     ];
-                    return jsonRes(40002, $returnData);
+                    return json(['code' => 40002, 'mess' => '钻石不足，无法进入房间', 'data' => $returnData]);
                 }
 
                 $noBindDiamond = 0;
@@ -240,24 +234,60 @@ SCRIPT;
                         $returnData = [
                             'need_diamond' => $needDiamond
                         ];
-                        return jsonRes(40002, $returnData);
+                        return json(['code' => 40002, 'mess' => '钻石不足，无法进入房间', 'data' => $returnData]);
                     }
                 }
             }
         }
 
+        // Redis用户数据
+        $userInfo = [
+            'userId' => $userSessionInfo['userid'],
+            'nickName' => $userSessionInfo['nickname'],
+            'headImgUrl' => $userSessionInfo['headimgurl'],
+            'ipAddr' => $userSessionInfo['ip'],
+            'sex' => $userSessionInfo['sex'],
+            'vipId' => isset($userVipInfo['vid']) ? $userVipInfo['vid'] : '',
+            'clientType' => $userSessionInfo['client_type'],
+            'systemType' => $userSessionInfo['app_type'],
+            'needDiamond' => $diamondInfo,
+        ];
+        $playerInfo[] = $userInfo;
+        // Redis用户数据
+
+        # 报送大数据
+        $setNum = getRoomSet($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode);
+        $tableType = 1; // 按局玩
+        if($setNum){
+            $tableType = 0; // 按圈玩
+        }
+        $clubMode = 'divide'; // 免费房
+        if($clubInfo['club_type'] == 1){
+            $clubMode = 'free';
+        }
+        $roundNum = getRoomRound($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); // 圈数
+        $baseScore = getRoomBaseScore($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); // 基础分
+        // 获取俱乐部所属地区
+        $areaName = '-';
+        $area = new AreaModel();
+        $areaInfo = $area->getInfoById($clubInfo['area_id']);
+        if($areaInfo){
+            $areaName = $areaInfo['area_name'];
+        }
+        // 报送大数据结束
+
         $redis = new Redis();
         $redisHandle = $redis->handler();
-        # 生成房间号
-        $roomNumber = $this->getRoomNum();
-        Log::write($roomNumber, 'Get');
+        // 生成房间号
+        $roomNumber = $this->getRoomNum($redisHandle);
         if(!$roomNumber){
-            return jsonRes(3517);
+            Log::write($roomNumber, '生成房间号超时');
+            return json(['code' => -10000, 'mess' => '系统繁忙']);
         }
         $roomNumber = (string)$roomNumber;
 
-        # 扣会长资产 判断会长资产是否充足 充足直接结算
-        if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 直接扣钻
+        // 扣会长资产 判断会长资产是否充足 充足直接结算
+        if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 直接扣钻
             $payMode = 'free';
             $operateData[] = [
                 'uid' => $clubInfo['president_id'],
@@ -270,24 +300,23 @@ SCRIPT;
             $operaRes = operatePlayerProperty($operateData);
             if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
                 $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
-                Log::write($roomNumber, "Rem");
                 $returnData = [
                     'need_diamond' => $needDiamond
                 ];
-                return jsonRes(40002, $returnData);
+                return json(['code' => 40002, 'mess' => '钻石不足，无法进入房间', 'data' => $returnData]);
             }
         }
 
-        # 请求逻辑服创建房间
+        // 请求逻辑服创建房间
         $data['roomId'] = $roomNumber;
         $data['config'] = $playInfoPlayJsonDecode;
         $data['config']['options'] = $roomOptionsInfoOptionsJsonDecode;
         $createRoomInfo = sendHttpRequest($httpUrl.Definition::$CREATE_ROOM.$userSessionInfo['userid'], $data);
 //        p($createRoomInfo);
-        if(!isset($createRoomInfo['content']['result'])){ # 创建房间失败
+        if(!isset($createRoomInfo['content']['result']) || ($createRoomInfo['content']['result'] != 0)){ // 创建房间失败
+            Log::write($roomNumber, '请求逻辑服创建房间失败');
             $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
-            Log::write($roomNumber, "Rem");
-            if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ # 还钻
+            if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 还钻
                 $operateData[] = [
                     'uid' => $clubInfo['president_id'],
                     'event_type' => '+',
@@ -298,72 +327,35 @@ SCRIPT;
                 ];
                 $operaRes = operatePlayerProperty($operateData);
                 if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
-                    Log::write(json_encode($operateData), 'operateError');
+                    Log::write(json_encode($operateData), '还钻失败');
                 }
             }
-            return jsonRes(3517);
+        }
+
+        if(!isset($createRoomInfo['content']['result'])){
+            return json(['code' => 3517, 'mess' => '逻辑服返回其他原因导致创建房间失败']);
         }else{
             if($createRoomInfo['content']['result'] != 0){
-                $redisHandle->zRem(RedisKey::$USED_ROOM_NUM, $roomNumber);
-                Log::write($roomNumber, "Rem");
-                if($clubInfo['club_type'] == 1 && ($needDiamond > 0)){ // 还钻
-                    $operateData[] = [
-                        'uid' => $clubInfo['president_id'],
-                        'event_type' => '+',
-                        'reason_id' => 8,
-                        'property_type' => $this->opt['club_id'].'_'.$clubInfo['president_id'].'_'.Definition::$USER_PROPERTY_PRESIDENT,
-                        'property_name' => '赠送蓝钻',
-                        'change_num' => $needDiamond
-                    ];
-                    $operaRes = operatePlayerProperty($operateData);
-                    if(!isset($operaRes['code']) || ($operaRes['code'] != 0)){
-                        Log::write(json_encode($operateData), 'operateError');
-                    }
+                $logData = [
+                    $roomNumber,
+                    $userSessionInfo['userid'],
+                ];
+                Log::write(json_encode($logData), '用户创建房间异常');
+                if($createRoomInfo['content']['result'] == 10002){
+                    return json(['code' => 9999, 'mess' => '请重新登录']);
                 }
 
-                if($createRoomInfo['content']['result'] == 10002){
-                    return jsonRes(9999);
-                }else{
-                    return jsonRes(3517);
+                if($createRoomInfo['content']['result'] == 10000){
+                    return json(['code' => 23202, 'mess' => '您要加入的房间不存在']);
                 }
+
+                if($createRoomInfo['content']['result'] == 10001){
+                    return json(['code' => 23204, 'mess' => '您要加入的房间人数已满']);
+                }
+
+                return json(['code' => 3517, 'mess' => '逻辑服返回其他原因导致创建房间失败']);
             }
         }
-
-        # Redis数据
-        $userInfo = [
-            'userId' => $userSessionInfo['userid'],
-            'nickName' => $userSessionInfo['nickname'],
-            'headImgUrl' => $userSessionInfo['headimgurl'],
-            'ipAddr' => $userSessionInfo['ip'],
-            'sex' => $userSessionInfo['sex'],
-            'vipId' => isset($userVipInfo['vid']) ? $userVipInfo['vid'] : '',
-            'clientType' => $userSessionInfo['client_type'],
-            'systemType' => $userSessionInfo['app_type'],
-        ];
-        if(isset($diamondInfo)){
-            $userInfo['needDiamond'] = $diamondInfo;
-        }
-        $playerInfo[] = $userInfo;
-        # 报送大数据
-        $setNum = getRoomSet($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode);
-        $tableType = 1; # 按局玩
-        if($setNum){
-            $tableType = 0; # 按圈玩
-        }
-        $clubMode = 'divide'; # 免费房
-        if($clubInfo['club_type'] == 1){
-            $clubMode = 'free';
-        }
-        $roundNum = getRoomRound($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 圈数
-        $baseScore = getRoomBaseScore($playInfoPlayJsonDecode, $roomOptionsInfoOptionsJsonDecode); # 基础分
-        # 获取俱乐部所属地区
-        $areaName = '-';
-        $area = new AreaModel();
-        $areaInfo = $area->getInfoById($clubInfo['area_id']);
-        if($areaInfo){
-            $areaName = $areaInfo['area_name'];
-        }
-        # 报送大数据结束
 
         $roomHashInfo = [
             'founderId' => '', // 接受回调保存房主ID
@@ -418,23 +410,37 @@ SCRIPT;
             'businessRebate' => $clubInfo['business_rebate'], // 上午会长返利比
         ];
 
-        # 写房间hash 写失败记录日志
-        $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $roomHashInfo);
+        // 写房间hash 写失败记录日志
+        $res = $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$roomNumber, $roomHashInfo);
+        if(!$res){
+            $logData = [
+                RedisKey::$USER_ROOM_KEY_HASH.$roomNumber,
+                $roomHashInfo
+            ];
+            Log::write(json_encode($logData), '写房间数据失败');
+        }
 
-        # 加入到俱乐部房间集
-        $redisHandle->sAdd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+        // 加入到俱乐部房间集
+        $res = $redisHandle->sAdd(RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'], $roomNumber);
+        if(!$res){
+            $logData = [
+                RedisKey::$CLUB_ALL_ROOM_NUMBER_SET.$this->opt['club_id'],
+                $roomNumber
+            ];
+            Log::write(json_encode($logData), '写俱乐部房间失败');
+        }
 
-        # 接口返回值
+        // 接口返回值
         $returnData = [
-            'need_gold' => $needDiamond, # 所需钻石
-            'check' => $playInfoPlayJsonDecode['checks'], # play表的json的checks
-            'options' => $roomOptionsInfoOptionsJsonDecode, # room_options表的options
-            'room_num' => $roomNumber, # 房间号
+            'need_gold' => $needDiamond, // 所需钻石
+            'check' => $playInfoPlayJsonDecode['checks'], // play表的json的checks
+            'options' => $roomOptionsInfoOptionsJsonDecode, // room_options表的options
+            'room_num' => $roomNumber, // 房间号
             'socket_ssl' => Env::get('socket_ssl'),
             'socket_h5' => $socketH5,
             'socket_url' =>  $socketUrl,
         ];
-        # 返回客户端
-        return jsonRes(0, $returnData);
+        // 返回客户端
+        return json(['code' => 0, 'mess' => '成功', 'data' => $returnData]);
     }
 }

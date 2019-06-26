@@ -16,10 +16,10 @@ class RoomEndCallBack extends Base
 {
     public function roomEndCallBack(){
         if(!isset($this->opt['roomId']) || !is_numeric($this->opt['roomId']) || !isset($this->opt['statistics']) || !is_array($this->opt['statistics'])){
-            return jsonRes(0);
+            return json(['code' => 0, 'mess' => '成功']);
         }
 
-        # 修改房间的结束时间
+        // 修改房间的结束时间
         $redis = new Redis();
         $redisHandle = $redis->handler();
 
@@ -31,13 +31,13 @@ class RoomEndCallBack extends Base
             $redisHandle->hMset(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], $setData);
         }
 
-        # 牌局正常结束 返回逻辑服扣钻相关数据
+        // 牌局正常结束 返回逻辑服扣钻相关数据
         $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['roomId'], ['playerInfos', 'clubType', 'roomRate']);
         $playerInfo = json_decode($roomHashInfo['playerInfos'], true);
 
         if($this->opt['round'] && ($roomHashInfo['clubType'] != 1) && $playerInfo){
             $returnData = [];
-            if($roomHashInfo['roomRate'] == 1){ # 大赢家模式
+            if($roomHashInfo['roomRate'] == 1){ // 大赢家模式
                 $userScore = [];
                 foreach ($this->opt['statistics'] as $k => $v){
                     $userScore[$v['playerId']] = $v['totalScore'];
@@ -52,7 +52,7 @@ class RoomEndCallBack extends Base
                 $userNum = count($userIds);
 
                 foreach ($this->opt['statistics'] as $k => $v){
-                    if(in_array($v['playerId'], $userIds)){ # 需要扣钻
+                    if(in_array($v['playerId'], $userIds)){ // 需要扣钻
                         foreach ($playerInfo as $kk => $userInfo){
                             if($userInfo['userId'] == $v['playerId']){
                                 $bind = isset($userInfo['needDiamond']['bind']) ? $userInfo['needDiamond']['bind'] : 0;
@@ -73,7 +73,7 @@ class RoomEndCallBack extends Base
                 }
             }
 
-            if($roomHashInfo['roomRate'] == 0){ # 平均扣钻
+            if($roomHashInfo['roomRate'] == 0){ // 平均扣钻
                 foreach ($this->opt['statistics'] as $k => $v){
                     foreach ($playerInfo as $kk => $userInfo){
                         if($v['playerId'] == $userInfo['userId']){
@@ -97,6 +97,6 @@ class RoomEndCallBack extends Base
                 ];
             }
         }
-        return jsonRes(0, $returnData);
+        return json(['code' => 0, 'mess' => '成功']);
     }
 }
