@@ -606,3 +606,64 @@ function getClubNameAndAreaName($club_id){
 }
 
 
+/**
+ * 解锁
+ * @param $lockKey
+ * @param $time
+ * @return mixed
+ */
+function delLock($lockKey, $time){
+    $redis = new Redis();
+    $redisHandle = $redis->handler();
+    $lockKey = 'lock:'.$lockKey;
+
+    $lua = <<<SCRIPT
+        local k1 = KEYS[1]
+        local v1 = tonumber(ARGV[1])
+        local v2 = tonumber(redis.call('get', k1))
+        if v2 == v1 then
+               redis.call('del', k1)
+               return true
+        else
+            return false
+        end
+SCRIPT;
+    $res = $redisHandle->eval($lua, array($lockKey, $time), 1);
+    if(!$res){
+        Log::write($lockKey, '超时删除锁异常');
+    }
+    return $res;
+}
+
+
+/**
+ * 获取redis锁
+ * @param $lockKey
+ * @return bool|int
+ */
+function getLock($lockKey){
+    $redis = new Redis();
+    $redisHandle = $redis->handler();
+
+    $getLock = false;
+    $timeOut = bcadd(time(), 2, 0);
+    $lockKey = 'lock:'.$lockKey;
+    while(!$getLock){
+        $time = time();
+        if($time > $timeOut){
+            break;
+        }
+        $getLock = $redisHandle->set($lockKey, $time, array('NX', 'EX' => 5));
+        if($getLock){
+            return $time;
+        }
+        //todo 为抢占式锁增加一个微秒睡眠时间， 减轻redis的瞬间并发请求数
+        usleep(10000);
+    }
+
+    if(!$getLock){
+        Log::write($lockKey, '获取锁异常');
+    }
+
+    return $getLock;
+}

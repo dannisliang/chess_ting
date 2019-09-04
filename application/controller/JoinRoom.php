@@ -140,20 +140,9 @@ class JoinRoom extends Base
         }
 
         # 使用redis锁写房间数据 失败写日志
-        $getLock = false;
-        $timeOut = bcadd(time(), 2, 0);
         $lockKey = RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'].'lock';
-        while(!$getLock){
-            if(time() > $timeOut){
-                break;
-            }
-            $getLock = $redisHandle->set($lockKey, 'lock', array('NX', 'EX' => 10));
-            if($getLock){
-                break;
-            }
-            //todo 为抢占式锁增加一个微秒睡眠时间， 减轻redis的瞬间并发请求数
-            usleep(1000);
-        }
+        $getLock = getLock($lockKey);
+
         if($getLock){ # 拿到锁处理数据并解锁
             $roomHashInfo = $redisHandle->hMget(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], ['needUserNum', 'playerInfos', 'socketUrl', 'socketH5', 'playChecks', 'roomOptions', 'socketSsl', 'clubName', 'clubId']);
             # 重写hash中用户信息
@@ -185,7 +174,7 @@ class JoinRoom extends Base
             }else{
                 $redisHandle->hSet(RedisKey::$USER_ROOM_KEY_HASH.$this->opt['room_id'], 'playerInfos', json_encode($roomUserInfo));
             }
-            $redisHandle->del($lockKey); # 解锁
+            delLock($lockKey, $getLock); # 解锁
             $returnData = [
                 'need_gold' => $needDiamond, # 需要的钻石
                 'room_num' => $this->opt['room_id'], # 房间号
